@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="sr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Javi — Theme Directions</title>
+<style>
+/* ===== Semantic roles (operator light) =====
+   Var A «Clean»:  bg #f4f6fb  surface #fff  ink #161b29  muted #6b7385  line #e4e8f0
+   Var B «Warm»:   bg #faf7f2  surface #fff  ink #20242e  muted #7a7468  line #ece6db
+   Shared brand:   brand #4f7cff  accent #7a5cff
+   Status:         on_the_way #4f7cff  delivered #16a34a  failed #dc2626  read #0ea5e9
+   Public branded: brand gradient #4f7cff→#7a5cff, page #ffffff, ink #161b29  */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#11151f;color:#e8ebf2;padding:28px;line-height:1.45}
+h1{font-size:22px;margin-bottom:4px}.sub{color:#9aa3b8;font-size:13px;margin-bottom:24px}
+.row{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.col{flex:1;min-width:300px}.col h2{font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:#9aa3b8;margin-bottom:10px}
+.reg{font-size:12px;color:#7e8092;margin-bottom:12px}
+.phone{width:330px;border-radius:26px;overflow:hidden;border:1px solid #2a3142;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+/* operator app */
+.app{padding:16px 14px 22px}
+.appA{background:#f4f6fb;color:#161b29}.appB{background:#faf7f2;color:#20242e}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.logo{font-weight:800;font-size:18px}.logo span{color:#4f7cff}
+.avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#4f7cff,#7a5cff)}
+.h{font-size:13px;font-weight:700;color:#6b7385;margin:6px 2px 10px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:#fff;border-radius:14px;padding:13px 14px;margin-bottom:10px;border:1px solid #e4e8f0}
+.appB .card{border-color:#ece6db}
+.card .name{font-weight:700;font-size:15px}
+.card .addr{color:#6b7385;font-size:13px;margin:2px 0 9px}
+.appB .card .addr{color:#7a7468}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px}
+.c-otw{background:#eaf0ff;color:#3056d3}.c-deliv{background:#e7f6ec;color:#137a38}.c-read{color:#0e7aa8;background:#e3f4fb}
+.eta{font-weight:700}
+.stars{color:#f5a623;font-size:14px;letter-spacing:1px}
+.cardrow{display:flex;justify-content:space-between;align-items:center}
+.startbtn{display:block;width:100%;text-align:center;background:#4f7cff;color:#fff;font-weight:700;font-size:15px;padding:11px;border-radius:11px;margin-top:4px}
+.fab{position:relative;margin-top:14px}
+.newbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:#4f7cff;color:#fff;font-weight:800;font-size:16px;padding:15px;border-radius:14px;box-shadow:0 6px 16px rgba(79,124,255,.35)}
+.appB .newbtn{border-radius:18px}
+.muted{color:#9aa3b8}
+/* public branded */
+.pub{background:#fff;color:#161b29}
+.pubhead{background:linear-gradient(135deg,#4f7cff,#7a5cff);color:#fff;padding:20px 18px 26px}
+.pubhead .brand{font-weight:800;font-size:16px;opacity:.92}
+.pubhead .who{font-size:14px;opacity:.9;margin-top:14px}
+.pubhead .status{font-size:26px;font-weight:800;margin-top:4px;line-height:1.15}
+.pubbody{padding:20px 18px 26px}
+.etabox{background:#f4f6fb;border:1px solid #e4e8f0;border-radius:14px;padding:16px;text-align:center;margin-bottom:18px}
+.etabox .lbl{font-size:12px;color:#6b7385;text-transform:uppercase;letter-spacing:.04em}
+.etabox .big{font-size:30px;font-weight:800;color:#161b29;margin-top:4px}
+.steps{display:flex;gap:6px;margin-bottom:6px}
+.step{flex:1;height:5px;border-radius:3px;background:#e4e8f0}.step.on{background:#4f7cff}
+.rate{border-top:1px solid #eef1f6;margin-top:20px;padding-top:18px;text-align:center}
+.rate .q{font-size:15px;font-weight:700;margin-bottom:10px}
+.rstars{font-size:30px;color:#d9dee8;letter-spacing:6px}
+.foot{font-size:11px;color:#9aa3b8;text-align:center;margin-top:16px}
+.tokrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.tok{font-size:10px;color:#cbd2e0;border:1px solid #2a3142;border-radius:6px;padding:3px 7px;display:flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+</style></head>
+<body>
+<h1>Javi — направления темы</h1>
+<div class="sub">Светлый «кабинет» в двух регистрах + брендовая публичная страница. Контент реальный (sr, латиница).</div>
+<div class="row">
+
+  <!-- Operator A -->
+  <div class="col"><h2>Кабинет — Вар. A «Clean»</h2><div class="reg">Прохладные нейтрали, чёткость, клинично — максимум читаемости</div>
+  <div class="phone"><div class="app appA">
+    <div class="topbar"><div class="logo">javi<span>.</span></div><div class="avatar"></div></div>
+    <div class="h">Aktivne dostave · danas</div>
+    <div class="card"><div class="cardrow"><div class="name">Ana Jovanović</div><span class="chip c-otw">● U dostavi</span></div>
+      <div class="addr">Bulevar oslobođenja 12, Novi Sad</div>
+      <div class="cardrow"><span class="muted" style="font-size:13px">Stiže do <span class="eta" style="color:#161b29">16:00</span></span><span class="chip c-read">✓ Pročitano</span></div></div>
+    <div class="card"><div class="cardrow"><div class="name">Marko Petrović</div><span style="font-size:13px;color:#6b7385">Spremno</span></div>
+      <div class="addr">Zmaj Jovina 4, Novi Sad</div>
+      <a class="startbtn">Dostava je počela</a></div>
+    <div class="h" style="margin-top:16px">Završeno</div>
+    <div class="card"><div class="cardrow"><div class="name">Jelena Ilić</div><span class="chip c-deliv">✓ Isporučeno</span></div>
+      <div class="cardrow"><span class="addr" style="margin:0">Dunavska 19</span><span class="stars">★★★★★</span></div></div>
+    <div class="fab"><a class="newbtn">＋ Nova dostava</a></div>
+  </div></div></div>
+
+  <!-- Operator B -->
+  <div class="col"><h2>Кабинет — Вар. B «Warm»</h2><div class="reg">Тёплый off-white, скруглённее, дружелюбнее</div>
+  <div class="phone"><div class="app appB">
+    <div class="topbar"><div class="logo">javi<span>.</span></div><div class="avatar"></div></div>
+    <div class="h">Aktivne dostave · danas</div>
+    <div class="card"><div class="cardrow"><div class="name">Ana Jovanović</div><span class="chip c-otw">● U dostavi</span></div>
+      <div class="addr">Bulevar oslobođenja 12, Novi Sad</div>
+      <div class="cardrow"><span class="muted" style="font-size:13px">Stiže do <span class="eta" style="color:#20242e">16:00</span></span><span class="chip c-read">✓ Pročitano</span></div></div>
+    <div class="card"><div class="cardrow"><div class="name">Marko Petrović</div><span style="font-size:13px;color:#7a7468">Spremno</span></div>
+      <div class="addr">Zmaj Jovina 4, Novi Sad</div>
+      <a class="startbtn">Dostava je počela</a></div>
+    <div class="h" style="margin-top:16px">Završeno</div>
+    <div class="card"><div class="cardrow"><div class="name">Jelena Ilić</div><span class="chip c-deliv">✓ Isporučeno</span></div>
+      <div class="cardrow"><span class="addr" style="margin:0">Dunavska 19</span><span class="stars">★★★★★</span></div></div>
+    <div class="fab"><a class="newbtn">＋ Nova dostava</a></div>
+  </div></div></div>
+
+  <!-- Public -->
+  <div class="col"><h2>Публичная страница (бренд)</h2><div class="reg">Брендовый градиент-шапка, чисто и светло — момент доверия</div>
+  <div class="phone"><div class="app pub" style="padding:0">
+    <div class="pubhead"><div class="brand">Pizza Napoli</div>
+      <div class="who">Zdravo, Ana 👋</div>
+      <div class="status">Vaša porudžbina je u dostavi</div></div>
+    <div class="pubbody">
+      <div class="steps"><div class="step on"></div><div class="step on"></div><div class="step"></div></div>
+      <div class="muted" style="font-size:12px;margin-bottom:16px">Primljeno · <b style="color:#161b29">U dostavi</b> · Isporučeno</div>
+      <div class="etabox"><div class="lbl">Stiže okvirno do</div><div class="big">16:00</div></div>
+      <div class="rate"><div class="q">Kako je prošla dostava?</div><div class="rstars">★ ★ ★ ★ ★</div></div>
+      <div class="foot">Javi · obaveštenja o isporuci</div>
+    </div>
+  </div></div>
+  <div class="tokrow">
+    <span class="tok"><span class="sw" style="background:#4f7cff"></span>brand</span>
+    <span class="tok"><span class="sw" style="background:#7a5cff"></span>accent</span>
+    <span class="tok"><span class="sw" style="background:#16a34a"></span>delivered</span>
+    <span class="tok"><span class="sw" style="background:#0ea5e9"></span>read</span>
+    <span class="tok"><span class="sw" style="background:#dc2626"></span>failed</span>
+    <span class="tok"><span class="sw" style="background:#f5a623"></span>rating</span>
+  </div>
+  </div>
+
+</div>
+</body></html>
