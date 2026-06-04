@@ -42,6 +42,7 @@ class SendResult:
 
     ok: bool
     provider_message_id: str | None = None
+    channel: str = ""  # фактический канал отправки (viber|sms)
 
 
 class MessagingProvider(ABC):

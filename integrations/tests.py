@@ -6,6 +6,7 @@ from django.test import override_settings
 
 from integrations.base import GeocodeResult
 from integrations.google_maps import GoogleMapsProvider
+from integrations.infobip import InfobipProvider
 from integrations.models import GeocodeCache
 from integrations.providers import get_maps_provider
 from integrations.testing import FakeMapsProvider
@@ -75,3 +76,75 @@ def test_google_provider_network_error_returns_none():
 def test_google_provider_no_key_returns_none():
     """Без ключа геокодинг отключён → None."""
     assert GoogleMapsProvider(api_key="").geocode("Knez Mihailova 6") is None
+
+
+# --- Story 2.3: Viber → SMS fallback ---
+
+
+def _ok_response():
+    class _Resp:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"messages": [{"messageId": "m-1"}]}
+
+    return _Resp()
+
+
+def _infobip():
+    return InfobipProvider(base_url="https://x", api_key="k", sender="S", channel="viber")
+
+
+def test_viber_ok_no_sms():
+    """AC#1/#3: Viber успешен → SMS не вызывается, channel=viber."""
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        result = _infobip().send_text("+381641234567", "hi")
+    assert result.ok and result.channel == "viber"
+    assert post.call_count == 1
+    assert post.call_args.args[0].endswith("/viber/2/messages")
+
+
+def test_viber_fail_falls_back_to_sms():
+    """AC#2: Viber падает → SMS, channel=sms."""
+    calls = []
+
+    def _side_effect(url, **kwargs):
+        calls.append(url)
+        if url.endswith("/viber/2/messages"):
+            raise requests.RequestException("viber down")
+        return _ok_response()
+
+    with patch("integrations.infobip.requests.post", side_effect=_side_effect):
+        result = _infobip().send_text("+381641234567", "hi")
+    assert result.ok and result.channel == "sms"
+    assert any("/viber/2/messages" in u for u in calls)
+    assert any("/sms/2/text/advanced" in u for u in calls)
+
+
+@override_settings(INFOBIP_SMS_FALLBACK=False)
+def test_viber_fail_no_fallback_when_disabled():
+    """AC#5: при выключенном fallback Viber-сбой → ok=False, без SMS."""
+    with patch(
+        "integrations.infobip.requests.post",
+        side_effect=requests.RequestException("down"),
+    ) as post:
+        result = InfobipProvider(
+            base_url="https://x", api_key="k", sender="S", channel="viber", sms_fallback=False
+        ).send_text("+381641234567", "hi")
+    assert result.ok is False
+    assert post.call_count == 1  # только Viber
+
+
+def test_channel_sms_sends_sms_directly():
+    """AC#4: INFOBIP_CHANNEL=sms → сразу SMS, без Viber."""
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        result = InfobipProvider(
+            base_url="https://x", api_key="k", sender="S", channel="sms"
+        ).send_text("+381641234567", "hi")
+    assert result.ok and result.channel == "sms"
+    assert post.call_args.args[0].endswith("/sms/2/text/advanced")
+
+
+def test_no_key_returns_not_ok():
+    assert InfobipProvider(api_key="", channel="viber").send_text("+381", "x").ok is False

@@ -52,7 +52,11 @@ class FakeMessagingProvider(MessagingProvider):
 
     def send_text(self, to_e164: str, text: str) -> SendResult:
         type(self).sent.append((to_e164, text))
-        return SendResult(ok=self.ok, provider_message_id="fake-msg-1" if self.ok else None)
+        return SendResult(
+            ok=self.ok,
+            provider_message_id="fake-msg-1" if self.ok else None,
+            channel="viber" if self.ok else "",
+        )
 
 
 class FailingMessagingProvider(MessagingProvider):

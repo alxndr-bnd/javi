@@ -127,11 +127,9 @@ def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) ->
         defaults={"expires_at": now + timedelta(days=settings.TRACKING_TOKEN_TTL_DAYS)},
     )
 
-    channel = settings.INFOBIP_CHANNEL
     notification = Notification.objects.create(
         delivery=delivery,
         kind=Notification.Kind.ON_THE_WAY,
-        channel=channel,
         status=Notification.Status.QUEUED,
     )
 
@@ -141,10 +139,11 @@ def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) ->
     )
     result = get_messaging_provider().send_text(delivery.recipient_phone, text)
     notification.status = Notification.Status.SENT if result.ok else Notification.Status.FAILED
+    notification.channel = result.channel  # фактический канал (viber|sms) или пусто при сбое
     notification.provider_message_id = result.provider_message_id or ""
     if result.ok:
         notification.sent_at = timezone.now()
-    notification.save(update_fields=["status", "provider_message_id", "sent_at"])
+    notification.save(update_fields=["status", "channel", "provider_message_id", "sent_at"])
 
     if not result.ok:
         logger.error("on_the_way send failed for delivery %s", delivery.id)

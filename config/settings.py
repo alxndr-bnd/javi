@@ -139,6 +139,7 @@ INFOBIP_BASE_URL = env("INFOBIP_BASE_URL", default="https://m9dw19.api.infobip.c
 INFOBIP_API_KEY = env("INFOBIP_API_KEY", default="")
 INFOBIP_SENDER = env("INFOBIP_SENDER", default="IBSelfServe")
 INFOBIP_CHANNEL = env("INFOBIP_CHANNEL", default="viber")  # viber | sms
+INFOBIP_SMS_FALLBACK = env.bool("INFOBIP_SMS_FALLBACK", default=True)  # Viber→SMS при сбое
 
 # Публичный базовый URL для ссылок в сообщениях (трекинг).
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="https://javi.serbito.rs")
