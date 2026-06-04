@@ -85,10 +85,11 @@ jobs:
             --port=8080 \
             --timeout=60 \
             --add-cloudsql-instances="serbito:europe-west1:serbitodb" \
-            --set-env-vars="^@@^DEBUG=False@@ALLOWED_HOSTS=javi.serbito.rs,.run.app@@CSRF_TRUSTED_ORIGINS=https://javi.serbito.rs@@STATICFILES_BACKEND=whitenoise.storage.CompressedManifestStaticFilesStorage" \
-            --set-secrets="SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest"
+            --set-env-vars="^@@^DEBUG=False@@ALLOWED_HOSTS=javi.serbito.rs,.run.app@@CSRF_TRUSTED_ORIGINS=https://javi.serbito.rs@@STATICFILES_BACKEND=whitenoise.storage.CompressedManifestStaticFilesStorage@@TASK_SCHEDULER=tasks.scheduler.CloudTasksScheduler" \
+            --set-secrets="SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest,TASKS_SECRET=javi-tasks-secret:latest"
         # One-time domain mapping (javi.serbito.rs -> service) — see SETUP_CICD.md.
         # Требуются Secret Manager секреты javi-secret-key, javi-database-url,
-        # javi-google-maps-key, javi-infobip-key и роли runtime-SA: roles/cloudsql.client,
-        # roles/secretmanager.secretAccessor (на все секреты).
-        # INFOBIP_BASE_URL/SENDER/CHANNEL и PUBLIC_BASE_URL берутся из дефолтов settings.py.
+        # javi-google-maps-key, javi-infobip-key, javi-infobip-webhook-secret, javi-tasks-secret
+        # и роли runtime-SA: roles/cloudsql.client, roles/secretmanager.secretAccessor (на секреты),
+        # roles/cloudtasks.enqueuer (постановка задач оценки в очередь javi-rating).
+        # INFOBIP_BASE_URL/SENDER/CHANNEL, PUBLIC_BASE_URL, CLOUD_TASKS_* — из дефолтов settings.py.
