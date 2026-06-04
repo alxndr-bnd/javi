@@ -140,6 +140,7 @@ INFOBIP_API_KEY = env("INFOBIP_API_KEY", default="")
 INFOBIP_SENDER = env("INFOBIP_SENDER", default="IBSelfServe")
 INFOBIP_CHANNEL = env("INFOBIP_CHANNEL", default="viber")  # viber | sms
 INFOBIP_SMS_FALLBACK = env.bool("INFOBIP_SMS_FALLBACK", default=True)  # Viber→SMS при сбое
+INFOBIP_WEBHOOK_SECRET = env("INFOBIP_WEBHOOK_SECRET", default="")  # защита вебхука receipts
 
 # Публичный базовый URL для ссылок в сообщениях (трекинг).
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="https://javi.serbito.rs")

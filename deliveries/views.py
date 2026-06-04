@@ -8,10 +8,11 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from common.timewindow import BELGRADE, format_eta
+from notifications.models import Notification
 
-from .forms import DeliveryForm, ManualEtaForm, ShopOriginForm
+from .forms import DeliveryForm, ManualEtaForm, RecipientPhoneForm, ShopOriginForm
 from .models import Delivery
-from .services import create_delivery, set_shop_origin, start_delivery
+from .services import create_delivery, resend_on_the_way, set_shop_origin, start_delivery
 
 
 class DeliveryListView(LoginRequiredMixin, TemplateView):
@@ -23,7 +24,14 @@ class DeliveryListView(LoginRequiredMixin, TemplateView):
         ctx = super().get_context_data(**kwargs)
         shop = getattr(self.request.user, "shop", None)
         # Изоляция арендаторов: только доставки текущего магазина.
-        deliveries = list(shop.deliveries.all()) if shop is not None else []
+        deliveries = (
+            list(shop.deliveries.prefetch_related("notifications")) if shop is not None else []
+        )
+        # Чип статуса уведомления «в пути» (для карточки) — без N+1.
+        for d in deliveries:
+            d.on_the_way_notif = next(
+                (n for n in d.notifications.all() if n.kind == Notification.Kind.ON_THE_WAY), None
+            )
         ctx["shop"] = shop
         ctx["deliveries"] = deliveries
         ctx["u_dostavi"] = [d for d in deliveries if d.status == Delivery.Status.ON_THE_WAY]
@@ -134,4 +142,36 @@ class DeliveryStartView(LoginRequiredMixin, View):
             messages.success(request, f"Kupac obavešten · stiže do {format_eta(result.eta_at)}")
             if not result.sent:
                 messages.warning(request, "Poruka nije poslata — pokušajte ponovo kasnije.")
+        return redirect("deliveries:list")
+
+
+class DeliveryResendView(LoginRequiredMixin, View):
+    """Переотправка уведомления при сбое (FR-25): правка номера + «Pošalji ponovo»."""
+
+    def post(self, request, pk):
+        shop = getattr(request.user, "shop", None)
+        delivery = get_object_or_404(Delivery, pk=pk, shop=shop)
+        form = RecipientPhoneForm(request.POST)
+        if not form.is_valid():
+            messages.error(request, "Neispravan broj. Npr. 064 123 4567")
+            return redirect("deliveries:list")
+        result = resend_on_the_way(delivery, new_phone=form.cleaned_data["phone_result"])
+        if result is None:
+            messages.error(request, "Nije moguće ponovo poslati.")
+        elif result.ok:
+            messages.success(request, "Poruka je ponovo poslata.")
+        else:
+            messages.warning(request, "Poruka nije poslata — proverite broj.")
+        return redirect("deliveries:list")
+
+
+class DeliveryMarkDeliveredView(LoginRequiredMixin, View):
+    """Ручная отметка «Доставлено» (FR-26, опц.). Система от неё не зависит."""
+
+    def post(self, request, pk):
+        shop = getattr(request.user, "shop", None)
+        delivery = get_object_or_404(Delivery, pk=pk, shop=shop)
+        delivery.status = Delivery.Status.DELIVERED
+        delivery.save(update_fields=["status"])
+        messages.success(request, "Označeno kao isporučeno.")
         return redirect("deliveries:list")

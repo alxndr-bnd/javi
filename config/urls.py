@@ -12,4 +12,5 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("app/", include("deliveries.urls")),
     path("t/", include("tracking.urls")),  # публичная страница статуса (без логина)
+    path("webhooks/", include("notifications.urls")),  # вебхуки Infobip (по секрету)
 ]

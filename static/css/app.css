@@ -28,6 +28,11 @@ a{color:var(--brand)}
 .chip-created{background:#eef2fb;color:#3a4a73}
 .chip-on_the_way{background:#e7efff;color:var(--on-the-way)}
 .chip-delivered{background:#eafaf0;color:var(--delivered)}
+/* чип статуса уведомления (receipts) */
+.nchip{display:inline-block;border-radius:var(--radius-pill);font-size:12px;font-weight:700;padding:3px 10px}
+.nchip-read{background:#e6f6fd;color:var(--read)}
+.nchip-delivered{background:#eafaf0;color:var(--delivered)}
+.nchip-failed{background:#fdecec;color:var(--failed)}
 .empty{text-align:center;color:var(--muted);padding:48px 16px}
 .empty .big{font-size:40px;margin-bottom:8px}
 .btn{display:block;width:100%;text-align:center;border:0;border-radius:var(--radius-btn);

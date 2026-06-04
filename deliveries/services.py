@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -80,6 +81,26 @@ def _tracking_link(token: str) -> str:
     return f"{settings.PUBLIC_BASE_URL.rstrip('/')}{reverse('tracking:status', args=[token])}"
 
 
+def _on_the_way_text(delivery: Delivery, token: str) -> str:
+    return (
+        f"Vaša porudžbina iz {delivery.shop.name} je u dostavi. "
+        f"Stiže okvirno do {format_eta(delivery.eta_at)}. Pratite: {_tracking_link(token)}"
+    )
+
+
+def _send_and_record(notification: Notification, delivery: Delivery, text: str):
+    """Отправляет текст и фиксирует исход на Notification (канал/статус/id/время)."""
+    result = get_messaging_provider().send_text(delivery.recipient_phone, text)
+    notification.status = Notification.Status.SENT if result.ok else Notification.Status.FAILED
+    notification.channel = result.channel
+    notification.provider_message_id = result.provider_message_id or ""
+    notification.sent_at = timezone.now() if result.ok else None
+    notification.save(update_fields=["status", "channel", "provider_message_id", "sent_at"])
+    if not result.ok:
+        logger.error("on_the_way send failed for delivery %s", delivery.id)
+    return result
+
+
 def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) -> StartResult:
     """«Доставка началась»: рассчитать ETA, уведомить получателя. Идемпотентно.
 
@@ -133,18 +154,27 @@ def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) ->
         status=Notification.Status.QUEUED,
     )
 
-    text = (
-        f"Vaša porudžbina iz {delivery.shop.name} je u dostavi. "
-        f"Stiže okvirno do {format_eta(eta_at)}. Pratite: {_tracking_link(token_obj.token)}"
-    )
-    result = get_messaging_provider().send_text(delivery.recipient_phone, text)
-    notification.status = Notification.Status.SENT if result.ok else Notification.Status.FAILED
-    notification.channel = result.channel  # фактический канал (viber|sms) или пусто при сбое
-    notification.provider_message_id = result.provider_message_id or ""
-    if result.ok:
-        notification.sent_at = timezone.now()
-    notification.save(update_fields=["status", "channel", "provider_message_id", "sent_at"])
-
-    if not result.ok:
-        logger.error("on_the_way send failed for delivery %s", delivery.id)
+    result = _send_and_record(notification, delivery, _on_the_way_text(delivery, token_obj.token))
     return StartResult(ok=True, sent=result.ok, eta_at=eta_at)
+
+
+def resend_on_the_way(delivery: Delivery, new_phone: PhoneResult | None = None):
+    """Переотправка уведомления «в пути» (FR-25). Явное действие, без дублей записей.
+
+    Опционально правит номер. Переиспользует существующий on_the_way-Notification
+    (новый logical_message_id), статус → queued → sent/failed.
+    """
+    if new_phone is not None:
+        delivery.recipient_phone = new_phone.e164
+        delivery.phone_risk = new_phone.is_risky
+        delivery.save(update_fields=["recipient_phone", "phone_risk"])
+
+    notification = delivery.notifications.filter(kind=Notification.Kind.ON_THE_WAY).first()
+    token_obj = getattr(delivery, "tracking_token", None)
+    if notification is None or token_obj is None:
+        return None
+
+    notification.logical_message_id = uuid.uuid4()
+    notification.status = Notification.Status.QUEUED
+    notification.save(update_fields=["logical_message_id", "status"])
+    return _send_and_record(notification, delivery, _on_the_way_text(delivery, token_obj.token))

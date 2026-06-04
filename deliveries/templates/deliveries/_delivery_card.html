@@ -1,4 +1,4 @@
-{% comment %}Карточка доставки: имя + адрес + чип статуса; старт в «Spremno», ETA в «U dostavi».{% endcomment %}
+{% comment %}Карточка доставки: имя+адрес, чип статуса доставки и уведомления, действия.{% endcomment %}
 <div class="card">
   <div class="card-name">{{ d.recipient_name }}</div>
   <div class="card-addr">{{ d.dest_address }}</div>
@@ -7,12 +7,42 @@
     {% if d.status == "on_the_way" and d.eta_at %}
       <span class="card-eta">do {{ d.eta_at|date:"H:i" }}</span>
     {% endif %}
+    {% if d.on_the_way_notif %}
+      {% if d.on_the_way_notif.status == "read" %}
+        <span class="nchip nchip-read">Pročitano</span>
+      {% elif d.on_the_way_notif.status == "delivered" %}
+        <span class="nchip nchip-delivered">Isporučeno</span>
+      {% elif d.on_the_way_notif.status == "failed" %}
+        <span class="nchip nchip-failed">Nije dostavljeno</span>
+      {% endif %}
+    {% endif %}
   </div>
+
   {% if d.status == "created" %}
     <form method="post" action="{% url 'deliveries:start' d.pk %}" class="card-action"
           onsubmit="return confirm('Poslati obaveštenje kupcu da je dostava počela?');">
       {% csrf_token %}
       <button type="submit" class="btn btn-primary">Dostava je počela</button>
+    </form>
+  {% endif %}
+
+  {% if d.on_the_way_notif.status == "failed" %}
+    <form method="post" action="{% url 'deliveries:resend' d.pk %}" class="card-action"
+          onsubmit="return confirm('Poslati poruku ponovo?');">
+      {% csrf_token %}
+      <div class="field" style="margin-bottom:8px">
+        <input type="text" name="recipient_phone" inputmode="tel"
+               value="{{ d.recipient_phone }}" placeholder="064 123 4567">
+      </div>
+      <button type="submit" class="btn btn-primary">Pošalji ponovo</button>
+    </form>
+  {% endif %}
+
+  {% if d.status == "on_the_way" %}
+    <form method="post" action="{% url 'deliveries:mark_delivered' d.pk %}" class="card-action"
+          onsubmit="return confirm('Označiti kao isporučeno?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost">Označi isporučeno</button>
     </form>
   {% endif %}
 </div>

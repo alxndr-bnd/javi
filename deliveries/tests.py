@@ -7,7 +7,12 @@ from django.utils import timezone
 
 from common.phone import normalize_phone
 from deliveries.models import Delivery, Shop
-from deliveries.services import create_delivery, set_shop_origin, start_delivery
+from deliveries.services import (
+    create_delivery,
+    resend_on_the_way,
+    set_shop_origin,
+    start_delivery,
+)
 from integrations.testing import FakeMessagingProvider
 from notifications.models import Notification
 
@@ -382,3 +387,68 @@ def test_start_view_success_moves_to_u_dostavi(client):
     assert resp.status_code == 200
     assert resp.context["u_dostavi"][0].pk == delivery.pk
     assert resp.context["spremno"] == []
+
+
+# --- Story 2.4: статус уведомления + переотправка + ручная отметка ---
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_resend_updates_phone_and_reuses_notification():
+    """AC#4: resend правит номер и переиспользует один Notification."""
+    _, delivery = _geocoded_delivery()
+    start_delivery(delivery)
+    FakeMessagingProvider.sent = []
+    new = normalize_phone("060 1234567")
+    result = resend_on_the_way(delivery, new_phone=new)
+
+    assert result.ok
+    delivery.refresh_from_db()
+    assert delivery.recipient_phone == "+381601234567"
+    assert delivery.notifications.filter(kind=Notification.Kind.ON_THE_WAY).count() == 1
+    assert len(FakeMessagingProvider.sent) == 1
+    n = delivery.notifications.get(kind=Notification.Kind.ON_THE_WAY)
+    assert n.status == Notification.Status.SENT
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_resend_view_success(client):
+    shop, delivery = _geocoded_delivery("rs@shop.rs", "Resend Shop")
+    start_delivery(delivery)
+    client.login(username="rs@shop.rs", password="pass12345")
+    resp = client.post(
+        f"/app/dostava/{delivery.pk}/posalji-ponovo/", {"recipient_phone": "064 1112233"}
+    )
+    assert resp.status_code == 302
+    delivery.refresh_from_db()
+    assert delivery.recipient_phone == "+381641112233"
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_resend_view_other_shop_404(client):
+    _make_shop_with_origin("att@shop.rs", "Att")
+    _, victim = _geocoded_delivery("vic@shop.rs", "Vic")
+    start_delivery(victim)
+    client.login(username="att@shop.rs", password="pass12345")
+    resp = client.post(
+        f"/app/dostava/{victim.pk}/posalji-ponovo/", {"recipient_phone": "064 1112233"}
+    )
+    assert resp.status_code == 404
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_mark_delivered(client):
+    shop, delivery = _geocoded_delivery("md@shop.rs", "Mark Shop")
+    start_delivery(delivery)
+    client.login(username="md@shop.rs", password="pass12345")
+    resp = client.post(f"/app/dostava/{delivery.pk}/isporuceno/")
+    assert resp.status_code == 302
+    delivery.refresh_from_db()
+    assert delivery.status == Delivery.Status.DELIVERED
+
+
+def test_mark_delivered_other_shop_404(client):
+    _make_shop_with_origin("a2@shop.rs", "A2")
+    _, victim = _geocoded_delivery("v2@shop.rs", "V2")
+    client.login(username="a2@shop.rs", password="pass12345")
+    resp = client.post(f"/app/dostava/{victim.pk}/isporuceno/")
+    assert resp.status_code == 404

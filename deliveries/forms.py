@@ -47,6 +47,20 @@ class DeliveryForm(forms.Form):
         return result.e164
 
 
+class RecipientPhoneForm(forms.Form):
+    """Правка номера получателя при переотправке (FR-25)."""
+
+    recipient_phone = forms.CharField(label="Telefon", max_length=32)
+
+    def clean_recipient_phone(self):
+        try:
+            result = normalize_phone(self.cleaned_data["recipient_phone"])
+        except InvalidPhone as exc:
+            raise forms.ValidationError("Neispravan broj. Npr. 064 123 4567") from exc
+        self.cleaned_data["phone_result"] = result
+        return result.e164
+
+
 class ManualEtaForm(forms.Form):
     """Ручной ввод ETA при недоступности маршрута (FR-9)."""
 
