@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Nova dostava · Javi{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">javi<span>.</span></div>
+    <a href="{% url 'deliveries:list' %}" class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:13px">← Dostave</a>
+  </div>
+
+  <div class="h">Nova dostava</div>
+
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Sačuvaj</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

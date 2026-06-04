@@ -2,13 +2,23 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 
-from deliveries.models import Shop
-from deliveries.services import set_shop_origin
+from common.phone import normalize_phone
+from deliveries.models import Delivery, Shop
+from deliveries.services import create_delivery, set_shop_origin
 
 pytestmark = pytest.mark.django_db
 
 FAKE_OK = "integrations.testing.FakeMapsProvider"
 FAKE_FAIL = "integrations.testing.FailingMapsProvider"
+
+
+def _make_shop_with_origin(email, name):
+    _, shop = _make_shop(email, name)
+    shop.origin_address = "Origin, Beograd"
+    shop.origin_lat = 44.8
+    shop.origin_lng = 20.45
+    shop.save()
+    return shop
 
 
 def _make_shop(email, name):
@@ -138,3 +148,109 @@ def test_profile_isolation_only_own_shop(client):
     shop_b.refresh_from_db()
     assert shop_a.origin_lat == pytest.approx(44.8167)
     assert shop_b.origin_lat is None
+
+
+# --- Story 1.3: создание доставки ---
+
+
+@override_settings(MAPS_PROVIDER=FAKE_OK)
+def test_create_delivery_geocode_success():
+    """AC#6: успешный геокод сохраняет координаты + formatted-адрес."""
+    shop = _make_shop_with_origin("d1@shop.rs", "Shop D1")
+    phone = normalize_phone("064 123 4567")
+    delivery, geocoded = create_delivery(
+        shop, recipient_name="Ana", phone=phone, dest_address="Neka adresa"
+    )
+    assert geocoded is True
+    assert delivery.recipient_phone == "+381641234567"
+    assert delivery.phone_risk is False
+    assert delivery.dest_lat == pytest.approx(44.8167)
+    assert delivery.dest_address == "Knez Mihailova 6, Beograd, Srbija"
+    assert delivery.status == Delivery.Status.CREATED
+
+
+@override_settings(MAPS_PROVIDER=FAKE_FAIL)
+def test_create_delivery_geocode_miss_still_creates():
+    """AC#6: при сбое геокода доставка создаётся без координат, поток не падает."""
+    shop = _make_shop_with_origin("d2@shop.rs", "Shop D2")
+    phone = normalize_phone("064 123 4567")
+    delivery, geocoded = create_delivery(
+        shop, recipient_name="Ana", phone=phone, dest_address="Nepoznata adresa"
+    )
+    assert geocoded is False
+    assert delivery.dest_lat is None
+    assert delivery.dest_address == "Nepoznata adresa"
+
+
+@override_settings(MAPS_PROVIDER=FAKE_OK)
+def test_create_delivery_foreign_phone_flags_risk():
+    """AC#5: иностранный/немобильный номер помечается флагом риска."""
+    shop = _make_shop_with_origin("d3@shop.rs", "Shop D3")
+    phone = normalize_phone("+49 1512 3456789")
+    delivery, _ = create_delivery(
+        shop, recipient_name="Hans", phone=phone, dest_address="Neka adresa"
+    )
+    assert delivery.phone_risk is True
+
+
+def test_create_view_requires_login(client):
+    """AC#8: аноним на форме создания → вход."""
+    resp = client.get("/app/dostava/nova/")
+    assert resp.status_code == 302
+    assert "/accounts/login/" in resp["Location"]
+
+
+def test_create_view_without_origin_redirects_to_profile(client):
+    """AC#2: магазин без origin → редирект в профиль."""
+    _make_shop("noorigin@shop.rs", "No Origin")
+    client.login(username="noorigin@shop.rs", password="pass12345")
+    resp = client.get("/app/dostava/nova/")
+    assert resp.status_code == 302
+    assert resp["Location"] == "/app/prodavnica/"
+
+
+@override_settings(MAPS_PROVIDER=FAKE_OK)
+def test_create_view_success_appears_in_spremno(client):
+    """AC#7: валидная форма → доставка в БД и в группе Spremno списка."""
+    shop = _make_shop_with_origin("d4@shop.rs", "Shop D4")
+    client.login(username="d4@shop.rs", password="pass12345")
+    resp = client.post(
+        "/app/dostava/nova/",
+        {"recipient_name": "Ana", "recipient_phone": "064 123 4567", "dest_address": "Neka adresa"},
+    )
+    assert resp.status_code == 302
+    assert resp["Location"] == "/app/"
+    assert shop.deliveries.count() == 1
+
+    list_resp = client.get("/app/")
+    assert list_resp.context["spremno"][0].recipient_name == "Ana"
+    assert "Spremno" in list_resp.content.decode()
+
+
+@override_settings(MAPS_PROVIDER=FAKE_OK)
+def test_create_view_invalid_phone_blocks(client):
+    """AC#4: невалидный телефон → ошибка формы, доставка не создаётся."""
+    shop = _make_shop_with_origin("d5@shop.rs", "Shop D5")
+    client.login(username="d5@shop.rs", password="pass12345")
+    resp = client.post(
+        "/app/dostava/nova/",
+        {"recipient_name": "Ana", "recipient_phone": "abc", "dest_address": "Neka adresa"},
+    )
+    assert resp.status_code == 200
+    assert "Neispravan broj" in resp.content.decode()
+    assert shop.deliveries.count() == 0
+
+
+@override_settings(MAPS_PROVIDER=FAKE_OK)
+def test_delivery_isolation_between_shops(client):
+    """AC#8: магазин видит только свои доставки."""
+    shop_a = _make_shop_with_origin("da@shop.rs", "Iso DA")
+    shop_b = _make_shop_with_origin("db@shop.rs", "Iso DB")
+    create_delivery(
+        shop_b, recipient_name="B-only", phone=normalize_phone("064 123 4567"),
+        dest_address="adr",
+    )
+    client.login(username="da@shop.rs", password="pass12345")
+    resp = client.get("/app/")
+    assert list(resp.context["deliveries"]) == []
+    assert shop_a.deliveries.count() == 0

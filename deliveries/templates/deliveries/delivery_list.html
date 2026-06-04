@@ -13,12 +13,25 @@
     </div>
   </div>
 
-  <div class="h">Aktivne dostave · danas</div>
+  {% if messages %}
+    {% for message in messages %}
+      <div class="msg {% if message.tags %}msg-{{ message.tags }}{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
 
   {% if deliveries %}
-    {% for d in deliveries %}
-      <div class="card">{{ d }}</div>
-    {% endfor %}
+    {% if u_dostavi %}
+      <div class="h">U dostavi</div>
+      {% for d in u_dostavi %}{% include "deliveries/_delivery_card.html" %}{% endfor %}
+    {% endif %}
+    {% if spremno %}
+      <div class="h">Spremno</div>
+      {% for d in spremno %}{% include "deliveries/_delivery_card.html" %}{% endfor %}
+    {% endif %}
+    {% if zavrseno %}
+      <div class="h">Završeno</div>
+      {% for d in zavrseno %}{% include "deliveries/_delivery_card.html" %}{% endfor %}
+    {% endif %}
   {% else %}
     <div class="empty">
       <div class="big">📦</div>
@@ -29,6 +42,6 @@
 </div>
 
 <div class="fab">
-  <a class="btn btn-primary" aria-disabled="true" title="Uskoro">＋ Nova dostava</a>
+  <a class="btn btn-primary" href="{% url 'deliveries:create' %}">＋ Nova dostava</a>
 </div>
 {% endblock %}

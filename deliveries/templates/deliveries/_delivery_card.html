@@ -1,0 +1,8 @@
+{% comment %}Карточка доставки: имя + адрес + чип статуса. Старт/деталь — Story 2.1.{% endcomment %}
+<div class="card">
+  <div class="card-name">{{ d.recipient_name }}</div>
+  <div class="card-addr">{{ d.dest_address }}</div>
+  <div class="card-meta">
+    <span class="chip chip-{{ d.status }}">{{ d.get_status_display }}</span>
+  </div>
+</div>
