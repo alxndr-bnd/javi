@@ -1,12 +1,17 @@
+from datetime import datetime
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
 
-from .forms import DeliveryForm, ShopOriginForm
+from common.timewindow import BELGRADE, format_eta
+
+from .forms import DeliveryForm, ManualEtaForm, ShopOriginForm
 from .models import Delivery
-from .services import create_delivery, set_shop_origin
+from .services import create_delivery, set_shop_origin, start_delivery
 
 
 class DeliveryListView(LoginRequiredMixin, TemplateView):
@@ -96,3 +101,37 @@ class DeliveryCreateView(LoginRequiredMixin, View):
             messages.info(request, "Prvo podesite adresu prodavnice.")
             return redirect("deliveries:profile")
         return None
+
+
+class DeliveryStartView(LoginRequiredMixin, View):
+    """«Dostava je počela»: расчёт ETA + уведомление получателю. При сбое — ручной ETA."""
+
+    template_name = "deliveries/delivery_manual_eta.html"
+
+    def post(self, request, pk):
+        shop = getattr(request.user, "shop", None)
+        delivery = get_object_or_404(Delivery, pk=pk, shop=shop)  # изоляция
+
+        # Ветка ручного ETA (повторный POST с временем).
+        if "eta_time" in request.POST:
+            form = ManualEtaForm(request.POST)
+            if not form.is_valid():
+                return render(request, self.template_name, {"form": form, "delivery": delivery})
+            today = timezone.now().astimezone(BELGRADE).date()
+            manual_eta = datetime.combine(today, form.cleaned_data["eta_time"], tzinfo=BELGRADE)
+            result = start_delivery(delivery, manual_eta=manual_eta)
+        else:
+            result = start_delivery(delivery)
+            if result.needs_manual_eta:
+                messages.info(request, "Ruta nije dostupna — unesite vreme dolaska ručno.")
+                return render(
+                    request, self.template_name, {"form": ManualEtaForm(), "delivery": delivery}
+                )
+
+        if result.already:
+            messages.info(request, "Dostava je već u toku.")
+        elif result.ok:
+            messages.success(request, f"Kupac obavešten · stiže do {format_eta(result.eta_at)}")
+            if not result.sent:
+                messages.warning(request, "Poruka nije poslata — pokušajte ponovo kasnije.")
+        return redirect("deliveries:list")

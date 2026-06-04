@@ -20,7 +20,9 @@ a{color:var(--brand)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);padding:13px 14px;margin-bottom:10px}
 .card-name{font-size:15px;font-weight:700}
 .card-addr{font-size:13px;color:var(--muted);margin-top:2px}
-.card-meta{margin-top:8px}
+.card-meta{margin-top:8px;display:flex;align-items:center;gap:8px}
+.card-eta{font-size:13px;font-weight:700;color:var(--on-the-way)}
+.card-action{margin-top:10px}
 /* status_chip — pill, цвет по семантике, статус всегда с текстом (a11y) */
 .chip{display:inline-block;border-radius:var(--radius-pill);font-size:12px;font-weight:700;padding:3px 10px}
 .chip-created{background:#eef2fb;color:#3a4a73}
@@ -48,3 +50,9 @@ a{color:var(--brand)}
 .msg{border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px;border:1px solid var(--line)}
 .msg-success{background:#eafaf0;border-color:#bfead0;color:#137a3a}
 .msg-error{background:#fdecec;border-color:#f6c9c9;color:var(--failed)}
+/* публичная страница статуса (минимальная; брендовый степпер — 2.2) */
+.track{max-width:480px;margin:0 auto;padding:24px 16px}
+.track-card{background:linear-gradient(135deg,var(--brand),var(--accent));color:#fff;border-radius:18px;padding:28px 22px;text-align:center}
+.track-shop{font-weight:800;font-size:18px;opacity:.95}
+.track-status{font-size:16px;margin-top:14px}
+.track-eta{font-size:30px;font-weight:800;margin-top:6px}

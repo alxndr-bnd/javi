@@ -119,9 +119,26 @@ LOGOUT_REDIRECT_URL = "/"
 # За прокси Cloud Run — доверяем X-Forwarded-Proto для HTTPS.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Интеграции — провайдер карт (геокодинг). Ключ из env/Secret Manager, не в коде.
+# Интеграции — провайдер карт (геокодинг + ETA). Ключ из env/Secret Manager, не в коде.
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 MAPS_PROVIDER = env(
     "MAPS_PROVIDER",
     default="integrations.google_maps.GoogleMapsProvider",
 )
+ROUTES_PROVIDER = env(
+    "ROUTES_PROVIDER",
+    default="integrations.google_maps.GoogleRoutesProvider",
+)
+
+# Интеграции — мессенджинг (Infobip Viber/SMS). Ключ из Secret Manager.
+MESSAGING_PROVIDER = env(
+    "MESSAGING_PROVIDER",
+    default="integrations.infobip.InfobipProvider",
+)
+INFOBIP_BASE_URL = env("INFOBIP_BASE_URL", default="https://m9dw19.api.infobip.com")
+INFOBIP_API_KEY = env("INFOBIP_API_KEY", default="")
+INFOBIP_SENDER = env("INFOBIP_SENDER", default="IBSelfServe")
+INFOBIP_CHANNEL = env("INFOBIP_CHANNEL", default="viber")  # viber | sms
+
+# Публичный базовый URL для ссылок в сообщениях (трекинг).
+PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="https://javi.serbito.rs")

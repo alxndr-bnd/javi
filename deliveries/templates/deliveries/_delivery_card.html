@@ -1,8 +1,18 @@
-{% comment %}Карточка доставки: имя + адрес + чип статуса. Старт/деталь — Story 2.1.{% endcomment %}
+{% comment %}Карточка доставки: имя + адрес + чип статуса; старт в «Spremno», ETA в «U dostavi».{% endcomment %}
 <div class="card">
   <div class="card-name">{{ d.recipient_name }}</div>
   <div class="card-addr">{{ d.dest_address }}</div>
   <div class="card-meta">
     <span class="chip chip-{{ d.status }}">{{ d.get_status_display }}</span>
+    {% if d.status == "on_the_way" and d.eta_at %}
+      <span class="card-eta">do {{ d.eta_at|date:"H:i" }}</span>
+    {% endif %}
   </div>
+  {% if d.status == "created" %}
+    <form method="post" action="{% url 'deliveries:start' d.pk %}" class="card-action"
+          onsubmit="return confirm('Poslati obaveštenje kupcu da je dostava počela?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Dostava je počela</button>
+    </form>
+  {% endif %}
 </div>

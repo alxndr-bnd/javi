@@ -2,10 +2,21 @@
 
 from __future__ import annotations
 
-from common.phone import PhoneResult
-from integrations.providers import get_maps_provider
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 
-from .models import Delivery, Shop
+from django.urls import reverse
+from django.utils import timezone
+
+from common.phone import PhoneResult
+from common.timewindow import format_eta
+from integrations.providers import get_maps_provider, get_messaging_provider, get_routes_provider
+from notifications.models import Notification
+
+from .models import Delivery, Shop, TrackingToken
+
+logger = logging.getLogger(__name__)
 
 
 def set_shop_origin(shop: Shop, raw_address: str) -> bool:
@@ -51,3 +62,85 @@ def create_delivery(
         description=description,
     )
     return delivery, geo is not None
+
+
+@dataclass
+class StartResult:
+    ok: bool = False
+    already: bool = False  # уже стартовала (идемпотентность)
+    needs_manual_eta: bool = False  # маршрут недоступен → нужен ручной ETA
+    sent: bool = False  # сообщение ушло
+    eta_at: datetime | None = None
+
+
+def _tracking_link(token: str) -> str:
+    from django.conf import settings
+
+    return f"{settings.PUBLIC_BASE_URL.rstrip('/')}{reverse('tracking:status', args=[token])}"
+
+
+def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) -> StartResult:
+    """«Доставка началась»: рассчитать ETA, уведомить получателя. Идемпотентно.
+
+    Маршрут недоступен/нет координат и нет manual_eta → StartResult(needs_manual_eta=True),
+    ничего не меняем (FR-9: поток не рвётся, магазин вводит ETA вручную).
+    """
+    # Идемпотентность: повторный старт — no-op.
+    if delivery.status == Delivery.Status.ON_THE_WAY or delivery.notifications.filter(
+        kind=Notification.Kind.ON_THE_WAY
+    ).exists():
+        return StartResult(already=True, eta_at=delivery.eta_at)
+
+    now = timezone.now()
+    if manual_eta is not None:
+        eta_at, eta_source = manual_eta, "manual"
+    else:
+        shop = delivery.shop
+        have_coords = None not in (
+            shop.origin_lat,
+            shop.origin_lng,
+            delivery.dest_lat,
+            delivery.dest_lng,
+        )
+        seconds = (
+            get_routes_provider().route_duration_seconds(
+                (shop.origin_lat, shop.origin_lng), (delivery.dest_lat, delivery.dest_lng)
+            )
+            if have_coords
+            else None
+        )
+        if seconds is None:
+            return StartResult(needs_manual_eta=True)
+        eta_at, eta_source = now + timedelta(seconds=seconds), "auto"
+
+    delivery.status = Delivery.Status.ON_THE_WAY
+    delivery.started_at = now
+    delivery.eta_at = eta_at
+    delivery.eta_source = eta_source
+    delivery.save(update_fields=["status", "started_at", "eta_at", "eta_source"])
+
+    token_obj, _ = TrackingToken.objects.get_or_create(delivery=delivery)
+    from django.conf import settings
+
+    channel = settings.INFOBIP_CHANNEL
+    notification = Notification.objects.create(
+        delivery=delivery,
+        kind=Notification.Kind.ON_THE_WAY,
+        channel=channel,
+        status=Notification.Status.QUEUED,
+    )
+
+    text = (
+        f"Vaša porudžbina iz {delivery.shop.name} je u dostavi. "
+        f"Stiže okvirno do {format_eta(eta_at)}. Pratite: {_tracking_link(token_obj.token)}"
+    )
+    result = get_messaging_provider().send_text(delivery.recipient_phone, text)
+    notification.status = Notification.Status.SENT if result.ok else Notification.Status.FAILED
+    notification.provider_message_id = result.provider_message_id or ""
+    if result.ok:
+        notification.sent_at = timezone.now()
+    notification.save(update_fields=["status", "provider_message_id", "sent_at"])
+
+    if not result.ok:
+        logger.error("on_the_way send failed for delivery %s", delivery.id)
+    return StartResult(ok=True, sent=result.ok, eta_at=eta_at)

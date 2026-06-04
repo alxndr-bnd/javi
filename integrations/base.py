@@ -22,3 +22,31 @@ class MapsProvider(ABC):
     def geocode(self, address: str) -> GeocodeResult | None:
         """Адрес → координаты. None = не распознан или сбой провайдера (мягкая деградация)."""
         raise NotImplementedError
+
+
+class RoutesProvider(ABC):
+    """Провайдер маршрутов (ETA). Время в пути origin→dest с учётом трафика."""
+
+    @abstractmethod
+    def route_duration_seconds(
+        self, origin: tuple[float, float], dest: tuple[float, float]
+    ) -> int | None:
+        """(lat,lng)×2 → секунды в пути. None = маршрут недоступен (fallback на ручной ETA)."""
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class SendResult:
+    """Результат отправки сообщения провайдером."""
+
+    ok: bool
+    provider_message_id: str | None = None
+
+
+class MessagingProvider(ABC):
+    """Провайдер сообщений (Viber/SMS через Infobip)."""
+
+    @abstractmethod
+    def send_text(self, to_e164: str, text: str) -> SendResult:
+        """Отправить текст на номер E.164. ok=False при сбое (без исключения наружу)."""
+        raise NotImplementedError

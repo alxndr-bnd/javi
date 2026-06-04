@@ -45,3 +45,15 @@ class DeliveryForm(forms.Form):
         # Кладём разобранный номер для view/сервиса; в поле — нормализованный E.164.
         self.cleaned_data["phone_result"] = result
         return result.e164
+
+
+class ManualEtaForm(forms.Form):
+    """Ручной ввод ETA при недоступности маршрута (FR-9)."""
+
+    eta_time = forms.TimeField(
+        label="Vreme dolaska (HH:MM)",
+        input_formats=["%H:%M"],
+        widget=forms.TimeInput(
+            format="%H:%M", attrs={"inputmode": "numeric", "placeholder": "16:00"}
+        ),
+    )

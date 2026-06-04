@@ -1,15 +1,35 @@
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
+from django.utils import timezone
 
 from common.phone import normalize_phone
 from deliveries.models import Delivery, Shop
-from deliveries.services import create_delivery, set_shop_origin
+from deliveries.services import create_delivery, set_shop_origin, start_delivery
+from integrations.testing import FakeMessagingProvider
+from notifications.models import Notification
 
 pytestmark = pytest.mark.django_db
 
 FAKE_OK = "integrations.testing.FakeMapsProvider"
 FAKE_FAIL = "integrations.testing.FailingMapsProvider"
+ROUTES_OK = "integrations.testing.FakeRoutesProvider"
+ROUTES_FAIL = "integrations.testing.FailingRoutesProvider"
+MSG_OK = "integrations.testing.FakeMessagingProvider"
+MSG_FAIL = "integrations.testing.FailingMessagingProvider"
+
+
+def _geocoded_delivery(email="s@shop.rs", name="Shop S"):
+    """Магазин с origin + доставка с геокодированными координатами (через фейк-карты)."""
+    shop = _make_shop_with_origin(email, name)
+    with override_settings(MAPS_PROVIDER=FAKE_OK):
+        delivery, _ = create_delivery(
+            shop, recipient_name="Ana", phone=normalize_phone("064 123 4567"),
+            dest_address="Neka adresa",
+        )
+    return shop, delivery
 
 
 def _make_shop_with_origin(email, name):
@@ -254,3 +274,110 @@ def test_delivery_isolation_between_shops(client):
     resp = client.get("/app/")
     assert list(resp.context["deliveries"]) == []
     assert shop_a.deliveries.count() == 0
+
+
+# --- Story 2.1: старт доставки + ETA + уведомление ---
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_start_delivery_computes_eta_and_sends():
+    """AC#1-3,6: ETA из маршрута, статус on_the_way, Notification sent, токен, текст со ссылкой."""
+    FakeMessagingProvider.sent = []
+    _, delivery = _geocoded_delivery()
+    result = start_delivery(delivery)
+
+    assert result.ok and result.sent
+    delivery.refresh_from_db()
+    assert delivery.status == Delivery.Status.ON_THE_WAY
+    assert delivery.eta_at is not None
+    assert delivery.eta_source == "auto"
+    assert hasattr(delivery, "tracking_token")
+    n = delivery.notifications.get(kind=Notification.Kind.ON_THE_WAY)
+    assert n.status == Notification.Status.SENT
+    assert len(FakeMessagingProvider.sent) == 1
+    to, text = FakeMessagingProvider.sent[0]
+    assert to == "+381641234567"
+    assert "Stiže okvirno do" in text and "/t/" in text
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_start_delivery_idempotent():
+    """AC#4: повторный старт — no-op, без второй отправки."""
+    FakeMessagingProvider.sent = []
+    _, delivery = _geocoded_delivery()
+    start_delivery(delivery)
+    second = start_delivery(delivery)
+
+    assert second.already is True
+    assert delivery.notifications.filter(kind=Notification.Kind.ON_THE_WAY).count() == 1
+    assert len(FakeMessagingProvider.sent) == 1
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_FAIL, MESSAGING_PROVIDER=MSG_OK)
+def test_start_delivery_route_unavailable_needs_manual_eta():
+    """AC#5: маршрут недоступен → сигнал ручного ETA, ничего не меняем."""
+    FakeMessagingProvider.sent = []
+    _, delivery = _geocoded_delivery()
+    result = start_delivery(delivery)
+
+    assert result.needs_manual_eta is True
+    delivery.refresh_from_db()
+    assert delivery.status == Delivery.Status.CREATED
+    assert delivery.notifications.count() == 0
+    assert len(FakeMessagingProvider.sent) == 0
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_FAIL, MESSAGING_PROVIDER=MSG_OK)
+def test_start_delivery_manual_eta_sends():
+    """AC#5: с ручным ETA отправка проходит, eta_source=manual."""
+    FakeMessagingProvider.sent = []
+    _, delivery = _geocoded_delivery()
+    manual = timezone.now() + timedelta(hours=1)
+    result = start_delivery(delivery, manual_eta=manual)
+
+    assert result.ok and result.sent
+    delivery.refresh_from_db()
+    assert delivery.eta_source == "manual"
+    assert len(FakeMessagingProvider.sent) == 1
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_FAIL)
+def test_start_delivery_send_failure_marks_failed():
+    """AC: сбой отправки → статус on_the_way, Notification=failed, sent=False."""
+    _, delivery = _geocoded_delivery()
+    result = start_delivery(delivery)
+
+    assert result.ok and result.sent is False
+    delivery.refresh_from_db()
+    assert delivery.status == Delivery.Status.ON_THE_WAY
+    n = delivery.notifications.get(kind=Notification.Kind.ON_THE_WAY)
+    assert n.status == Notification.Status.FAILED
+
+
+def test_start_view_requires_login(client):
+    _, delivery = _geocoded_delivery()
+    resp = client.post(f"/app/dostava/{delivery.pk}/start/")
+    assert resp.status_code == 302
+    assert "/accounts/login/" in resp["Location"]
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_start_view_cannot_start_other_shop_delivery(client):
+    """AC#8: чужую доставку стартовать нельзя."""
+    _make_shop_with_origin("attacker@shop.rs", "Attacker")
+    _, victim_delivery = _geocoded_delivery("victim@shop.rs", "Victim")
+    client.login(username="attacker@shop.rs", password="pass12345")
+    resp = client.post(f"/app/dostava/{victim_delivery.pk}/start/")
+    assert resp.status_code == 404
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_start_view_success_moves_to_u_dostavi(client):
+    """AC#6: успешный старт → карточка в группе U dostavi."""
+    FakeMessagingProvider.sent = []
+    shop, delivery = _geocoded_delivery("ok@shop.rs", "OK Shop")
+    client.login(username="ok@shop.rs", password="pass12345")
+    resp = client.post(f"/app/dostava/{delivery.pk}/start/", follow=True)
+    assert resp.status_code == 200
+    assert resp.context["u_dostavi"][0].pk == delivery.pk
+    assert resp.context["spremno"] == []

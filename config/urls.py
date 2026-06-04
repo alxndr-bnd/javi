@@ -11,4 +11,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("app/", include("deliveries.urls")),
+    path("t/", include("tracking.urls")),  # публичная страница статуса (без логина)
 ]

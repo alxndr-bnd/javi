@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Vreme dolaska · Javi{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">javi<span>.</span></div>
+    <a href="{% url 'deliveries:list' %}" class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:13px">← Dostave</a>
+  </div>
+
+  <div class="h">Vreme dolaska</div>
+  <div class="card">
+    <div class="muted" style="font-size:13px;margin-bottom:10px">
+      {{ delivery.recipient_name }} · {{ delivery.dest_address }}
+    </div>
+    <form method="post" action="{% url 'deliveries:start' delivery.pk %}" novalidate>
+      {% csrf_token %}
+      <div class="field">
+        <label for="{{ form.eta_time.id_for_label }}">{{ form.eta_time.label }}</label>
+        {{ form.eta_time }}
+        {% if form.eta_time.errors %}
+          <ul class="errorlist">{% for e in form.eta_time.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary">Obavesti kupca</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

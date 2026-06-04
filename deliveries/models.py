@@ -1,5 +1,12 @@
+import secrets
+
 from django.conf import settings
 from django.db import models
+
+
+def _new_tracking_token() -> str:
+    """Непредсказуемый URL-safe токен для публичной страницы статуса."""
+    return secrets.token_urlsafe(24)
 
 
 class Shop(models.Model):
@@ -46,7 +53,10 @@ class Delivery(models.Model):
     description = models.CharField("описание", max_length=300, blank=True)
     source = models.CharField(max_length=10, choices=Source.choices, default=Source.MANUAL)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.CREATED)
-    # Поля ETA/старта (eta_at, eta_source, started_at) — добавляются в Story 2.1.
+    # ETA/старт (Story 2.1): рассчитывается при «Dostava je počela».
+    eta_at = models.DateTimeField("ETA (UTC)", null=True, blank=True)
+    eta_source = models.CharField("источник ETA", max_length=6, blank=True)  # auto | manual
+    started_at = models.DateTimeField("старт доставки", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -54,3 +64,17 @@ class Delivery(models.Model):
 
     def __str__(self):
         return f"{self.recipient_name} — {self.dest_address}"
+
+
+class TrackingToken(models.Model):
+    """Непредсказуемый токен для публичной страницы статуса (без логина)."""
+
+    delivery = models.OneToOneField(
+        Delivery, on_delete=models.CASCADE, related_name="tracking_token"
+    )
+    token = models.CharField(max_length=64, unique=True, default=_new_tracking_token)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.token

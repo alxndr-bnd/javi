@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Status dostave · Javi{% endblock %}
+{% block body %}
+<div class="track">
+  {% if expired %}
+    <div class="track-card">
+      <div class="muted">Link je istekao.</div>
+    </div>
+  {% else %}
+    <div class="track-card">
+      <div class="track-shop">{{ shop_name }}</div>
+      {% if status == "on_the_way" %}
+        <div class="track-status">Vaša porudžbina je u dostavi</div>
+        {% if eta %}<div class="track-eta">Stiže okvirno do {{ eta }}</div>{% endif %}
+      {% elif status == "delivered" %}
+        <div class="track-status">Isporučeno</div>
+      {% else %}
+        <div class="track-status">Primljeno</div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
