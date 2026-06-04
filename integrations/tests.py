@@ -148,3 +148,32 @@ def test_channel_sms_sends_sms_directly():
 
 def test_no_key_returns_not_ok():
     assert InfobipProvider(api_key="", channel="viber").send_text("+381", "x").ok is False
+
+
+@override_settings(INFOBIP_WEBHOOK_SECRET="whsec", PUBLIC_BASE_URL="https://javi.serbito.rs")
+def test_viber_payload_includes_report_webhook():
+    """notifyUrl/webhooks: Viber-сообщение содержит delivery/seen webhook с секретом."""
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        _infobip().send_text("+381641234567", "hi")
+    msg = post.call_args.kwargs["json"]["messages"][0]
+    url = msg["webhooks"]["delivery"]["url"]
+    assert url.endswith("/webhooks/infobip/reports/?secret=whsec")
+    assert msg["webhooks"]["seen"]["url"] == url
+
+
+@override_settings(INFOBIP_WEBHOOK_SECRET="whsec", PUBLIC_BASE_URL="https://javi.serbito.rs")
+def test_sms_payload_includes_notify_url():
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        InfobipProvider(
+            base_url="https://x", api_key="k", sender="S", channel="sms"
+        ).send_text("+381641234567", "hi")
+    msg = post.call_args.kwargs["json"]["messages"][0]
+    assert msg["notifyUrl"].endswith("/webhooks/infobip/reports/?secret=whsec")
+    assert msg["notifyContentType"] == "application/json"
+
+
+@override_settings(INFOBIP_WEBHOOK_SECRET="")
+def test_no_webhook_when_secret_unset():
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        _infobip().send_text("+381641234567", "hi")
+    assert "webhooks" not in post.call_args.kwargs["json"]["messages"][0]

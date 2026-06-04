@@ -6,6 +6,7 @@ import logging
 
 import requests
 from django.conf import settings
+from django.urls import reverse
 
 from .base import MessagingProvider, SendResult
 
@@ -82,20 +83,30 @@ class InfobipProvider(MessagingProvider):
         except (KeyError, IndexError, TypeError):
             return True, None
 
+    def _report_url(self) -> str | None:
+        """URL нашего вебхука отчётов о доставке (с секретом). None если секрет не задан."""
+        secret = settings.INFOBIP_WEBHOOK_SECRET
+        if not secret:
+            return None
+        base = settings.PUBLIC_BASE_URL.rstrip("/")
+        return f"{base}{reverse('notifications:infobip_reports')}?secret={secret}"
+
     def _send_viber(self, to: str, text: str) -> tuple[bool, str | None]:
-        payload = {
-            "messages": [
-                {
-                    "sender": self.sender,
-                    "destinations": [{"to": to}],
-                    "content": {"text": text, "type": "TEXT"},
-                }
-            ]
+        message = {
+            "sender": self.sender,
+            "destinations": [{"to": to}],
+            "content": {"text": text, "type": "TEXT"},
         }
-        return self._post(f"{self.base_url}/viber/2/messages", payload)
+        url = self._report_url()
+        if url:
+            # delivery + seen reports → наш вебхук (даёт Isporučeno/Pročitano/Nije dostavljeno).
+            message["webhooks"] = {"delivery": {"url": url}, "seen": {"url": url}}
+        return self._post(f"{self.base_url}/viber/2/messages", {"messages": [message]})
 
     def _send_sms(self, to: str, text: str) -> tuple[bool, str | None]:
-        payload = {
-            "messages": [{"from": self.sender, "destinations": [{"to": to}], "text": text}]
-        }
-        return self._post(f"{self.base_url}/sms/2/text/advanced", payload)
+        message = {"from": self.sender, "destinations": [{"to": to}], "text": text}
+        url = self._report_url()
+        if url:
+            message["notifyUrl"] = url
+            message["notifyContentType"] = "application/json"
+        return self._post(f"{self.base_url}/sms/2/text/advanced", {"messages": [message]})
