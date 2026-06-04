@@ -12,3 +12,10 @@ class RecordingTaskScheduler(TaskScheduler):
 
     def schedule_rating_request(self, delivery_id: int, run_at: datetime) -> None:
         type(self).scheduled.append((delivery_id, run_at))
+
+
+class FailingTaskScheduler(TaskScheduler):
+    """Имитирует сбой постановки задачи (напр. недоступность Cloud Tasks)."""
+
+    def schedule_rating_request(self, delivery_id: int, run_at: datetime) -> None:
+        raise RuntimeError("cloud tasks unavailable")

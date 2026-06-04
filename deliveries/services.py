@@ -159,7 +159,11 @@ def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) ->
     result = _send_and_record(notification, delivery, _on_the_way_text(delivery, token_obj.token))
 
     # Планируем запрос оценки на ETA+30 (прижатый к окну 08:00–22:00) — AR-4/FR-16/21.
-    get_task_scheduler().schedule_rating_request(delivery.id, rating_send_time(eta_at))
+    # Сбой планировщика НЕ должен ломать старт (сообщение уже ушло) — деградируем мягко.
+    try:
+        get_task_scheduler().schedule_rating_request(delivery.id, rating_send_time(eta_at))
+    except Exception:
+        logger.exception("failed to schedule rating request for delivery %s", delivery.id)
     return StartResult(ok=True, sent=result.ok, eta_at=eta_at)
 
 

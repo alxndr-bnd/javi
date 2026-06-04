@@ -42,6 +42,20 @@ def test_start_schedules_rating_request():
     assert run_at == rating_send_time(delivery.eta_at)
 
 
+@override_settings(
+    ROUTES_PROVIDER=ROUTES_OK,
+    MESSAGING_PROVIDER=MSG_OK,
+    TASK_SCHEDULER="tasks.testing.FailingTaskScheduler",
+)
+def test_start_survives_scheduler_failure():
+    """Сбой планировщика не ломает старт (сообщение уже ушло)."""
+    delivery = _delivery(_make_shop())
+    result = start_delivery(delivery)
+    assert result.ok is True
+    delivery.refresh_from_db()
+    assert delivery.status == Delivery.Status.ON_THE_WAY
+
+
 @override_settings(MESSAGING_PROVIDER=MSG_OK, TASKS_SECRET=SECRET)
 def test_send_rating_callback_sends_request(client):
     """AC#2/#3: верный секрет → rating_request Notification."""
