@@ -34,5 +34,9 @@ a{color:var(--brand)}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
 .field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:var(--surface);color:var(--ink)}
-.errorlist{color:var(--failed);font-size:13px;list-style:none;padding:0;margin:0 0 10px}
+.errorlist{color:var(--failed);font-size:13px;list-style:none;padding:0;margin:6px 0 0}
 .muted{color:var(--muted)}
+/* сообщения (Django messages) */
+.msg{border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px;border:1px solid var(--line)}
+.msg-success{background:#eafaf0;border-color:#bfead0;color:#137a3a}
+.msg-error{background:#fdecec;border-color:#f6c9c9;color:var(--failed)}

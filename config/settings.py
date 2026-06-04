@@ -118,3 +118,10 @@ LOGOUT_REDIRECT_URL = "/"
 
 # За прокси Cloud Run — доверяем X-Forwarded-Proto для HTTPS.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Интеграции — провайдер карт (геокодинг). Ключ из env/Secret Manager, не в коде.
+GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
+MAPS_PROVIDER = env(
+    "MAPS_PROVIDER",
+    default="integrations.google_maps.GoogleMapsProvider",
+)

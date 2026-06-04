@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Prodavnica · Javi{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">javi<span>.</span></div>
+    <a href="{% url 'deliveries:list' %}" class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:13px">← Dostave</a>
+  </div>
+
+  <div class="h">Prodavnica</div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="msg {% if message.tags %}msg-{{ message.tags }}{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+      <div class="field">
+        <label for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+        {{ form.address }}
+        {% if form.address.errors %}
+          <ul class="errorlist">{% for e in form.address.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div class="muted" style="font-size:13px;margin-top:6px">
+          Polazna tačka za računanje vremena dostave.
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Sačuvaj</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
