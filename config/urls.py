@@ -12,6 +12,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("app/", include("deliveries.urls")),
+    path("api/v1/", include("deliveries.api_urls")),  # публичный API по ключу
     path("t/", include("tracking.urls")),  # публичная страница статуса (без логина)
     path("webhooks/", include("notifications.urls")),  # вебхуки Infobip (по секрету)
     path("tasks/", include("tasks.urls")),  # колбэки Cloud Tasks (по секрету)

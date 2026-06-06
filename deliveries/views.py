@@ -15,7 +15,7 @@ from common.timewindow import BELGRADE, format_eta
 from notifications.models import Notification, OptOut
 
 from .forms import DeliveryForm, ManualEtaForm, RecipientPhoneForm, ShopOriginForm
-from .models import Delivery
+from .models import ApiKey, Delivery
 from .services import (
     compute_eta,
     create_delivery,
@@ -96,17 +96,21 @@ class ShopProfileView(LoginRequiredMixin, View):
 
     template_name = "deliveries/shop_profile.html"
 
+    def _context(self, shop, form):
+        api_keys = list(shop.api_keys.all()) if shop is not None else []
+        return {"form": form, "shop": shop, "api_keys": api_keys}
+
     def get(self, request):
         shop = getattr(request.user, "shop", None)  # изоляция: только свой магазин
         if shop is None:
-            return render(request, self.template_name, {"form": None, "shop": None})
+            return render(request, self.template_name, self._context(None, None))
         form = ShopOriginForm(initial={"name": shop.name, "address": shop.origin_address})
-        return render(request, self.template_name, {"form": form, "shop": shop})
+        return render(request, self.template_name, self._context(shop, form))
 
     def post(self, request):
         shop = getattr(request.user, "shop", None)
         if shop is None:
-            return render(request, self.template_name, {"form": None, "shop": None})
+            return render(request, self.template_name, self._context(None, None))
         form = ShopOriginForm(request.POST)
         if form.is_valid():
             # Название сохраняем всегда (независимо от геокода адреса).
@@ -122,7 +126,35 @@ class ShopProfileView(LoginRequiredMixin, View):
                     "Please check and try again."
                 ),
             )
-        return render(request, self.template_name, {"form": form, "shop": shop})
+        return render(request, self.template_name, self._context(shop, form))
+
+
+class ApiKeyCreateView(LoginRequiredMixin, View):
+    """Генерация API-ключа. Полный ключ показывается ОДИН раз через message."""
+
+    def post(self, request):
+        shop = getattr(request.user, "shop", None)
+        if shop is None:
+            messages.error(request, _("Account is not linked to a store."))
+            return redirect("deliveries:profile")
+        _key_obj, full_key = ApiKey.generate(shop)
+        messages.success(
+            request,
+            _("API key created. Copy it now — it will not be shown again: %(key)s")
+            % {"key": full_key},
+        )
+        return redirect("deliveries:profile")
+
+
+class ApiKeyRevokeView(LoginRequiredMixin, View):
+    """Отзыв API-ключа (скоуп по магазину)."""
+
+    def post(self, request, pk):
+        shop = getattr(request.user, "shop", None)
+        api_key = get_object_or_404(ApiKey, pk=pk, shop=shop)  # изоляция
+        api_key.revoke()
+        messages.success(request, _("API key revoked."))
+        return redirect("deliveries:profile")
 
 
 class DeliveryCreateView(LoginRequiredMixin, View):

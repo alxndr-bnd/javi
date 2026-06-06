@@ -2,6 +2,8 @@ from django.urls import path
 
 from .views import (
     ApiDocsView,
+    ApiKeyCreateView,
+    ApiKeyRevokeView,
     DeletedDeliveriesView,
     DeliveryCreateView,
     DeliveryDeleteView,
@@ -40,4 +42,6 @@ urlpatterns = [
         name="mark_delivered",
     ),
     path("prodavnica/", ShopProfileView.as_view(), name="profile"),
+    path("api-kljucevi/novi/", ApiKeyCreateView.as_view(), name="api_key_create"),
+    path("api-kljucevi/<int:pk>/opozovi/", ApiKeyRevokeView.as_view(), name="api_key_revoke"),
 ]
