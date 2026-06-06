@@ -44,6 +44,28 @@
           {% trans "Starting point for delivery time calculation." %}
         </div>
       </div>
+
+      <div class="field">
+        <label for="{{ form.webhook_url.id_for_label }}">{{ form.webhook_url.label }}</label>
+        {{ form.webhook_url }}
+        {% if form.webhook_url.errors %}
+          <ul class="errorlist">{% for e in form.webhook_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div class="muted" style="font-size:13px;margin-top:6px">
+          {% trans "We POST delivery events here (signed with HMAC-SHA256). Leave empty to disable." %}
+        </div>
+      </div>
+      <div class="field">
+        <label for="{{ form.webhook_secret.id_for_label }}">{{ form.webhook_secret.label }}</label>
+        {{ form.webhook_secret }}
+        {% if form.webhook_secret.errors %}
+          <ul class="errorlist">{% for e in form.webhook_secret.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div class="muted" style="font-size:13px;margin-top:6px">
+          {% trans "Used to sign the Javi-Signature header so you can verify requests are from us." %}
+        </div>
+      </div>
+
       <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
     </form>
   </div>

@@ -122,6 +122,31 @@ def _tracking_link(token: str) -> str:
     return f"{settings.PUBLIC_BASE_URL.rstrip('/')}{reverse('tracking:status', args=[token])}"
 
 
+def delivery_event_payload(delivery: Delivery, extra: dict | None = None) -> dict:
+    """Базовый payload вебхука по доставке: id, статус, получатель, tracking_url + extra."""
+    token_obj = getattr(delivery, "tracking_token", None)
+    payload = {
+        "id": delivery.id,
+        "external_id": "",  # задел: внешний id мерчанта (когда появится на модели)
+        "status": delivery.status,
+        "recipient": {
+            "name": delivery.recipient_name,
+            "phone": delivery.recipient_phone,
+        },
+        "tracking_url": _tracking_link(token_obj.token) if token_obj else "",
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
+def emit_delivery_event(delivery: Delivery, event: str, extra: dict | None = None) -> None:
+    """Собрать payload доставки и отправить вебхук мерчанту (безопасно, без падений)."""
+    from notifications.outbound import notify_merchant
+
+    notify_merchant(delivery.shop, event, delivery_event_payload(delivery, extra))
+
+
 def _on_the_way_text(delivery: Delivery, token: str) -> str:
     return gettext(
         "Your order from %(shop)s is on its way. "
@@ -194,6 +219,9 @@ def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) ->
         get_task_scheduler().schedule_rating_request(delivery.id, rating_send_time(eta_at))
     except Exception:
         logger.exception("failed to schedule rating request for delivery %s", delivery.id)
+
+    # Исходящий вебхук мерчанту (декуплено, безопасно — notify_merchant сам глушит сбои).
+    emit_delivery_event(delivery, "delivery.started")
     return StartResult(ok=True, sent=result.ok, eta_at=eta_at)
 
 

@@ -92,6 +92,9 @@ def mark_received(request, token):
     if delivery.status != Delivery.Status.DELIVERED:
         delivery.status = Delivery.Status.DELIVERED
         delivery.save(update_fields=["status"])
+        from deliveries.services import emit_delivery_event
+
+        emit_delivery_event(delivery, "delivery.delivered")
     return redirect("tracking:status", token=token)
 
 
@@ -117,5 +120,12 @@ def rate(request, token):
     except (TypeError, ValueError):
         value = 0
     if 1 <= value <= 5:
-        Rating.objects.update_or_create(delivery=token_obj.delivery, defaults={"value": value})
+        delivery = token_obj.delivery
+        _rating, created = Rating.objects.update_or_create(
+            delivery=delivery, defaults={"value": value}
+        )
+        if created:
+            from deliveries.services import emit_delivery_event
+
+            emit_delivery_event(delivery, "rating.created", {"rating": value})
     return redirect("tracking:status", token=token)
