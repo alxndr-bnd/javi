@@ -5,8 +5,19 @@ from .models import ApiKey, Delivery, Shop
 
 @admin.register(Shop)
 class ShopAdmin(admin.ModelAdmin):
-    list_display = ("name", "owner", "created_at")
+    list_display = ("name", "owner", "webhook_url", "created_at")
     search_fields = ("name", "owner__email")
+    fields = (
+        "owner",
+        "name",
+        "origin_address",
+        "origin_lat",
+        "origin_lng",
+        "webhook_url",
+        "webhook_secret",
+        "completed_expanded",
+        "kanban_view",
+    )
 
 
 @admin.register(ApiKey)

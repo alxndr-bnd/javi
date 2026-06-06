@@ -19,6 +19,7 @@ from .models import ApiKey, Delivery
 from .services import (
     compute_eta,
     create_delivery,
+    emit_delivery_event,
     eta_unavailable_reason,
     resend_on_the_way,
     set_shop_origin,
@@ -104,7 +105,14 @@ class ShopProfileView(LoginRequiredMixin, View):
         shop = getattr(request.user, "shop", None)  # изоляция: только свой магазин
         if shop is None:
             return render(request, self.template_name, self._context(None, None))
-        form = ShopOriginForm(initial={"name": shop.name, "address": shop.origin_address})
+        form = ShopOriginForm(
+            initial={
+                "name": shop.name,
+                "address": shop.origin_address,
+                "webhook_url": shop.webhook_url,
+                "webhook_secret": shop.webhook_secret,
+            }
+        )
         return render(request, self.template_name, self._context(shop, form))
 
     def post(self, request):
@@ -113,9 +121,11 @@ class ShopProfileView(LoginRequiredMixin, View):
             return render(request, self.template_name, self._context(None, None))
         form = ShopOriginForm(request.POST)
         if form.is_valid():
-            # Название сохраняем всегда (независимо от геокода адреса).
+            # Название + настройки вебхука сохраняем всегда (независимо от геокода адреса).
             shop.name = form.cleaned_data["name"]
-            shop.save(update_fields=["name"])
+            shop.webhook_url = form.cleaned_data["webhook_url"]
+            shop.webhook_secret = form.cleaned_data["webhook_secret"]
+            shop.save(update_fields=["name", "webhook_url", "webhook_secret"])
             if set_shop_origin(shop, form.cleaned_data["address"]):
                 messages.success(request, _("Saved."))
                 return redirect("deliveries:profile")  # PRG
@@ -304,8 +314,10 @@ class DeliveryMarkDeliveredView(LoginRequiredMixin, View):
     def post(self, request, pk):
         shop = getattr(request.user, "shop", None)
         delivery = get_object_or_404(Delivery, pk=pk, shop=shop)
-        delivery.status = Delivery.Status.DELIVERED
-        delivery.save(update_fields=["status"])
+        if delivery.status != Delivery.Status.DELIVERED:
+            delivery.status = Delivery.Status.DELIVERED
+            delivery.save(update_fields=["status"])
+            emit_delivery_event(delivery, "delivery.delivered")
         messages.success(request, _("Marked as delivered."))
         return redirect("deliveries:list")
 

@@ -7,7 +7,10 @@ INVALID_PHONE_MSG = _("Invalid number. E.g. 064 123 4567")
 
 
 class ShopOriginForm(forms.Form):
-    """Название + адрес магазина (origin). Геокодинг адреса — в сервисе после валидации."""
+    """Название + адрес магазина (origin) + настройки исходящих вебхуков.
+
+    Геокодинг адреса — в сервисе после валидации.
+    """
 
     name = forms.CharField(label=_("Store name"), max_length=200)
     address = forms.CharField(
@@ -19,6 +22,18 @@ class ShopOriginForm(forms.Form):
                 "placeholder": "Knez Mihailova 6, Beograd",
             }
         ),
+    )
+    webhook_url = forms.URLField(
+        label=_("Webhook URL"),
+        required=False,
+        assume_scheme="https",
+        widget=forms.URLInput(attrs={"placeholder": "https://your-shop.example/javi-webhook"}),
+    )
+    webhook_secret = forms.CharField(
+        label=_("Webhook secret"),
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
     )
 
 

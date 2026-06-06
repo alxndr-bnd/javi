@@ -40,6 +40,10 @@ class Shop(models.Model):
     completed_expanded = models.BooleanField("секция «завершённые» развёрнута", default=False)
     kanban_view = models.BooleanField("вид «канбан-доска»", default=False)
 
+    # Исходящие вебхуки мерчанту: URL приёмника + секрет для HMAC-подписи тела.
+    webhook_url = models.URLField("URL вебхука", blank=True)
+    webhook_secret = models.CharField("секрет вебхука (HMAC)", max_length=200, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
