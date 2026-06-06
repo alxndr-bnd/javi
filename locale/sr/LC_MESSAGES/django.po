@@ -1,0 +1,445 @@
+# Javi delivery-notification app — Serbian (Latin) translation.
+# Copyright (C) 2026
+# This file is distributed under the same license as the Javi package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Javi\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-07 01:28+0200\n"
+"PO-Revision-Date: 2026-06-07 01:30+0200\n"
+"Last-Translator: Javi <noreply@javi.serbito.rs>\n"
+"Language-Team: Serbian (Latin)\n"
+"Language: sr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: deliveries/forms.py:6 deliveries/views.py:257
+msgid "Invalid number. E.g. 064 123 4567"
+msgstr "Neispravan broj. Npr. 064 123 4567"
+
+#: deliveries/forms.py:12
+msgid "Store name"
+msgstr "Naziv prodavnice"
+
+#: deliveries/forms.py:14
+msgid "Store address"
+msgstr "Adresa prodavnice"
+
+#: deliveries/forms.py:29 deliveries/forms.py:58
+msgid "Phone"
+msgstr "Telefon"
+
+#: deliveries/forms.py:35
+msgid "Name"
+msgstr "Ime"
+
+#: deliveries/forms.py:37
+msgid "Address"
+msgstr "Adresa"
+
+#: deliveries/forms.py:40
+msgid "Street and number, city"
+msgstr "Ulica i broj, grad"
+
+#: deliveries/forms.py:43
+msgid "Description (optional)"
+msgstr "Opis (opciono)"
+
+#: deliveries/forms.py:73
+msgid "Arrival time (HH:MM)"
+msgstr "Vreme dolaska (HH:MM)"
+
+#: deliveries/models.py:43
+#: deliveries/templates/deliveries/delivery_board.html:38
+#: deliveries/templates/deliveries/delivery_list.html:38
+msgid "New"
+msgstr "Novo"
+
+#: deliveries/models.py:44
+#: deliveries/templates/deliveries/delivery_board.html:42
+#: deliveries/templates/deliveries/delivery_list.html:42
+msgid "Ready"
+msgstr "Spremno"
+
+#: deliveries/models.py:45
+#: deliveries/templates/deliveries/delivery_board.html:46
+#: deliveries/templates/deliveries/delivery_list.html:46
+msgid "In delivery"
+msgstr "U dostavi"
+
+#: deliveries/models.py:46
+#: deliveries/templates/deliveries/delivery_board.html:50
+msgid "Done"
+msgstr "Završeno"
+
+#: deliveries/services.py:104
+msgid "Store address is not geocoded — open “Store” and save the address."
+msgstr "Adresa prodavnice nije geokodirana — otvorite „Prodavnica“ i sačuvajte adresu."
+
+#: deliveries/services.py:106
+msgid ""
+"We could not recognize the delivery address — check the recipient address."
+msgstr ""
+"Nismo prepoznali adresu dostave — proverite adresu primaoca."
+
+#: deliveries/services.py:107
+msgid "The map can't compute a route right now — enter the time manually."
+msgstr "Mapa trenutno ne može da izračuna rutu — unesite vreme ručno."
+
+#: deliveries/services.py:127
+#, python-format
+msgid ""
+"Your order from %(shop)s is on its way. Arriving approximately by %(time)s. "
+"Track: %(link)s"
+msgstr ""
+"Vaša porudžbina iz %(shop)s je u dostavi. Stiže okvirno do %(time)s. "
+"Pratite: %(link)s"
+
+#: deliveries/services.py:236
+#, python-format
+msgid "How did the delivery from %(shop)s go? Rate it: %(link)s"
+msgstr "Kako je prošla dostava iz %(shop)s? Ocenite: %(link)s"
+
+#: deliveries/templates/deliveries/_delivery_card.html:8
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:19
+msgid "by"
+msgstr "do"
+
+#: deliveries/templates/deliveries/_delivery_card.html:12
+msgid "Read"
+msgstr "Pročitano"
+
+#: deliveries/templates/deliveries/_delivery_card.html:14
+msgid "Delivered"
+msgstr "Isporučeno"
+
+#: deliveries/templates/deliveries/_delivery_card.html:16
+msgid "Not delivered"
+msgstr "Nije dostavljeno"
+
+#: deliveries/templates/deliveries/_delivery_card.html:22
+msgid "recipient opted out of notifications"
+msgstr "primalac otkazao obaveštenja"
+
+#: deliveries/templates/deliveries/_delivery_card.html:28
+msgid "Mark ready"
+msgstr "Označi spremno"
+
+#: deliveries/templates/deliveries/_delivery_card.html:35
+msgid "Delivery has started"
+msgstr "Dostava je počela"
+
+#: deliveries/templates/deliveries/_delivery_card.html:41
+msgid "Send the message again?"
+msgstr "Poslati poruku ponovo?"
+
+#: deliveries/templates/deliveries/_delivery_card.html:47
+msgid "Resend"
+msgstr "Pošalji ponovo"
+
+#: deliveries/templates/deliveries/_delivery_card.html:53
+msgid "Mark as delivered?"
+msgstr "Označiti kao isporučeno?"
+
+#: deliveries/templates/deliveries/_delivery_card.html:55
+msgid "Mark delivered"
+msgstr "Označi isporučeno"
+
+#: deliveries/templates/deliveries/_delivery_card.html:60
+msgid "Delete this delivery?"
+msgstr "Obrisati ovu dostavu?"
+
+#: deliveries/templates/deliveries/_delivery_card.html:62
+msgid "Delete delivery"
+msgstr "Obriši dostavu"
+
+#: deliveries/templates/deliveries/api_docs.html:8
+#: deliveries/templates/deliveries/deleted_list.html:8
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:8
+#: deliveries/templates/deliveries/delivery_form.html:8
+#: deliveries/templates/deliveries/delivery_list.html:3
+#: deliveries/templates/deliveries/shop_profile.html:8
+msgid "Deliveries"
+msgstr "Dostave"
+
+#: deliveries/templates/deliveries/api_docs.html:11
+#: deliveries/templates/deliveries/delivery_board.html:58
+#: deliveries/templates/deliveries/delivery_list.html:66
+msgid "Integration API"
+msgstr "API za integraciju"
+
+#: deliveries/templates/deliveries/api_docs.html:14
+msgid ""
+"Create an API key and send orders directly from your system — Javi notifies "
+"your customers about the delivery."
+msgstr ""
+"Napravite API ključ i šaljite porudžbine direktno iz svog sistema — Javi "
+"obaveštava vaše kupce o dostavi."
+
+#: deliveries/templates/deliveries/api_docs.html:17
+msgid "Generate an API key in your profile"
+msgstr "Generišite API ključ u svom profilu"
+
+#: deliveries/templates/deliveries/api_docs.html:18
+msgid "Create an order (customer address + phone)"
+msgstr "Napravite porudžbinu (adresa kupca + telefon)"
+
+#: deliveries/templates/deliveries/api_docs.html:19
+msgid ""
+"Mark “delivery started” → customer gets a notification and a tracking link"
+msgstr ""
+"Označite „dostava započeta“ → kupac dobija obaveštenje i link za praćenje"
+
+#: deliveries/templates/deliveries/api_docs.html:20
+msgid "Delivery status and rating"
+msgstr "Status dostave i ocena"
+
+#: deliveries/templates/deliveries/deleted_list.html:3
+msgid "Deleted"
+msgstr "Obrisano"
+
+#: deliveries/templates/deliveries/deleted_list.html:11
+#: deliveries/templates/deliveries/delivery_board.html:56
+#: deliveries/templates/deliveries/delivery_list.html:64
+msgid "Deleted orders"
+msgstr "Obrisane porudžbine"
+
+#: deliveries/templates/deliveries/deleted_list.html:26
+msgid "Restore"
+msgstr "Vrati"
+
+#: deliveries/templates/deliveries/deleted_list.html:31
+msgid "No deleted orders."
+msgstr "Nema obrisanih porudžbina."
+
+#: deliveries/templates/deliveries/delivery_board.html:3
+#: deliveries/templates/deliveries/delivery_board.html:20
+#: deliveries/templates/deliveries/delivery_list.html:20
+msgid "Board"
+msgstr "Tabla"
+
+#: deliveries/templates/deliveries/delivery_board.html:9
+#: deliveries/templates/deliveries/delivery_list.html:9
+#: deliveries/templates/deliveries/shop_profile.html:3
+#: deliveries/templates/deliveries/shop_profile.html:11
+msgid "Store"
+msgstr "Prodavnica"
+
+#: deliveries/templates/deliveries/delivery_board.html:12
+#: deliveries/templates/deliveries/delivery_list.html:12
+msgid "Sign out"
+msgstr "Odjava"
+
+#: deliveries/templates/deliveries/delivery_board.html:19
+#: deliveries/templates/deliveries/delivery_list.html:19
+msgid "List"
+msgstr "Lista"
+
+#: deliveries/templates/deliveries/delivery_board.html:65
+#: deliveries/templates/deliveries/delivery_form.html:3
+#: deliveries/templates/deliveries/delivery_form.html:11
+#: deliveries/templates/deliveries/delivery_list.html:73
+msgid "New delivery"
+msgstr "Nova dostava"
+
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:3
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:11
+msgid "Confirm delivery"
+msgstr "Potvrdite dostavu"
+
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:18
+msgid "Estimated arrival time"
+msgstr "Procenjeno vreme dolaska"
+
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:35
+msgid "You can adjust the time before sending."
+msgstr "Možete ispraviti vreme pre slanja."
+
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:37
+msgid "Confirm and notify the customer"
+msgstr "Potvrdi i obavesti kupca"
+
+#: deliveries/templates/deliveries/delivery_form.html:28
+#: deliveries/templates/deliveries/shop_profile.html:47
+msgid "Save"
+msgstr "Sačuvaj"
+
+#: deliveries/templates/deliveries/delivery_list.html:51
+#, python-format
+msgid "Done (%(n)s)"
+msgid_plural "Done (%(n)s)"
+msgstr[0] "Završeno (%(n)s)"
+msgstr[1] "Završeno (%(n)s)"
+msgstr[2] "Završeno (%(n)s)"
+
+#: deliveries/templates/deliveries/delivery_list.html:58
+msgid "No deliveries today."
+msgstr "Nema dostava danas."
+
+#: deliveries/templates/deliveries/delivery_list.html:59
+msgid "Add your first delivery with the button below."
+msgstr "Dodajte prvu dostavu dugmetom ispod."
+
+#: deliveries/templates/deliveries/shop_profile.html:21
+msgid "Account is not linked to a store."
+msgstr "Nalog nije povezan sa prodavnicom."
+
+#: deliveries/templates/deliveries/shop_profile.html:44
+msgid "Starting point for delivery time calculation."
+msgstr "Polazna tačka za računanje vremena dostave."
+
+#: deliveries/views.py:116
+msgid "Saved."
+msgstr "Sačuvano."
+
+#: deliveries/views.py:121
+msgid ""
+"Name saved, but we could not recognize the address. Please check and try "
+"again."
+msgstr ""
+"Naziv je sačuvan, ali nismo prepoznali adresu. Proverite je i pokušajte "
+"ponovo."
+
+#: deliveries/views.py:154
+msgid "Delivery added."
+msgstr "Dostava je dodata."
+
+#: deliveries/views.py:156
+msgid "The number is not a Serbian mobile — please check."
+msgstr "Broj nije srpski mobilni — proverite ga."
+
+#: deliveries/views.py:160
+msgid "We could not recognize the address — please check it later."
+msgstr "Nismo prepoznali adresu — proverite je kasnije."
+
+#: deliveries/views.py:169
+msgid "First set your store address."
+msgstr "Prvo podesite adresu prodavnice."
+
+#: deliveries/views.py:216 deliveries/views.py:229
+msgid "Delivery is already in progress."
+msgstr "Dostava je već u toku."
+
+#: deliveries/views.py:220
+#, python-format
+msgid "Customer notified · arriving by %(time)s"
+msgstr "Kupac obavešten · stiže do %(time)s"
+
+#: deliveries/views.py:224
+msgid "Message not sent — try again later."
+msgstr "Poruka nije poslata — pokušajte kasnije."
+
+#: deliveries/views.py:261
+msgid "Unable to resend."
+msgstr "Nije moguće ponovo poslati."
+
+#: deliveries/views.py:263
+msgid "Message resent."
+msgstr "Poruka je ponovo poslata."
+
+#: deliveries/views.py:265
+msgid "Message not sent — check the number."
+msgstr "Poruka nije poslata — proverite broj."
+
+#: deliveries/views.py:277
+msgid "Marked as delivered."
+msgstr "Označeno kao isporučeno."
+
+#: deliveries/views.py:312
+msgid "Delivery deleted."
+msgstr "Dostava je obrisana."
+
+#: deliveries/views.py:338
+msgid "Delivery restored."
+msgstr "Dostava je vraćena."
+
+#: templates/accounts/login.html:3 templates/accounts/login.html:7
+#: templates/accounts/login.html:21
+msgid "Sign in"
+msgstr "Prijava"
+
+#: templates/accounts/login.html:14
+msgid "Email"
+msgstr "Email"
+
+#: templates/accounts/login.html:18
+msgid "Password"
+msgstr "Lozinka"
+
+#: templates/base.html:13
+msgid ""
+"in development — bugs and outages are possible, do not rely on stability"
+msgstr ""
+"u razvoju — moguće su greške i prekidi, ne oslanjajte se na stabilnost"
+
+#: tracking/templates/tracking/status.html:3
+#: tracking/templates/tracking/status.html:24
+msgid "Delivery status"
+msgstr "Status dostave"
+
+#: tracking/templates/tracking/status.html:8
+msgid "Link has expired."
+msgstr "Link je istekao."
+
+#: tracking/templates/tracking/status.html:14
+msgid "Your order has been delivered"
+msgstr "Vaša porudžbina je isporučena"
+
+#: tracking/templates/tracking/status.html:16
+msgid "Your order is on its way"
+msgstr "Vaša porudžbina je u dostavi"
+
+#: tracking/templates/tracking/status.html:17
+#, python-format
+msgid "Arriving approximately by %(eta)s"
+msgstr "Stiže okvirno do %(eta)s"
+
+#: tracking/templates/tracking/status.html:19
+msgid "Your order has been received"
+msgstr "Vaša porudžbina je primljena"
+
+#: tracking/templates/tracking/status.html:36
+msgid "I received the order"
+msgstr "Primio sam porudžbinu"
+
+#: tracking/templates/tracking/status.html:41
+#, python-format
+msgid "Thank you for your rating! Your rating: %(rating)s★"
+msgstr "Hvala na oceni! Vaša ocena: %(rating)s★"
+
+#: tracking/templates/tracking/status.html:44
+msgid "How did the delivery go?"
+msgstr "Kako je prošla dostava?"
+
+#: tracking/templates/tracking/status.html:45
+msgid "Tap the stars to rate (1 = poor, 5 = excellent)."
+msgstr "Dodirnite zvezdice da ocenite (1 = loše, 5 = odlično)."
+
+#: tracking/templates/tracking/status.html:50
+#, python-format
+msgid "Rating %(n)s of 5"
+msgstr "Ocena %(n)s od 5"
+
+#: tracking/templates/tracking/status.html:57
+msgid "Unsubscribe from notifications"
+msgstr "Odjavi se sa obaveštenja"
+
+#: tracking/templates/tracking/unsubscribed.html:3
+msgid "Unsubscribe"
+msgstr "Odjava"
+
+#: tracking/templates/tracking/unsubscribed.html:7
+msgid "You have been unsubscribed."
+msgstr "Odjavljeni ste."
+
+#: tracking/templates/tracking/unsubscribed.html:8
+msgid "We will no longer send you rating messages."
+msgstr "Više vam nećemo slati poruke o ocenjivanju."
+
+#: tracking/views.py:64
+msgid "Too many requests. Try again later."
+msgstr "Previše zahteva. Pokušajte kasnije."
