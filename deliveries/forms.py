@@ -19,14 +19,16 @@ class ShopOriginForm(forms.Form):
 
 
 class DeliveryForm(forms.Form):
-    """Создание доставки: имя, телефон, адрес получателя (+ описание опц.)."""
+    """Создание доставки: телефон первым (автоподстановка клиента), имя, адрес (+ описание)."""
 
-    recipient_name = forms.CharField(label="Ime", max_length=200)
     recipient_phone = forms.CharField(
         label="Telefon",
         max_length=32,
-        widget=forms.TextInput(attrs={"inputmode": "tel", "placeholder": "064 123 4567"}),
+        widget=forms.TextInput(
+            attrs={"inputmode": "tel", "placeholder": "064 123 4567", "autofocus": True}
+        ),
     )
+    recipient_name = forms.CharField(label="Ime", max_length=200)
     dest_address = forms.CharField(
         label="Adresa",
         max_length=300,

@@ -6,6 +6,7 @@ from .views import (
     DeliveryMarkDeliveredView,
     DeliveryResendView,
     DeliveryStartView,
+    RecipientLookupView,
     ShopProfileView,
 )
 
@@ -14,6 +15,7 @@ app_name = "deliveries"
 urlpatterns = [
     path("", DeliveryListView.as_view(), name="list"),
     path("dostava/nova/", DeliveryCreateView.as_view(), name="create"),
+    path("klijent/", RecipientLookupView.as_view(), name="recipient_lookup"),
     path("dostava/<int:pk>/start/", DeliveryStartView.as_view(), name="start"),
     path("dostava/<int:pk>/posalji-ponovo/", DeliveryResendView.as_view(), name="resend"),
     path(

@@ -2,11 +2,13 @@ from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
 
+from common.phone import InvalidPhone, normalize_phone
 from common.timewindow import BELGRADE, format_eta
 from notifications.models import Notification, OptOut
 
@@ -120,6 +122,28 @@ class DeliveryCreateView(LoginRequiredMixin, View):
             messages.info(request, "Prvo podesite adresu prodavnice.")
             return redirect("deliveries:profile")
         return None
+
+
+class RecipientLookupView(LoginRequiredMixin, View):
+    """Автоподстановка клиента по номеру: имя + адрес из последней доставки магазина."""
+
+    def get(self, request):
+        shop = getattr(request.user, "shop", None)
+        if shop is None:
+            return JsonResponse({"found": False})
+        try:
+            e164 = normalize_phone(request.GET.get("phone", "")).e164
+        except InvalidPhone:
+            return JsonResponse({"found": False})
+        # Изоляция: ищем только среди доставок своего магазина.
+        last = (
+            shop.deliveries.filter(recipient_phone=e164).order_by("-created_at").first()
+        )
+        if last is None:
+            return JsonResponse({"found": False})
+        return JsonResponse(
+            {"found": True, "name": last.recipient_name, "address": last.dest_address}
+        )
 
 
 class DeliveryStartView(LoginRequiredMixin, View):

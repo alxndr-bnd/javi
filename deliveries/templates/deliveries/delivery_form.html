@@ -28,4 +28,29 @@
     </form>
   </div>
 </div>
+
+{# Автоподстановка клиента: ввёл номер → имя и адрес из прошлой доставки (если был). #}
+<script>
+(function () {
+  var phone = document.getElementById("id_recipient_phone");
+  var name = document.getElementById("id_recipient_name");
+  var addr = document.getElementById("id_dest_address");
+  if (!phone || !name || !addr) return;
+  var lookupUrl = "{% url 'deliveries:recipient_lookup' %}";
+  function fill() {
+    var v = phone.value.trim();
+    if (v.length < 6) return;
+    fetch(lookupUrl + "?phone=" + encodeURIComponent(v), {headers: {"X-Requested-With": "fetch"}})
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.found) return;
+        if (!name.value) name.value = d.name;     // не перезаписываем введённое
+        if (!addr.value) addr.value = d.address;
+      })
+      .catch(function () {});
+  }
+  phone.addEventListener("change", fill);
+  phone.addEventListener("blur", fill);
+})();
+</script>
 {% endblock %}

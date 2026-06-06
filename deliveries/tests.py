@@ -455,6 +455,46 @@ def test_mark_delivered_other_shop_404(client):
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
+def test_recipient_lookup_returns_known_client(client):
+    """Автоподстановка: по номеру возвращаются имя+адрес последней доставки магазина."""
+    shop = _make_shop_with_origin("lk@shop.rs", "Lookup Shop")
+    create_delivery(
+        shop, recipient_name="Ana Anić", phone=normalize_phone("064 123 4567"),
+        dest_address="Knez Mihailova 6",
+    )
+    client.login(username="lk@shop.rs", password="pass12345")
+    resp = client.get("/app/klijent/?phone=064 123 4567")
+    data = resp.json()
+    assert data["found"] is True
+    assert data["name"] == "Ana Anić"
+    assert "Knez Mihailova" in data["address"]
+
+
+def test_recipient_lookup_unknown_returns_not_found(client):
+    _make_shop_with_origin("lk2@shop.rs", "Lookup2")
+    client.login(username="lk2@shop.rs", password="pass12345")
+    assert client.get("/app/klijent/?phone=064 999 8877").json()["found"] is False
+
+
+@override_settings(MAPS_PROVIDER=FAKE_OK)
+def test_recipient_lookup_isolated_by_shop(client):
+    """Магазин не видит клиентов другого магазина."""
+    other = _make_shop_with_origin("other@shop.rs", "Other")
+    create_delivery(
+        other, recipient_name="Tuđ Klijent", phone=normalize_phone("064 123 4567"),
+        dest_address="Negde",
+    )
+    _make_shop_with_origin("me@shop.rs", "Me")
+    client.login(username="me@shop.rs", password="pass12345")
+    assert client.get("/app/klijent/?phone=064 123 4567").json()["found"] is False
+
+
+def test_recipient_lookup_requires_login(client):
+    resp = client.get("/app/klijent/?phone=064 123 4567")
+    assert resp.status_code == 302
+
+
+@override_settings(MAPS_PROVIDER=FAKE_OK)
 def test_cabinet_shows_opted_out(client):
     """Story 3.2 AC#4: магазин видит «otkazao obaveštenja» для отписанного."""
     from notifications.services import opt_out
