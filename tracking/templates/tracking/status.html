@@ -29,24 +29,34 @@
       {% endfor %}
     </ol>
 
-    <div class="track-unsub">
-      <a href="{% url 'tracking:unsubscribe' token %}">Odjavi se sa obaveštenja</a>
-    </div>
+    {% if status == "on_the_way" %}
+      <form method="post" action="{% url 'tracking:mark_received' token %}" class="confirm-block">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Primio sam porudžbinu</button>
+      </form>
+    {% endif %}
 
     {% if rating %}
-      <div class="rate-done">Hvala! Vaša ocena: {{ rating }}★</div>
+      <div class="rate-done">Hvala na oceni! Vaša ocena: {{ rating }}★</div>
     {% elif can_rate %}
       <div class="rate-block">
         <div class="rate-q">Kako je prošla dostava?</div>
+        <div class="rate-hint">Dodirnite zvezdice da ocenite (1 = loše, 5 = odlično).</div>
+        {% comment %}Звёзды в обратном порядке (5→1) + CSS row-reverse: hover/focus
+        подсвечивает выбранную и все левее (нарастающе). Работает и без JS (тап = отправка).{% endcomment %}
         <form method="post" action="{% url 'tracking:rate' token %}" class="stars">
           {% csrf_token %}
-          {% for n in "12345" %}
-            <button type="submit" name="value" value="{{ forloop.counter }}"
-                    class="star" aria-label="Ocena {{ forloop.counter }} od 5">★</button>
+          {% for n in "54321" %}
+            <button type="submit" name="value" value="{{ n }}"
+                    class="star" aria-label="Ocena {{ n }} od 5">★</button>
           {% endfor %}
         </form>
       </div>
     {% endif %}
+
+    <div class="track-unsub">
+      <a href="{% url 'tracking:unsubscribe' token %}">Odjavi se sa obaveštenja</a>
+    </div>
   {% endif %}
 </div>
 {% endblock %}

@@ -100,6 +100,21 @@ def test_rating_invalid_value_ignored(client):
     assert Rating.objects.count() == 0
 
 
+def test_recipient_can_mark_received(client):
+    """Получатель подтверждает получение → статус delivered, появляется блок оценки."""
+    token = _token(Delivery.Status.ON_THE_WAY)
+    url = f"/t/{token.token}/"
+    assert "Primio sam porudžbinu" in client.get(url).content.decode()
+    resp = client.post(f"{url}primljeno/")
+    assert resp.status_code == 302
+    token.delivery.refresh_from_db()
+    assert token.delivery.status == Delivery.Status.DELIVERED
+    body = client.get(url).content.decode()
+    assert "isporučena" in body
+    assert "Primio sam porudžbinu" not in body
+    assert "Kako je prošla dostava" in body  # оценку всё ещё можно поставить
+
+
 def test_unsubscribe_adds_to_blocklist(client):
     """AC#1: ссылка отписки → OptOut + подтверждение."""
     from notifications.models import OptOut

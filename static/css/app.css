@@ -73,13 +73,18 @@ a{color:var(--brand)}
 .step--active .step-dot,.step--done .step-dot{color:var(--brand)}
 .step--active .step-label{color:var(--ink)}
 .step--done .step-label{color:var(--ink)}
+/* подтверждение получения */
+.confirm-block{margin-top:22px}
 /* rating_stars — тап = отправка, без кнопки (UX-DR5); крупный тач-таргет */
 .rate-block{text-align:center;margin-top:24px}
-.rate-q{font-size:15px;color:var(--ink);margin-bottom:10px}
-.stars{display:flex;justify-content:center;gap:6px}
+.rate-q{font-size:16px;font-weight:700;color:var(--ink)}
+.rate-hint{font-size:13px;color:var(--muted);margin:4px 0 10px}
+/* звёзды в DOM-порядке 5→1 + row-reverse → визуально 1..5; нарастающая подсветка */
+.stars{display:flex;flex-direction:row-reverse;justify-content:center;gap:6px}
 .star{background:none;border:0;cursor:pointer;font-size:34px;line-height:1;color:var(--line);
-  padding:8px;min-width:48px;min-height:48px}
-.star:hover,.star:focus{color:var(--rating)}
+  padding:8px;min-width:48px;min-height:48px;transition:color .08s}
+.star:hover,.star:hover ~ .star,
+.star:focus,.star:focus ~ .star{color:var(--rating)}
 .rate-done{text-align:center;margin-top:24px;font-size:16px;font-weight:700;color:var(--delivered)}
 .track-unsub{text-align:center;margin-top:20px;font-size:12px}
 .track-unsub a{color:var(--muted)}

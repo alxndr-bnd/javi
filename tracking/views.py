@@ -71,6 +71,19 @@ def status(request, token):
     return render(request, "tracking/status.html", ctx)
 
 
+@require_POST
+def mark_received(request, token):
+    """Получатель подтверждает получение заказа → статус delivered (идемпотентно)."""
+    token_obj = _active_token(token)
+    if token_obj is None:
+        return render(request, "tracking/status.html", {"expired": True}, status=410)
+    delivery = token_obj.delivery
+    if delivery.status != Delivery.Status.DELIVERED:
+        delivery.status = Delivery.Status.DELIVERED
+        delivery.save(update_fields=["status"])
+    return redirect("tracking:status", token=token)
+
+
 def unsubscribe(request, token):
     """Отписка получателя по ссылке (без логина): номер → блоклист, «Odjavljeni ste»."""
     from notifications.services import opt_out
