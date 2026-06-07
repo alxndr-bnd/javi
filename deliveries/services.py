@@ -14,7 +14,7 @@ from django.utils.translation import gettext
 from common.phone import PhoneResult
 from common.timewindow import format_eta, rating_send_time
 from integrations.providers import get_maps_provider, get_messaging_provider, get_routes_provider
-from notifications.models import Notification
+from notifications.models import Notification, NotificationAttempt
 from notifications.services import is_opted_out
 from tasks.scheduler import get_task_scheduler
 
@@ -158,15 +158,81 @@ def _on_the_way_text(delivery: Delivery, token: str) -> str:
     }
 
 
+def _record_attempts(notification: Notification, result) -> None:
+    """Пишет по строке NotificationAttempt на каждую попытку канала из SendResult.
+
+    Цепочка fallback → result.attempts (по одной на канал, в порядке попыток).
+    Одноканальный провайдер (текущие фейки) → attempts пуст: зеркалим верхний
+    уровень SendResult одной строкой, чтобы таблица попыток всегда была заполнена.
+    Идемпотентно при повторной отправке: старые попытки этого Notification стираем.
+    """
+    attempts = getattr(result, "attempts", ()) or ()
+    if not attempts:
+        # Синтетическая единственная попытка из самого SendResult.
+        attempts = (
+            _AttemptView(
+                channel=result.channel,
+                ok=result.ok,
+                provider_message_id=result.provider_message_id,
+            ),
+        )
+    # Resend переиспользует Notification — чистим прежние попытки, не плодим дубли.
+    notification.attempts.all().delete()
+    NotificationAttempt.objects.bulk_create(
+        [
+            NotificationAttempt(
+                notification=notification,
+                channel=a.channel or "",
+                ok=bool(a.ok),
+                provider_message_id=a.provider_message_id or "",
+                attempt_no=i + 1,
+            )
+            for i, a in enumerate(attempts)
+        ]
+    )
+
+
+@dataclass(frozen=True)
+class _AttemptView:
+    """Лёгкий вид на одну попытку (для одноканального SendResult без attempts)."""
+
+    channel: str
+    ok: bool
+    provider_message_id: str | None = None
+
+
 def _send_and_record(notification: Notification, delivery: Delivery, text: str):
-    """Отправляет текст и фиксирует исход на Notification (канал/статус/id/время)."""
+    """Отправляет текст и фиксирует исход на Notification + per-channel попытки.
+
+    Если провайдер вернул цепочку (result.attempts), победитель — первая ok-попытка:
+    её канал/provider_message_id попадают на Notification. Если ok нет — FAILED.
+    Одноканальный SendResult (attempts пуст) сохраняет прежнее поведение.
+    """
     result = get_messaging_provider().send_text(delivery.recipient_phone, text)
-    notification.status = Notification.Status.SENT if result.ok else Notification.Status.FAILED
-    notification.channel = result.channel
-    notification.provider_message_id = result.provider_message_id or ""
-    notification.sent_at = timezone.now() if result.ok else None
+
+    attempts = getattr(result, "attempts", ()) or ()
+    winner = next((a for a in attempts if a.ok), None)
+
+    if attempts:
+        # Цепочка fallback: победитель определяет канал/id; ok = есть ли победитель.
+        ok = winner is not None
+        channel = winner.channel if winner else ""
+        provider_message_id = winner.provider_message_id if winner else ""
+    else:
+        # Одноканальный провайдер — поведение как раньше, из верхнего уровня SendResult.
+        ok = result.ok
+        channel = result.channel
+        provider_message_id = result.provider_message_id or ""
+
+    notification.status = Notification.Status.SENT if ok else Notification.Status.FAILED
+    notification.channel = channel
+    notification.provider_message_id = provider_message_id or ""
+    notification.sent_at = timezone.now() if ok else None
     notification.save(update_fields=["status", "channel", "provider_message_id", "sent_at"])
-    if not result.ok:
+
+    _record_attempts(notification, result)
+
+    if not ok:
         logger.error("notification send failed for delivery %s", delivery.id)
     return result
 

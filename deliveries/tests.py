@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 
 import pytest
@@ -678,3 +679,179 @@ def test_quota_widget_shown_in_cabinet(client):
     summary = {b["key"]: b for b in resp.context["free_quota"]}
     assert summary["viber"]["used"] == 3
     assert "Free quota left" in resp.content.decode()
+
+
+# --- P1: per-channel NotificationAttempt records (multi-channel fallback) ---
+
+
+from dataclasses import dataclass, field  # noqa: E402
+
+from deliveries import services as svc  # noqa: E402
+
+
+@dataclass(frozen=True)
+class _Attempt:
+    """Локальный вид одной попытки канала (дублирует контракт AttemptResult)."""
+
+    channel: str
+    ok: bool
+    provider_message_id: str | None = None
+
+
+@dataclass(frozen=True)
+class _SendResult:
+    """SendResult с цепочкой попыток — конструируем прямо в тесте (без реального провайдера)."""
+
+    ok: bool
+    provider_message_id: str | None = None
+    channel: str = ""
+    attempts: tuple = field(default_factory=tuple)
+
+
+class _StubProvider:
+    """Возвращает заранее заданный SendResult из _send_and_record (через get_messaging_provider)."""
+
+    result = None
+
+    def send_text(self, to_e164, text):
+        return type(self).result
+
+
+def _patch_provider(monkeypatch, result):
+    _StubProvider.result = result
+    monkeypatch.setattr(svc, "get_messaging_provider", lambda: _StubProvider())
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK)
+def test_fallback_chain_records_attempts_and_picks_winner(monkeypatch):
+    """Цепочка viber(fail)→sms(ok): две попытки по порядку, родитель = победитель (sms)."""
+    _, delivery = _geocoded_delivery("fb1@shop.rs", "FB1")
+    _patch_provider(
+        monkeypatch,
+        _SendResult(
+            ok=True,
+            provider_message_id="sms-99",
+            channel="sms",
+            attempts=(
+                _Attempt(channel="viber", ok=False, provider_message_id=""),
+                _Attempt(channel="sms", ok=True, provider_message_id="sms-99"),
+            ),
+        ),
+    )
+    result = start_delivery(delivery)
+    assert result.ok and result.sent
+
+    n = delivery.notifications.get(kind=Notification.Kind.ON_THE_WAY)
+    assert n.status == Notification.Status.SENT
+    assert n.channel == "sms"  # победивший канал на родителе
+    assert n.provider_message_id == "sms-99"
+
+    attempts = list(n.attempts.all())
+    assert [(a.attempt_no, a.channel, a.ok) for a in attempts] == [
+        (1, "viber", False),
+        (2, "sms", True),
+    ]
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK)
+def test_fallback_all_fail_marks_failed(monkeypatch):
+    """Все каналы упали → родитель FAILED, обе попытки сохранены, канал пуст."""
+    _, delivery = _geocoded_delivery("fb2@shop.rs", "FB2")
+    _patch_provider(
+        monkeypatch,
+        _SendResult(
+            ok=False,
+            attempts=(
+                _Attempt(channel="viber", ok=False),
+                _Attempt(channel="sms", ok=False),
+            ),
+        ),
+    )
+    result = start_delivery(delivery)
+    assert result.ok and result.sent is False
+
+    n = delivery.notifications.get(kind=Notification.Kind.ON_THE_WAY)
+    assert n.status == Notification.Status.FAILED
+    assert n.channel == ""
+    assert n.attempts.count() == 2
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_single_channel_path_mirrors_one_attempt():
+    """Одноканальный фейк (attempts пуст): прежнее поведение + одна зеркальная попытка."""
+    FakeMessagingProvider.sent = []
+    _, delivery = _geocoded_delivery("sc1@shop.rs", "SC1")
+    start_delivery(delivery)
+
+    n = delivery.notifications.get(kind=Notification.Kind.ON_THE_WAY)
+    assert n.status == Notification.Status.SENT
+    assert n.channel == "viber"
+    assert n.provider_message_id == "fake-msg-1"
+    attempts = list(n.attempts.all())
+    assert len(attempts) == 1
+    assert (attempts[0].channel, attempts[0].ok, attempts[0].provider_message_id) == (
+        "viber", True, "fake-msg-1",
+    )
+
+
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_resend_replaces_attempts_no_duplicates():
+    """Resend переиспользует Notification и заменяет попытки (без накопления дублей)."""
+    _, delivery = _geocoded_delivery("sc2@shop.rs", "SC2")
+    start_delivery(delivery)
+    resend_on_the_way(delivery)
+
+    n = delivery.notifications.get(kind=Notification.Kind.ON_THE_WAY)
+    assert n.attempts.count() == 1  # не накопилось
+
+
+def test_logical_message_uniqueness_constraint():
+    """Идемпотентность: дубль (delivery, kind, logical_message_id) запрещён БД."""
+    import uuid
+
+    from django.db import IntegrityError
+
+    shop = _make_shop_with_origin("uniq@shop.rs", "Uniq Shop")
+    delivery, _ = create_delivery(
+        shop, recipient_name="Ana", phone=normalize_phone("064 123 4567"), dest_address="adr"
+    )
+    lid = uuid.uuid4()
+    Notification.objects.create(
+        delivery=delivery, kind=Notification.Kind.RATING_REQUEST, logical_message_id=lid
+    )
+    with pytest.raises(IntegrityError):
+        Notification.objects.create(
+            delivery=delivery, kind=Notification.Kind.RATING_REQUEST, logical_message_id=lid
+        )
+
+
+@override_settings(
+    ROUTES_PROVIDER=ROUTES_OK, INFOBIP_WEBHOOK_SECRET="s3cret", MESSAGING_PROVIDER=MSG_OK
+)
+def test_receipt_updates_parent_via_winning_message_id(client, monkeypatch):
+    """Receipt по winning provider_message_id обновляет статус родительского Notification."""
+    _, delivery = _geocoded_delivery("rc1@shop.rs", "RC1")
+    _patch_provider(
+        monkeypatch,
+        _SendResult(
+            ok=True,
+            provider_message_id="win-7",
+            channel="sms",
+            attempts=(
+                _Attempt(channel="viber", ok=False),
+                _Attempt(channel="sms", ok=True, provider_message_id="win-7"),
+            ),
+        ),
+    )
+    start_delivery(delivery)
+    n = delivery.notifications.get(kind=Notification.Kind.ON_THE_WAY)
+    assert n.provider_message_id == "win-7"
+
+    report = {"results": [{"messageId": "win-7", "status": {"groupName": "DELIVERED"}}]}
+    client.post(
+        "/webhooks/infobip/reports/?secret=s3cret",
+        data=json.dumps(report),
+        content_type="application/json",
+    )
+    n.refresh_from_db()
+    assert n.status == Notification.Status.DELIVERED
