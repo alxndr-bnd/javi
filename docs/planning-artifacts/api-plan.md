@@ -19,6 +19,7 @@ _Создано: 2026-06-07. Статус: план (до реализации).
 | Pošalji ponovo | `POST /api/v1/deliveries/{id}/notifications/resend` |
 | Obriši / Vrati | `DELETE /api/v1/deliveries/{id}` / `POST .../restore` |
 | Статус/детали | `GET /api/v1/deliveries/{id}`, `GET /api/v1/deliveries` |
+| Редактировать магазин / вебхуки | `GET`/`PATCH /api/v1/shop` |
 
 **Индустриально-стандартные статусы (маппинг на внутренние):** ориентир — AfterShip 7-статусная модель.
 | Внутренний | API (industry-standard) |
@@ -144,5 +145,7 @@ DELETE /api/v1/deliveries/{id}            # soft delete
 - ✅ **Epic API-3 (вебхуки мерчанту)** — `Shop.webhook_url/secret` (admin+профиль), события delivery.started/notification.delivered|read|failed/delivery.delivered/rating.created, HMAC `Javi-Signature`, доставка через Cloud Tasks (очередь javi-rating), failure-safe. _Субагент → интегрировано; релиз `v0.28.0`._
 - ✅ **Epic API-1 (регистрация)** — self-service sign-up на `/accounts/register/` (User+Shop, авто-логин). _Субагент → интегрировано; релиз `v0.27.0`._
 - ✅ **Epic API-4 (доки)** — OpenAPI `/api/schema/`, Swagger `/api/docs/`, ReDoc `/api/redoc/` (публично); `/app/api` со ссылками + curl quick-start. _Релиз `v0.29.0`._
+
+- ✅ **Паритет завершён** — `GET/PATCH /api/v1/shop` (имя, адрес+геокод, webhook_url/secret). Все UI-действия жизненного цикла доставки + конфиг магазина доступны через API со стандартными статусами. _Релиз `v0.30.0`._
 
 > Отмечаем по мере выполнения: статус + commit/release тег. Реализация — TDD (тесты → код → рефактор → следующий пункт), многозадачные части — субагентами параллельно.

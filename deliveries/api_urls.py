@@ -5,6 +5,7 @@ from . import api
 app_name = "api"
 
 urlpatterns = [
+    path("shop", api.ShopView.as_view(), name="shop"),
     path("deliveries", api.DeliveriesCollectionView.as_view(), name="deliveries"),
     path("deliveries/<int:pk>", api.DeliveryDetailView.as_view(), name="delivery_detail"),
     path("deliveries/<int:pk>/start", api.DeliveryStartView.as_view(), name="delivery_start"),

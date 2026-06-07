@@ -40,6 +40,7 @@ from .services import (
     mark_ready,
     resend_on_the_way,
     restore,
+    set_shop_origin,
     soft_delete,
     start_delivery,
 )
@@ -572,3 +573,63 @@ class DeliveryResendView(_ShopScopedView):
         return Response(
             {"delivery": body, "notification": body["notification"]}, status=200
         )
+
+
+# --- Профиль магазина (паритет: редактирование магазина + вебхуки через API) ---
+
+
+def serialize_shop(shop) -> dict:
+    return {
+        "name": shop.name,
+        "address": shop.origin_address,
+        "geocoded": shop.origin_lat is not None and shop.origin_lng is not None,
+        "webhook_url": shop.webhook_url,
+        "webhook_configured": bool(shop.webhook_url and shop.webhook_secret),
+    }
+
+
+class ShopSerializer(serializers.Serializer):
+    name = serializers.CharField(required=False, help_text=_("Store name."))
+    address = serializers.CharField(
+        required=False, allow_blank=True,
+        help_text=_("Store address; geocoded server-side into the ETA origin."),
+    )
+    webhook_url = serializers.URLField(
+        required=False, allow_blank=True,
+        help_text=_("Merchant URL that receives signed event webhooks."),
+    )
+    webhook_secret = serializers.CharField(
+        required=False, allow_blank=True,
+        help_text=_("Secret for the Javi-Signature HMAC of webhook bodies."),
+    )
+
+
+class ShopView(_ShopScopedView):
+    """Профиль магазина: имя, адрес (origin), настройки вебхука — GET и PATCH."""
+
+    serializer_class = ShopSerializer
+
+    @extend_schema(responses={200: ShopSerializer}, summary="Get store profile")
+    def get(self, request):
+        return Response(serialize_shop(self.shop), status=200)
+
+    @extend_schema(
+        request=ShopSerializer, responses={200: ShopSerializer},
+        summary="Update store profile / webhook settings",
+    )
+    def patch(self, request):
+        serializer = ShopSerializer(data=request.data, partial=True)
+        if not serializer.is_valid():
+            raise ApiError("invalid_request", _flatten_message(serializer.errors), 400)
+        data = serializer.validated_data
+        shop = self.shop
+        fields = []
+        for f in ("name", "webhook_url", "webhook_secret"):
+            if f in data:
+                setattr(shop, f, data[f])
+                fields.append(f)
+        if fields:
+            shop.save(update_fields=fields)
+        if data.get("address"):
+            set_shop_origin(shop, data["address"])  # геокод origin (через сервис)
+        return Response(serialize_shop(shop), status=200)

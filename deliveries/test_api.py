@@ -592,3 +592,50 @@ def test_create_key_requires_login(client):
     resp = client.post("/app/api-kljucevi/novi/")
     assert resp.status_code == 302
     assert "/accounts/login/" in resp["Location"]
+
+
+# --- /api/v1/shop (store profile + webhook config; UI↔API parity) ---
+
+SHOP_URL = "/api/v1/shop"
+
+
+def test_shop_requires_key(client):
+    assert client.get(SHOP_URL).status_code == 401
+
+
+def test_get_shop(client):
+    shop, key = _shop_and_key()
+    resp = client.get(SHOP_URL, **_auth(key))
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == shop.name
+    assert "webhook_url" in data and "address" in data
+
+
+@override_settings(MAPS_PROVIDER="integrations.testing.FakeMapsProvider")
+def test_patch_shop_name_and_address_geocodes(client):
+    shop, key = _shop_and_key()
+    resp = client.patch(
+        SHOP_URL,
+        data='{"name":"Nova Pizza","address":"Knez Mihailova 6"}',
+        content_type="application/json",
+        **_auth(key),
+    )
+    assert resp.status_code == 200
+    shop.refresh_from_db()
+    assert shop.name == "Nova Pizza"
+    assert shop.origin_lat is not None  # geocoded
+
+
+def test_patch_shop_webhook(client):
+    shop, key = _shop_and_key()
+    resp = client.patch(
+        SHOP_URL,
+        data='{"webhook_url":"https://merchant.example/hook","webhook_secret":"s3cr"}',
+        content_type="application/json",
+        **_auth(key),
+    )
+    assert resp.status_code == 200
+    shop.refresh_from_db()
+    assert shop.webhook_url == "https://merchant.example/hook"
+    assert shop.webhook_secret == "s3cr"
