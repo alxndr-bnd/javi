@@ -1,0 +1,58 @@
+{% load i18n %}
+{% comment %}Единый хедер кабинета (list + board) — без дублирования. Вторичная навигация в «⋯»-меню.{% endcomment %}
+<header class="hdr">
+  <div class="hdr-row">
+    <a href="{% url 'deliveries:list' %}" class="brand">javi<span>.</span></a>
+
+    <div class="hdr-actions">
+      <form method="post" action="{% url 'deliveries:set_view' %}" class="view-switch">
+        {% csrf_token %}
+        <button type="submit" name="mode" value="list" class="view-tab{% if not kanban_view %} is-active{% endif %}">{% trans "List" %}</button>
+        <button type="submit" name="mode" value="board" class="view-tab{% if kanban_view %} is-active{% endif %}">{% trans "Board" %}</button>
+      </form>
+
+      <details class="menu">
+        <summary class="menu-btn" aria-label="{% trans 'Menu' %}" aria-haspopup="menu">
+          <span></span><span></span><span></span>
+        </summary>
+        <div class="menu-pop" role="menu">
+          <a href="{% url 'deliveries:profile' %}" role="menuitem">{% trans "Store" %}</a>
+          <a href="{% url 'deliveries:deleted' %}" role="menuitem">{% trans "Deleted orders" %}</a>
+          <a href="{% url 'deliveries:api_docs' %}" role="menuitem">{% trans "Integration API" %}</a>
+          <div class="menu-sep"></div>
+          <div class="menu-lang">{% include "_lang_switch.html" %}</div>
+          <div class="menu-sep"></div>
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="menu-signout" role="menuitem">{% trans "Sign out" %}</button>
+          </form>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  {% if shop %}
+    <div class="hdr-shop">
+      <span class="hdr-shop-name">{{ shop.name }}</span>
+      {% if shop.origin_address %}<span class="hdr-shop-addr">{{ shop.origin_address }}</span>{% endif %}
+    </div>
+  {% endif %}
+
+  {% if messages %}
+    <div class="hdr-msgs">
+      {% for message in messages %}
+        <div class="msg {% if message.tags %}msg-{{ message.tags }}{% endif %}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</header>
+
+<script>
+// Закрыть «⋯»-меню по клику вне него / Esc (прогрессивное улучшение).
+(function () {
+  var m = document.querySelector(".menu");
+  if (!m) return;
+  document.addEventListener("click", function (e) { if (!m.contains(e.target)) m.removeAttribute("open"); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") m.removeAttribute("open"); });
+})();
+</script>

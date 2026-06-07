@@ -17,10 +17,37 @@ body{
   padding:5px 12px;line-height:1.3}
 .alpha-bar strong{letter-spacing:.08em}
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
-.topnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.topnav-link{font-size:13px;color:var(--muted);text-decoration:none;padding:6px 4px}
-.btn-compact{width:auto;padding:6px 12px;font-size:13px}
 .logo{font-weight:800;font-size:18px}.logo span{color:var(--brand)}
+/* --- единый хедер кабинета (list + board) --- */
+.hdr{margin-bottom:14px}
+.hdr-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{font-weight:800;font-size:18px;color:var(--ink);text-decoration:none}
+.brand span{color:var(--brand)}
+.hdr-actions{display:flex;align-items:center;gap:10px}
+/* «⋯»-меню вторичной навигации (details/summary, без JS-фреймворка) */
+.menu{position:relative}
+.menu>summary{list-style:none;cursor:pointer;width:38px;height:34px;border:1px solid var(--line);
+  border-radius:10px;background:var(--surface);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px}
+.menu>summary::-webkit-details-marker{display:none}
+.menu>summary span{width:16px;height:2px;background:var(--ink);border-radius:2px}
+.menu[open]>summary{border-color:var(--brand)}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);min-width:200px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(22,27,41,.16);
+  padding:6px;z-index:60}
+.menu-pop a,.menu-signout{display:block;width:100%;box-sizing:border-box;text-align:left;
+  padding:9px 10px;font-size:14px;color:var(--ink);text-decoration:none;border:0;background:none;
+  border-radius:8px;cursor:pointer}
+.menu-pop a:hover,.menu-signout:hover{background:var(--bg)}
+.menu-signout{color:var(--failed);font-weight:700}
+.menu-sep{height:1px;background:var(--line);margin:5px 2px}
+.menu-lang{padding:6px 10px}
+/* строка магазина */
+.hdr-shop{margin-top:8px;font-size:13px;display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline}
+.hdr-shop-name{font-weight:700;color:var(--ink)}
+.hdr-shop-addr{color:var(--muted)}
+.hdr-shop-addr::before{content:"· ";color:var(--line)}
+.hdr-msgs{margin-top:10px}
 a{color:var(--brand)}
 .h{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:14px 2px 10px}
 .wrap--wide{max-width:1200px;padding-left:8px;padding-right:8px}
@@ -37,16 +64,10 @@ a{color:var(--brand)}
   border:1px solid var(--line);border-radius:14px;padding:8px}
 .kanban-col-h{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;
   letter-spacing:.03em;margin:2px 2px 10px}
-.shop-bar{font-size:12px;color:var(--muted);margin:-6px 2px 4px}
-.shop-bar-name{font-weight:700;color:var(--ink)}
-.shop-bar-addr{margin-left:2px}
 .completed{margin-top:4px}
 .completed-summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
 .completed-summary::before{content:"▸";font-size:11px}
 .completed[open] .completed-summary::before{content:"▾"}
-.footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);
-  font-size:13px;color:var(--muted);display:flex;gap:8px;justify-content:center;align-items:center}
-.footer a{color:var(--muted)}
 .lang-switch{display:inline-flex;gap:4px}
 .lang-link{background:none;border:0;color:var(--muted);font-size:12px;cursor:pointer;padding:0 2px}
 .lang-link.is-active{color:var(--ink);font-weight:800}

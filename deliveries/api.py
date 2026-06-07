@@ -136,7 +136,10 @@ class NotificationSerializer(serializers.Serializer):
 
 
 class DeliverySerializer(serializers.Serializer):
-    """Доставка в ответах API. `status` — стандартный, `status_internal` — код Javi."""
+    """Delivery in API responses.
+
+    `status` is industry-standard; `status_internal` is the Javi code.
+    """
 
     id = serializers.IntegerField(read_only=True)
     status = serializers.ChoiceField(
@@ -227,7 +230,7 @@ def serialize_delivery(delivery: Delivery) -> dict:
 
 
 class _ShopScopedView(GenericAPIView):
-    """Общая база: магазин ключа — `request.user`; доставки скоупятся по нему."""
+    """Base view: the API key's shop is `request.user`; all data is scoped to it."""
 
     @property
     def shop(self):
@@ -605,7 +608,7 @@ class ShopSerializer(serializers.Serializer):
 
 
 class ShopView(_ShopScopedView):
-    """Профиль магазина: имя, адрес (origin), настройки вебхука — GET и PATCH."""
+    """Store profile: name, address (ETA origin) and webhook settings — GET and PATCH."""
 
     serializer_class = ShopSerializer
 

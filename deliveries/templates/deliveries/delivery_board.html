@@ -3,37 +3,7 @@
 {% block title %}{% trans "Board" %} · Javi{% endblock %}
 {% block body %}
 <div class="wrap wrap--wide">
-  <div class="topbar">
-    <div class="logo">javi<span>.</span></div>
-    <div class="topnav">
-      <a href="{% url 'deliveries:deleted' %}" class="topnav-link">{% trans "Deleted" %}</a>
-      <a href="{% url 'deliveries:api_docs' %}" class="topnav-link">{% trans "API" %}</a>
-      <a href="{% url 'deliveries:profile' %}" class="btn btn-ghost btn-compact">{% trans "Store" %}</a>
-      <form method="post" action="{% url 'accounts:logout' %}" style="margin:0">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-ghost btn-compact">{% trans "Sign out" %}</button>
-      </form>
-    </div>
-  </div>
-
-  <form method="post" action="{% url 'deliveries:set_view' %}" class="view-switch">
-    {% csrf_token %}
-    <button type="submit" name="mode" value="list" class="view-tab">{% trans "List" %}</button>
-    <button type="submit" name="mode" value="board" class="view-tab is-active">{% trans "Board" %}</button>
-  </form>
-
-  {% if shop %}
-    <div class="shop-bar">
-      <span class="shop-bar-name">{{ shop.name }}</span>
-      {% if shop.origin_address %}<span class="shop-bar-addr">· {{ shop.origin_address }}</span>{% endif %}
-    </div>
-  {% endif %}
-
-  {% if messages %}
-    {% for message in messages %}
-      <div class="msg {% if message.tags %}msg-{{ message.tags }}{% endif %}">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
+  {% include "deliveries/_header.html" %}
 
   <div class="kanban">
     <div class="kanban-col">
@@ -52,14 +22,6 @@
       <div class="kanban-col-h">{% trans "Done" %} · {{ zavrseno|length }}</div>
       {% for d in zavrseno %}{% include "deliveries/_delivery_card.html" %}{% endfor %}
     </div>
-  </div>
-
-  <div class="footer">
-    <a href="{% url 'deliveries:deleted' %}">{% trans "Deleted orders" %}</a>
-    <span>·</span>
-    <a href="{% url 'deliveries:api_docs' %}">{% trans "Integration API" %}</a>
-    <span>·</span>
-    {% include "_lang_switch.html" %}
   </div>
 </div>
 
