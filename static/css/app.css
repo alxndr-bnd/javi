@@ -72,7 +72,9 @@ a{color:var(--brand)}
 .lang-link{background:none;border:0;color:var(--muted);font-size:12px;cursor:pointer;padding:0 2px}
 .lang-link.is-active{color:var(--ink);font-weight:800}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);padding:13px 14px;margin-bottom:10px}
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .card-name{font-size:15px;font-weight:700}
+.card-id{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
 .card-addr{font-size:13px;color:var(--muted);margin-top:2px}
 .card-meta{margin-top:8px;display:flex;align-items:center;gap:8px}
 .card-eta{font-size:13px;font-weight:700;color:var(--on-the-way)}

@@ -249,8 +249,11 @@ def test_create_view_success_appears_in_novo(client):
     assert shop.deliveries.count() == 1
 
     list_resp = client.get("/app/")
-    assert list_resp.context["novo"][0].recipient_name == "Ana"
-    assert "New" in list_resp.content.decode()
+    d = list_resp.context["novo"][0]
+    assert d.recipient_name == "Ana"
+    body = list_resp.content.decode()
+    assert "New" in body
+    assert f"#{d.id}" in body  # id заказа на карточке
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
