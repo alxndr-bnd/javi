@@ -126,6 +126,18 @@ LOGOUT_REDIRECT_URL = "/"
 # За прокси Cloud Run — доверяем X-Forwarded-Proto для HTTPS.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Усиление безопасности — включается явным флагом SECURE_SSL=True в проде (deploy.yaml).
+# Выключено локально и в тестах (там запросы по http без X-Forwarded-Proto).
+SECURE_SSL = env.bool("SECURE_SSL", default=False)
+if SECURE_SSL:
+    SESSION_COOKIE_SECURE = True  # сессионную куку только по HTTPS
+    CSRF_COOKIE_SECURE = True  # CSRF-куку только по HTTPS
+    SECURE_SSL_REDIRECT = True  # http → https (с учётом X-Forwarded-Proto)
+    SECURE_HSTS_SECONDS = 31536000  # HSTS на год
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+SESSION_COOKIE_HTTPONLY = True  # дефолт True, фиксируем явно (безопасно всегда)
+
 # Интеграции — провайдер карт (геокодинг + ETA). Ключ из env/Secret Manager, не в коде.
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 MAPS_PROVIDER = env(

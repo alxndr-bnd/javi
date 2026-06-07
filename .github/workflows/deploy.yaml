@@ -85,7 +85,7 @@ jobs:
             --port=8080 \
             --timeout=60 \
             --add-cloudsql-instances="serbito:europe-west1:serbitodb" \
-            --set-env-vars="^@@^DEBUG=False@@ALLOWED_HOSTS=javi.serbito.rs,.run.app@@CSRF_TRUSTED_ORIGINS=https://javi.serbito.rs@@STATICFILES_BACKEND=whitenoise.storage.CompressedManifestStaticFilesStorage@@TASK_SCHEDULER=tasks.scheduler.CloudTasksScheduler" \
+            --set-env-vars="^@@^DEBUG=False@@ALLOWED_HOSTS=javi.serbito.rs,.run.app@@CSRF_TRUSTED_ORIGINS=https://javi.serbito.rs@@STATICFILES_BACKEND=whitenoise.storage.CompressedManifestStaticFilesStorage@@TASK_SCHEDULER=tasks.scheduler.CloudTasksScheduler@@SECURE_SSL=True" \
             --set-secrets="SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest,TASKS_SECRET=javi-tasks-secret:latest"
         # One-time domain mapping (javi.serbito.rs -> service) — see SETUP_CICD.md.
         # Требуются Secret Manager секреты javi-secret-key, javi-database-url,
