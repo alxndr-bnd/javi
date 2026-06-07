@@ -652,3 +652,29 @@ def test_ui_list_oldest_first(client):
     client.login(username="ord@shop.rs", password="pass12345")
     novo = client.get("/app/").context["novo"]
     assert [d.recipient_name for d in novo] == ["Older", "Newer"]
+
+
+# --- Free-tier quota counter (global, shown to all signed-in accounts) ---
+
+
+def test_quota_widget_hidden_for_anonymous(client):
+    """Аноним не видит виджет квот (и context-процессор молчит)."""
+    resp = client.get("/accounts/login/")
+    assert "free_quota" not in resp.context
+
+
+def test_quota_widget_shown_in_cabinet(client):
+    """Залогиненный магазин видит блок остатка бесплатных квот в кабинете."""
+    from django.core.cache import cache
+
+    from integrations.models import METRIC_VIBER, ProviderUsage
+
+    cache.clear()  # 60-сек кэш сводки не должен отдавать чужой результат между тестами
+    _make_shop_with_origin("quota@shop.rs", "Quota Shop")
+    ProviderUsage.record(METRIC_VIBER, 3)
+    client.login(username="quota@shop.rs", password="pass12345")
+    resp = client.get("/app/")
+    assert resp.status_code == 200
+    summary = {b["key"]: b for b in resp.context["free_quota"]}
+    assert summary["viber"]["used"] == 3
+    assert "Free quota left" in resp.content.decode()

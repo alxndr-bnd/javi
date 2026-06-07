@@ -19,6 +19,23 @@
           <a href="{% url 'deliveries:profile' %}" role="menuitem">{% trans "Store" %}</a>
           <a href="{% url 'deliveries:deleted' %}" role="menuitem">{% trans "Deleted orders" %}</a>
           <a href="{% url 'deliveries:api_docs' %}" role="menuitem">{% trans "Integration API" %}</a>
+          {% if free_quota %}
+            <div class="menu-sep"></div>
+            <div class="quota" role="group" aria-label="{% trans 'Free quota' %}">
+              <div class="quota-title">{% trans "Free quota left" %}</div>
+              {% for q in free_quota %}
+                <div class="quota-row">
+                  <span class="quota-name">{{ q.label }}</span>
+                  {% if q.limit > 0 %}
+                    <span class="quota-bar"><span class="quota-fill" style="width:{{ q.pct }}%"></span></span>
+                    <span class="quota-num">{{ q.remaining }}</span>
+                  {% else %}
+                    <span class="quota-num">{{ q.used }}</span>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
           <div class="menu-sep"></div>
           <div class="menu-lang">{% include "_lang_switch.html" %}</div>
           <div class="menu-sep"></div>

@@ -65,6 +65,7 @@ TEMPLATES = [
                 "django.template.context_processors.i18n",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "deliveries.context_processors.free_quota",
             ],
         },
     },
@@ -137,6 +138,14 @@ if SECURE_SSL:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 SESSION_COOKIE_HTTPONLY = True  # дефолт True, фиксируем явно (безопасно всегда)
+
+# Учёт расхода квот free-tier (глобально, account-wide). Считаем свои вызовы провайдеров.
+USAGE_METERING_ENABLED = env.bool("USAGE_METERING_ENABLED", default=True)
+# Бесплатные лимиты. Maps — помесячный free tier (по умолч. 10000 вызовов/мес, общий бакет
+# геокодинг+маршруты). Viber/SMS — пожизненный остаток триала; выставить реальные значения.
+FREE_QUOTA_MAPS = env.int("FREE_QUOTA_MAPS", default=10000)
+FREE_QUOTA_VIBER = env.int("FREE_QUOTA_VIBER", default=1000)
+FREE_QUOTA_SMS = env.int("FREE_QUOTA_SMS", default=1000)
 
 # Интеграции — провайдер карт (геокодинг + ETA). Ключ из env/Secret Manager, не в коде.
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
