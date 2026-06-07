@@ -89,7 +89,8 @@ class Delivery(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        # По умолчанию — по времени создания, старые → новые (дефолт для UI и API).
+        ordering = ["created_at"]
 
     def __str__(self):
         return f"{self.recipient_name} — {self.dest_address}"

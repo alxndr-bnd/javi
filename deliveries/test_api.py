@@ -639,3 +639,26 @@ def test_patch_shop_webhook(client):
     shop.refresh_from_db()
     assert shop.webhook_url == "https://merchant.example/hook"
     assert shop.webhook_secret == "s3cr"
+
+
+# --- сортировка списка: дефолт старые→новые, ?sort override ---
+
+def test_list_oldest_first_by_default_and_sort_override(client):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    shop, key = _shop_and_key()
+    older = Delivery.objects.create(
+        shop=shop, recipient_name="Older", recipient_phone="+381641111111", dest_address="a"
+    )
+    newer = Delivery.objects.create(
+        shop=shop, recipient_name="Newer", recipient_phone="+381642222222", dest_address="b"
+    )
+    Delivery.objects.filter(pk=older.pk).update(created_at=timezone.now() - timedelta(hours=1))
+
+    ids = [d["id"] for d in client.get("/api/v1/deliveries", **_auth(key)).json()]
+    assert ids == [older.pk, newer.pk]  # старые → новые по умолчанию
+
+    desc = client.get("/api/v1/deliveries?sort=-created_at", **_auth(key)).json()
+    assert [d["id"] for d in desc] == [newer.pk, older.pk]  # override

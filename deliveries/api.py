@@ -268,7 +268,16 @@ class DeliveriesCollectionView(_ShopScopedView):
                 ),
                 required=False,
                 enum=STANDARD_STATUSES,
-            )
+            ),
+            OpenApiParameter(
+                name="sort",
+                description=_(
+                    "Sort order. Default `created_at` (oldest first); use "
+                    "`-created_at` for newest first."
+                ),
+                required=False,
+                enum=["created_at", "-created_at"],
+            ),
         ],
         responses={200: DeliverySerializer(many=True)},
     )
@@ -278,6 +287,9 @@ class DeliveriesCollectionView(_ShopScopedView):
         if status_filter:
             internal = STATUS_MAP_REVERSE.get(status_filter, status_filter)
             qs = qs.filter(status=internal)
+        # По умолчанию — старые → новые (Meta.ordering); ?sort=-created_at для обратного.
+        if request.query_params.get("sort") == "-created_at":
+            qs = qs.order_by("-created_at")
         data = [serialize_delivery(d) for d in qs]
         return Response(data, status=status.HTTP_200_OK)
 

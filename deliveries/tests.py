@@ -635,3 +635,20 @@ def test_cabinet_shows_opted_out(client):
     client.login(username="oo@shop.rs", password="pass12345")
     body = client.get("/app/").content.decode()
     assert "opted out of notifications" in body
+
+
+def test_ui_list_oldest_first(client):
+    """UI: в группе заказы старые → новые (дефолт Meta.ordering)."""
+    from datetime import timedelta
+
+    shop = _make_shop_with_origin("ord@shop.rs", "Ord Shop")
+    older = Delivery.objects.create(
+        shop=shop, recipient_name="Older", recipient_phone="+381641111111", dest_address="a"
+    )
+    Delivery.objects.create(
+        shop=shop, recipient_name="Newer", recipient_phone="+381642222222", dest_address="b"
+    )
+    Delivery.objects.filter(pk=older.pk).update(created_at=timezone.now() - timedelta(hours=1))
+    client.login(username="ord@shop.rs", password="pass12345")
+    novo = client.get("/app/").context["novo"]
+    assert [d.recipient_name for d in novo] == ["Older", "Newer"]
