@@ -24,4 +24,8 @@ Cloud Run service `javi` as env `INFOBIP_API_KEY`. See [[javi-infobip]].
 - Optional follow-up: scrub the leaked value from any local logs/transcripts.
 
 ## Progress
-- (pending — scheduled "soon" per owner, 2026-06-07)
+- **DONE 2026-06-07.** Owner created a new Infobip key and revoked the leaked one in the
+  portal. New key added as `javi-infobip-key` v2 (verified clean: 69 bytes, no trailing `\n`).
+  Applied to prod via release `v0.43.0` (Cloud Run resolves `:latest` at deploy → revision
+  `javi-00042` reads v2). Smoke test passed: a real Viber notification was delivered on the new
+  key. Secret version 1 (old key) disabled. Leaked value is dead (revoked at Infobip).
