@@ -482,6 +482,7 @@ dependencies = [
     { name = "phonenumbers" },
     { name = "psycopg", extra = ["binary"] },
     { name = "requests" },
+    { name = "tzdata" },
     { name = "whitenoise" },
 ]
 
@@ -503,6 +504,7 @@ requires-dist = [
     { name = "phonenumbers", specifier = ">=9.0.31" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
     { name = "requests", specifier = ">=2.34.2" },
+    { name = "tzdata", specifier = ">=2026.2" },
     { name = "whitenoise", specifier = ">=6.12.0" },
 ]
 

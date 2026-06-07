@@ -146,6 +146,9 @@ USAGE_METERING_ENABLED = env.bool("USAGE_METERING_ENABLED", default=True)
 FREE_QUOTA_MAPS = env.int("FREE_QUOTA_MAPS", default=10000)
 FREE_QUOTA_VIBER = env.int("FREE_QUOTA_VIBER", default=1000)
 FREE_QUOTA_SMS = env.int("FREE_QUOTA_SMS", default=1000)
+# Часовой пояс сброса месячных квот. Google Maps free tier обнуляется 1-го числа в полночь
+# по Тихоокеанскому времени — выравниваем границу месяца под него (а не под UTC).
+QUOTA_RESET_TZ = env("QUOTA_RESET_TZ", default="America/Los_Angeles")
 
 # Интеграции — провайдер карт (геокодинг + ETA). Ключ из env/Secret Manager, не в коде.
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")

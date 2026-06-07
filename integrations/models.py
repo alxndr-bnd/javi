@@ -1,3 +1,7 @@
+from datetime import UTC
+from zoneinfo import ZoneInfo
+
+from django.conf import settings
 from django.db import models
 from django.db.models import F
 from django.utils import timezone
@@ -33,8 +37,15 @@ MESSAGING_METRICS = (METRIC_TELEGRAM, METRIC_VIBER, METRIC_WHATSAPP, METRIC_SMS)
 
 
 def usage_period(now=None) -> str:
-    """Бакет периода (UTC-месяц) `YYYY-MM` для помесячного сброса квоты."""
-    return (now or timezone.now()).strftime("%Y-%m")
+    """Бакет периода `YYYY-MM` в часовом поясе сброса квот (settings.QUOTA_RESET_TZ,
+    по умолч. Тихоокеанский). Google Maps free tier обнуляется 1-го числа в полночь
+    Pacific Time — так помесячные метрики обнуляются ровно когда провайдер реально
+    сбрасывает бесплатный лимит, а не на границе UTC-месяца."""
+    now = now or timezone.now()
+    if timezone.is_naive(now):
+        now = now.replace(tzinfo=UTC)
+    tz = ZoneInfo(getattr(settings, "QUOTA_RESET_TZ", "America/Los_Angeles"))
+    return now.astimezone(tz).strftime("%Y-%m")
 
 
 class ProviderUsage(models.Model):

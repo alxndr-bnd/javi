@@ -50,7 +50,12 @@ Not deployed by this work (no tag). Deploy = `scripts/release_minor.sh` → vX.Y
 Related: leaked Infobip key rotation → see `infobip-key-rotation.md` (scheduled soon).
 
 ## Progress
-- Implemented in one TDD pass (commit pending). All 180 tests pass, ruff clean.
+- **Maps reset aligned to Google's free tier (2026-06-07):** verified Google Maps free tier
+  zeroes on the 1st of each calendar month at **midnight Pacific Time**. `usage_period` now
+  buckets monthly metrics in `QUOTA_RESET_TZ` (default `America/Los_Angeles`) instead of UTC,
+  so Maps usage zeroes exactly when Google resets. Added `tzdata` dep (slim image has no
+  zoneinfo). Viber/SMS are lifetime → unaffected. (On branch `feature/multichannel-fallback`.)
+- Implemented in one TDD pass (shipped v0.39.0). All tests pass, ruff clean.
 - Counts our own real provider calls (no billing creds in cabinet). Widget shown read-only to
   every signed-in account in the `⋯` menu. Per-shop quotas: future work.
 - Possible later refinements: real Infobip balance probe (operator-side) for money-accurate

@@ -21,6 +21,7 @@ from integrations.models import (
     METRIC_VIBER,
     GeocodeCache,
     ProviderUsage,
+    usage_period,
 )
 from integrations.providers import get_maps_provider, get_messaging_provider
 from integrations.testing import FakeMapsProvider, FakeMessagingProvider
@@ -59,6 +60,16 @@ class _Inner:
 
     def send_text(self, to, text):
         return self._send_result
+
+
+@override_settings(QUOTA_RESET_TZ="America/Los_Angeles")
+def test_usage_period_resets_on_pacific_month_boundary():
+    """Месячный бакет выровнен под сброс Google Maps (полночь 1-го числа Pacific),
+    а не под UTC: late-UTC конец месяца ещё относится к прошлому месяцу по Pacific."""
+    # 2026-07-01 03:00 UTC == 2026-06-30 20:00 Pacific → ещё июнь.
+    assert usage_period(datetime(2026, 7, 1, 3, 0, tzinfo=UTC)) == "2026-06"
+    # 2026-07-01 08:00 UTC == 2026-07-01 01:00 Pacific → уже июль.
+    assert usage_period(datetime(2026, 7, 1, 8, 0, tzinfo=UTC)) == "2026-07"
 
 
 @pytest.mark.django_db
