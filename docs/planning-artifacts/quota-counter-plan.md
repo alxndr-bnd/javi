@@ -40,8 +40,14 @@ calls (cache hits don't count; Viber→SMS fallback counts as the channel actual
 - [x] T6 — removed committed dup `deliveries/views 2.py`
 
 Not deployed by this work (no tag). Deploy = `scripts/release_minor.sh` → vX.Y.0 tag.
-Limits are env-configurable (`FREE_QUOTA_MAPS/VIBER/SMS`, defaults 10000/1000/1000) — set real
-values in `.github/deploy.env.yaml` before/with the deploy.
+
+**Real prod limits set in `.github/deploy.env.yaml` (2026-06-07):**
+- `FREE_QUOTA_MAPS=10000` — real Google free tier (calls/month per SKU).
+- `FREE_QUOTA_VIBER=93` — remaining of the Infobip trial (93 of 100 free Viber, ~57 days
+  left). Counter runs from 0, so it hits the real wall after 93 more of our sends.
+- `FREE_QUOTA_SMS=0` — usage-only (no fixed free SMS count given yet); set a real number later.
+
+Related: leaked Infobip key rotation → see `infobip-key-rotation.md` (scheduled soon).
 
 ## Progress
 - Implemented in one TDD pass (commit pending). All 180 tests pass, ruff clean.
