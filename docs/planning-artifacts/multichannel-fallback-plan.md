@@ -180,5 +180,22 @@ once P0/P1 land), merged sequentially — mind shared files (`providers.py`, `me
 - Fanned out via 2 parallel worktree subagents (disjoint files); merged sequentially. Gotcha
   logged: worktree branches fork from `main`, not the current feature branch — agents must
   rebase onto the foundation, and migration numbers can collide (renumber on merge).
-- **Next:** P2 (WhatsApp provider, behind flag) and P3 (Telegram opt-in) — independent, can
-  fan out in parallel once this lands. P4 (async DLR escalation) later. Not yet deployed.
+- **P0+P1 shipped: v0.40.0** (PR #3), prod healthy. First deploy stack under the renamed repo.
+- **P2 done** (`5e20897`, agent): `WhatsAppProvider` (Infobip WhatsApp **template** send —
+  business-initiated needs an approved Utility template; runtime text → single `{{1}}`
+  placeholder). Slotted between Viber and SMS **only when `WHATSAPP_ENABLED`** (default False);
+  soft-fails → chain falls through to SMS. Settings `WHATSAPP_ENABLED/SENDER/TEMPLATE_NAME/
+  TEMPLATE_LANG`.
+- **P3 done** (`220eb41`, agent): `TelegramProvider` (Bot API) + `TelegramContact(phone↔chat_id)`
+  opt-in model (migration 0005) + secret-guarded bot webhook that captures opt-in from a shared
+  contact. Provider **self-skips** (no HTTP, ok=False) for non-opted-in numbers, so it's safe
+  **prepended first** and falls through to Viber for everyone else. `TELEGRAM_ENABLED` (default
+  False) + `TELEGRAM_BOT_TOKEN`/`TELEGRAM_WEBHOOK_SECRET`.
+- Fanned out P2+P3 as 2 parallel worktree subagents; hand-merged the two shared files
+  (`providers.py` chain order, `settings.py`). Combined default chain when all flags on =
+  `telegram → viber → whatsapp → sms`; all flags off (default) = unchanged `viber → sms`.
+  Added combined-chain order tests. **Full suite 227 green, ruff clean, migrations consistent.**
+- **External onboarding needed before turning channels on** (code is dark/flagged): WhatsApp =
+  Meta business verification + approved Utility template + `WHATSAPP_SENDER`; Telegram = create
+  bot, set webhook with secret, users opt in via shared-contact button.
+- **Next:** P4 (async DLR-driven escalation) — optional, later.
