@@ -158,11 +158,14 @@ ROUTES_PROVIDER = env(
     default="integrations.google_maps.GoogleRoutesProvider",
 )
 
-# Интеграции — мессенджинг (Infobip Viber/SMS). Ключ из Secret Manager.
-MESSAGING_PROVIDER = env(
-    "MESSAGING_PROVIDER",
-    default="integrations.infobip.InfobipProvider",
-)
+# Интеграции — мессенджинг (Infobip Viber/SMS).
+# Прод-путь: ChainedMessagingProvider из одно-канальных провайдеров (MESSAGING_CHAIN).
+# MESSAGING_PROVIDER (одиночный, dotted-path) — обратная совместимость / свап вендора в тестах;
+# если задан, имеет приоритет над цепочкой.
+MESSAGING_PROVIDER = env("MESSAGING_PROVIDER", default="")
+# Упорядоченный список dotted-path одно-канальных провайдеров (fallback-цепочка).
+# Пусто → фабрика берёт дефолт из INFOBIP_CHANNEL/INFOBIP_SMS_FALLBACK (= сегодняшний Viber→SMS).
+MESSAGING_CHAIN = env.list("MESSAGING_CHAIN", default=[])
 INFOBIP_BASE_URL = env("INFOBIP_BASE_URL", default="https://m9dw19.api.infobip.com")
 INFOBIP_API_KEY = env("INFOBIP_API_KEY", default="")
 INFOBIP_SENDER = env("INFOBIP_SENDER", default="IBSelfServe")

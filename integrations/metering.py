@@ -9,10 +9,9 @@ from __future__ import annotations
 
 from .base import GeocodeResult, MapsProvider, MessagingProvider, RoutesProvider, SendResult
 from .models import (
+    MESSAGING_METRICS,
     METRIC_MAPS_GEOCODE,
     METRIC_MAPS_ROUTE,
-    METRIC_SMS,
-    METRIC_VIBER,
     ProviderUsage,
 )
 
@@ -47,6 +46,6 @@ class MeteringMessagingProvider(MessagingProvider):
 
     def send_text(self, to_e164: str, text: str) -> SendResult:
         result = self.inner.send_text(to_e164, text)
-        if result.ok and result.channel in (METRIC_VIBER, METRIC_SMS):
+        if result.ok and result.channel in MESSAGING_METRICS:
             ProviderUsage.record(result.channel)
         return result

@@ -5,9 +5,10 @@ import pytest
 import requests
 from django.test import override_settings
 
-from integrations.base import GeocodeResult, SendResult
+from integrations.base import GeocodeResult, MessagingProvider, SendResult
+from integrations.chained import ChainedMessagingProvider
 from integrations.google_maps import GoogleMapsProvider
-from integrations.infobip import InfobipProvider
+from integrations.infobip import InfobipProvider, SmsProvider, ViberProvider
 from integrations.metering import (
     MeteringMapsProvider,
     MeteringMessagingProvider,
@@ -21,8 +22,8 @@ from integrations.models import (
     GeocodeCache,
     ProviderUsage,
 )
-from integrations.providers import get_maps_provider
-from integrations.testing import FakeMapsProvider
+from integrations.providers import get_maps_provider, get_messaging_provider
+from integrations.testing import FakeMapsProvider, FakeMessagingProvider
 from integrations.usage import quota_summary
 
 
@@ -307,3 +308,224 @@ def test_no_webhook_when_secret_unset():
     with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
         _infobip().send_text("+381641234567", "hi")
     assert "webhooks" not in post.call_args.kwargs["json"]["messages"][0]
+
+
+# --- P0: single-channel providers (Infobip-backed) ---
+
+
+def test_viber_provider_sends_only_viber():
+    """ViberProvider шлёт ТОЛЬКО Viber, channel=viber, attempts пуст (одно-канальный)."""
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        result = ViberProvider(base_url="https://x", api_key="k", sender="S").send_text(
+            "+381641234567", "hi"
+        )
+    assert result.ok and result.channel == "viber"
+    assert result.attempts == ()
+    assert post.call_count == 1
+    assert post.call_args.args[0].endswith("/viber/2/messages")
+
+
+def test_viber_provider_failure_returns_not_ok():
+    with patch(
+        "integrations.infobip.requests.post",
+        side_effect=requests.RequestException("down"),
+    ):
+        result = ViberProvider(base_url="https://x", api_key="k", sender="S").send_text(
+            "+381", "hi"
+        )
+    assert result.ok is False and result.channel == ""
+
+
+def test_sms_provider_sends_only_sms():
+    """SmsProvider шлёт ТОЛЬКО SMS, channel=sms."""
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        result = SmsProvider(base_url="https://x", api_key="k", sender="S").send_text(
+            "+381641234567", "hi"
+        )
+    assert result.ok and result.channel == "sms"
+    assert post.call_args.args[0].endswith("/sms/2/text/advanced")
+
+
+def test_single_channel_provider_no_key_not_ok():
+    assert ViberProvider(api_key="").send_text("+381", "x").ok is False
+    assert SmsProvider(api_key="").send_text("+381", "x").ok is False
+
+
+# --- P0: ChainedMessagingProvider ---
+
+
+class _StubChannel(MessagingProvider):
+    """Одно-канальный стаб: задаём channel и успех/провал для проверки цепочки."""
+
+    def __init__(self, channel, ok, mid="m"):
+        self.channel = channel  # одно-канальный провайдер знает свой канал
+        self._ok = ok
+        self._mid = mid
+        self.calls = 0
+
+    def send_text(self, to_e164, text):
+        self.calls += 1
+        if self._ok:
+            return SendResult(ok=True, provider_message_id=self._mid, channel=self.channel)
+        return SendResult(ok=False, channel="")
+
+
+def test_chain_returns_first_success_and_stops():
+    """Первый ok=True выигрывает; последующие провайдеры НЕ вызываются."""
+    a = _StubChannel("viber", ok=True, mid="v-1")
+    b = _StubChannel("sms", ok=True, mid="s-1")
+    result = ChainedMessagingProvider([a, b]).send_text("+381", "hi")
+    assert result.ok and result.channel == "viber" and result.provider_message_id == "v-1"
+    assert a.calls == 1 and b.calls == 0
+    assert tuple((x.channel, x.ok) for x in result.attempts) == (("viber", True),)
+
+
+def test_chain_falls_through_to_next_on_failure():
+    """Первый падает → пробуем следующий; attempts содержит обе попытки по порядку."""
+    a = _StubChannel("viber", ok=False)
+    b = _StubChannel("sms", ok=True, mid="s-1")
+    result = ChainedMessagingProvider([a, b]).send_text("+381", "hi")
+    assert result.ok and result.channel == "sms" and result.provider_message_id == "s-1"
+    assert a.calls == 1 and b.calls == 1
+    assert tuple((x.channel, x.ok) for x in result.attempts) == (
+        ("viber", False),
+        ("sms", True),
+    )
+
+
+def test_chain_all_fail():
+    """Все падают → ok=False, channel="", attempts со всеми попытками."""
+    a = _StubChannel("viber", ok=False)
+    b = _StubChannel("sms", ok=False)
+    result = ChainedMessagingProvider([a, b]).send_text("+381", "hi")
+    assert result.ok is False and result.channel == "" and result.provider_message_id is None
+    assert tuple((x.channel, x.ok) for x in result.attempts) == (
+        ("viber", False),
+        ("sms", False),
+    )
+
+
+@pytest.mark.django_db
+def test_metering_counts_winning_channel_of_chain():
+    """Метеринг поверх цепочки считает только победивший канал (sms), не проигравший."""
+    chain = ChainedMessagingProvider(
+        [_StubChannel("viber", ok=False), _StubChannel("sms", ok=True, mid="s-1")]
+    )
+    MeteringMessagingProvider(chain).send_text("+381", "hi")
+    assert ProviderUsage.objects.get(metric=METRIC_SMS).count == 1
+    assert not ProviderUsage.objects.filter(metric=METRIC_VIBER).exists()
+
+
+# --- P0: factory default chain reproduces today's Viber→SMS behavior ---
+
+
+@override_settings(
+    INFOBIP_BASE_URL="https://x",
+    INFOBIP_API_KEY="k",
+    INFOBIP_SENDER="S",
+    INFOBIP_CHANNEL="viber",
+    INFOBIP_SMS_FALLBACK=True,
+    MESSAGING_CHAIN=[],
+    USAGE_METERING_ENABLED=False,
+)
+def test_default_chain_viber_ok_no_sms():
+    """Дефолтная цепочка = [Viber, Sms]: Viber успешен → SMS не вызывается."""
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        result = get_messaging_provider().send_text("+381641234567", "hi")
+    assert result.ok and result.channel == "viber"
+    assert post.call_count == 1
+    assert post.call_args.args[0].endswith("/viber/2/messages")
+
+
+@override_settings(
+    INFOBIP_BASE_URL="https://x",
+    INFOBIP_API_KEY="k",
+    INFOBIP_SENDER="S",
+    INFOBIP_CHANNEL="viber",
+    INFOBIP_SMS_FALLBACK=True,
+    MESSAGING_CHAIN=[],
+    USAGE_METERING_ENABLED=False,
+)
+def test_default_chain_viber_fail_falls_back_to_sms():
+    """Viber падает → SMS, channel=sms (дефолтная цепочка [Viber, Sms])."""
+    calls = []
+
+    def _side_effect(url, **kwargs):
+        calls.append(url)
+        if url.endswith("/viber/2/messages"):
+            raise requests.RequestException("viber down")
+        return _ok_response()
+
+    with patch("integrations.infobip.requests.post", side_effect=_side_effect):
+        result = get_messaging_provider().send_text("+381641234567", "hi")
+    assert result.ok and result.channel == "sms"
+    assert any("/viber/2/messages" in u for u in calls)
+    assert any("/sms/2/text/advanced" in u for u in calls)
+    assert tuple((x.channel, x.ok) for x in result.attempts) == (
+        ("viber", False),
+        ("sms", True),
+    )
+
+
+@override_settings(
+    INFOBIP_BASE_URL="https://x",
+    INFOBIP_API_KEY="k",
+    INFOBIP_SENDER="S",
+    INFOBIP_CHANNEL="viber",
+    INFOBIP_SMS_FALLBACK=False,
+    MESSAGING_CHAIN=[],
+    USAGE_METERING_ENABLED=False,
+)
+def test_default_chain_no_sms_when_fallback_disabled():
+    """INFOBIP_SMS_FALLBACK=False → цепочка только [Viber]; Viber-сбой → ok=False, без SMS."""
+    with patch(
+        "integrations.infobip.requests.post",
+        side_effect=requests.RequestException("down"),
+    ) as post:
+        result = get_messaging_provider().send_text("+381641234567", "hi")
+    assert result.ok is False
+    assert post.call_count == 1  # только Viber
+
+
+@override_settings(
+    INFOBIP_BASE_URL="https://x",
+    INFOBIP_API_KEY="k",
+    INFOBIP_SENDER="S",
+    INFOBIP_CHANNEL="sms",
+    MESSAGING_CHAIN=[],
+    USAGE_METERING_ENABLED=False,
+)
+def test_default_chain_channel_sms_is_sms_only():
+    """INFOBIP_CHANNEL=sms → цепочка только [Sms], сразу SMS без Viber."""
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        result = get_messaging_provider().send_text("+381641234567", "hi")
+    assert result.ok and result.channel == "sms"
+    assert post.call_count == 1
+    assert post.call_args.args[0].endswith("/sms/2/text/advanced")
+
+
+@override_settings(
+    MESSAGING_CHAIN=[
+        "integrations.testing.FailingMessagingProvider",
+        "integrations.testing.FakeMessagingProvider",
+    ],
+    USAGE_METERING_ENABLED=False,
+)
+def test_factory_builds_chain_from_messaging_chain_setting():
+    """MESSAGING_CHAIN (dotted-paths) собирается в ChainedMessagingProvider по порядку."""
+    FakeMessagingProvider.sent = []
+    result = get_messaging_provider().send_text("+381", "hi")
+    assert result.ok and result.channel == "viber"  # первый упал, второй (Fake) выиграл
+    assert len(result.attempts) == 2
+
+
+@override_settings(
+    MESSAGING_PROVIDER="integrations.testing.FakeMessagingProvider",
+    USAGE_METERING_ENABLED=False,
+)
+def test_factory_honors_single_messaging_provider_override():
+    """Обратная совместимость: MESSAGING_PROVIDER (одиночный) используется напрямую."""
+    FakeMessagingProvider.sent = []
+    result = get_messaging_provider().send_text("+381", "hi")
+    assert result.ok and result.channel == "viber"
+    assert len(FakeMessagingProvider.sent) == 1
