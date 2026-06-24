@@ -75,7 +75,8 @@
     padding:6px 11px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s
   }
   .langs button:hover{color:var(--ink);border-color:var(--brand)}
-  .langs button.active{background:var(--brand);border-color:var(--brand);color:#fff}
+  /* darker than --brand so white text clears WCAG AA (4.5:1); was #4f7cff = 3.71 */
+  .langs button.active{background:#3a5bd0;border-color:#3a5bd0;color:#fff}
 
   .hero{padding:46px 0 28px;text-align:center}
   .hero h1{font-size:clamp(28px,5vw,46px);line-height:1.12;margin:0 0 16px;font-weight:800}
@@ -101,7 +102,7 @@
   @media(max-width:760px){.grid{grid-template-columns:1fr}}
   .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
   .feat .ic{font-size:26px;margin-bottom:10px}
-  .feat h3{margin:0 0 6px;font-size:17px}
+  .feat h2{margin:0 0 6px;font-size:17px;font-weight:700}
   .feat p{margin:0;color:var(--muted);font-size:14.5px}
 
   .form-section{margin:36px 0 20px}
@@ -140,6 +141,7 @@
     </nav>
   </header>
 
+  <main>
   <section class="hero">
     <h1 data-i18n="hero_h1">Obavestite kupca <span class="hl">kada paket krene — i kada stiže</span></h1>
     <p class="lead" data-i18n="hero_lead">Manje neuspešnih isporuka. Zadovoljniji kupci. Više ponovljenih porudžbina.</p>
@@ -156,17 +158,17 @@
   <section class="grid" id="kako">
     <div class="feat">
       <div class="ic">📦</div>
-      <h3 data-i18n="f1_h">Kupac zna da paket kreće</h3>
+      <h2 data-i18n="f1_h">Kupac zna da paket kreće</h2>
       <p data-i18n="f1_p">Automatska poruka preko Viber-a ili SMS-a čim pošaljete porudžbinu.</p>
     </div>
     <div class="feat">
       <div class="ic">⏱️</div>
-      <h3 data-i18n="f2_h">I kada otprilike stiže</h3>
+      <h2 data-i18n="f2_h">I kada otprilike stiže</h2>
       <p data-i18n="f2_p">Okvirno vreme dolaska — kupac je kod kuće, isporuka uspeva iz prvog pokušaja.</p>
     </div>
     <div class="feat">
       <div class="ic">🔗</div>
-      <h3 data-i18n="f3_h">Praćenje na jednom linku</h3>
+      <h2 data-i18n="f3_h">Praćenje na jednom linku</h2>
       <p data-i18n="f3_p">Bez instaliranja aplikacije — kupac otvori status u pregledaču.</p>
     </div>
   </section>
@@ -178,16 +180,16 @@
         <p class="sub" data-i18n="form_sub">Javljamo vam se i pokazujemo kako radi. Bez obaveza.</p>
         <form id="leadForm" action="https://formspree.io/f/mgoqjnny" method="POST">
           <div class="field">
-            <label data-i18n="lbl_shop">Naziv prodavnice <span class="req">*</span></label>
-            <input type="text" name="shop" required>
+            <label for="f-shop" data-i18n="lbl_shop">Naziv prodavnice <span class="req">*</span></label>
+            <input id="f-shop" type="text" name="shop" required>
           </div>
           <div class="field">
-            <label data-i18n="lbl_contact">Email ili telefon / Viber <span class="req">*</span></label>
-            <input type="text" name="contact" required>
+            <label for="f-contact" data-i18n="lbl_contact">Email ili telefon / Viber <span class="req">*</span></label>
+            <input id="f-contact" type="text" name="contact" required>
           </div>
           <div class="field">
-            <label data-i18n="lbl_volume">Porudžbina mesečno (otprilike)</label>
-            <select name="volume">
+            <label for="f-volume" data-i18n="lbl_volume">Porudžbina mesečno (otprilike)</label>
+            <select id="f-volume" name="volume">
               <option value="" data-i18n="opt_choose">— izaberite —</option>
               <option value="1-50">1–50</option>
               <option value="50-200">50–200</option>
@@ -196,8 +198,8 @@
             </select>
           </div>
           <div class="field">
-            <label data-i18n="lbl_msg">Poruka (opciono)</label>
-            <textarea name="message"></textarea>
+            <label for="f-msg" data-i18n="lbl_msg">Poruka (opciono)</label>
+            <textarea id="f-msg" name="message"></textarea>
           </div>
           <input type="hidden" name="lang" id="f_lang" value="sr">
           <input type="hidden" name="utm_source" id="f_utm_source" value="">
@@ -215,6 +217,7 @@
       </div>
     </div>
   </section>
+  </main>
 
   <footer>
     <p>© 2026 Javi · javi.serbito.rs · <span data-i18n="foot">Obaveštenja o isporuci za prodavnice u Srbiji</span></p>
