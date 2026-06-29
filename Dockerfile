@@ -9,6 +9,10 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# Patch base-image OS packages (Debian security updates) so the Trivy deploy gate
+# doesn't fail on a fixed base CVE.
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
 # uv для установки зависимостей по lock-файлу
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
