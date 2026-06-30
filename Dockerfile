@@ -1,6 +1,6 @@
 # ---- Stage 1: Django + gunicorn (Javi MVP) ----
 # Лендинг Этапа 0 остаётся в образе (landing/) и отдаётся WhiteNoise на /.
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
