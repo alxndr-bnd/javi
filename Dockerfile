@@ -24,6 +24,12 @@ COPY . .
 # Собрать статику (manifest) на этапе сборки
 RUN python manage.py collectstatic --noinput
 
+# Run as an unprivileged user (least privilege; Cloud Run binds non-privileged 8080).
+# Added after collectstatic (which needs root write) and before runtime. migrate at
+# startup writes only to the DB, so no image-filesystem write is needed at runtime.
+RUN useradd --create-home --uid 10001 appuser && chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8080
 
 # Миграции на старте, затем gunicorn на $PORT (Cloud Run = 8080)
