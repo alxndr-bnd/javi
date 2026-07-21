@@ -22,7 +22,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest-django>=4.12.0",
-    "ruff>=0.15.15",
+    "ruff>=0.15.22",
 ]
 
 [tool.ruff]
