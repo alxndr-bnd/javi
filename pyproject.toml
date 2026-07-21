@@ -15,7 +15,7 @@ dependencies = [
     "phonenumbers>=9.0.31",
     "psycopg[binary]>=3.3.4",
     "requests>=2.34.2",
-    "tzdata>=2026.2",
+    "tzdata>=2026.3",
     "whitenoise>=6.12.0",
 ]
 
