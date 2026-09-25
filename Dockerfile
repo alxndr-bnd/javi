@@ -13,6 +13,11 @@ WORKDIR /app
 # doesn't fail on a fixed base CVE.
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
+# Манифесты вендоринга системного pip (pip/_vendor/bom.cdx.json, vendor.txt) декларируют его
+# внутренние setuptools 70.3.0 и msgpack 1.1.2 — Trivy видит в них HIGH CVE без PkgPath, хотя
+# таких пакетов в окружении нет и pip они для работы не нужны (как в serbito и gtd).
+RUN find /usr/local/lib -type f \( -name 'bom.cdx.json' -o -name 'vendor.txt' \) -path '*/pip/_vendor/*' -delete
+
 # uv для установки зависимостей по lock-файлу
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
@@ -33,4 +38,5 @@ USER appuser
 EXPOSE 8080
 
 # Миграции на старте, затем gunicorn на $PORT (Cloud Run = 8080)
-CMD exec sh -c "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 60"
+# JSON-форма CMD + exec: gunicorn становится PID 1 и получает SIGTERM от Cloud Run напрямую
+CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 60"]
