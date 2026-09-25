@@ -10,6 +10,14 @@ if [[ -z "$msg" ]]; then
   exit 1
 fi
 
+# --- gate: tests always run and must pass before we tag — never skipped ---
+echo "==> pytest"
+uv run pytest
+echo "==> ruff check"
+uv run ruff check .
+echo "==> manage.py check"
+uv run python manage.py check
+
 # --- gate: landing must exist and parse before we tag ---
 echo "==> landing HTML parses"
 python3 -c "import html.parser; html.parser.HTMLParser().feed(open('landing/index.html',encoding='utf-8').read()); print('landing OK')"

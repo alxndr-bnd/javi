@@ -1,8 +1,11 @@
 """Django settings for Javi (config project). Env-driven (12-factor)."""
 
+import sys
 from pathlib import Path
 
 import environ
+
+from config.sentry import init_sentry
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -13,6 +16,12 @@ env = environ.Env(
 )
 # Локально читаем .env, если он есть (в проде переменные приходят из окружения).
 environ.Env.read_env(BASE_DIR / ".env")
+
+# Sentry — только при заданном SENTRY_DSN (прод: Secret Manager, см. config/sentry.py).
+# Под pytest не поднимаем никогда, даже если DSN случайно есть в окружении/.env
+# (как в serbito: "pytest" in sys.modules надёжен и в xdist-воркерах).
+if "pytest" not in sys.modules:
+    init_sentry()
 
 SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-change-me")
 DEBUG = env("DEBUG")
@@ -241,7 +250,7 @@ SPECTACULAR_SETTINGS = {
         "**Statuses** are industry-standard (AfterShip-style): `pending`, "
         "`ready_for_pickup`, `out_for_delivery`, `delivered`. The internal Javi "
         "code is also returned as `status_internal`.\n\n"
-        "**Errors** use a single envelope: `{\"error\": {\"code\", \"message\"}}`."
+        '**Errors** use a single envelope: `{"error": {"code", "message"}}`.'
     ),
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",

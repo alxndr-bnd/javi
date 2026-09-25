@@ -85,6 +85,11 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
+          # SENTRY_RELEASE (javi@X.Y.Z из тега) дописываем в копию env-файла: gcloud не
+          # разрешает сочетать --env-vars-file с --update-env-vars.
+          ENV_FILE="$RUNNER_TEMP/deploy.env.yaml"
+          cp .github/deploy.env.yaml "$ENV_FILE"
+          echo "SENTRY_RELEASE: \"javi@${GITHUB_REF_NAME#v}\"" >> "$ENV_FILE"
           gcloud run deploy "$SERVICE" \
             --image "$AR_IMAGE:${{ github.sha }}" \
             --region "$REGION" \
@@ -96,11 +101,12 @@ jobs:
             --port=8080 \
             --timeout=60 \
             --add-cloudsql-instances="serbito:europe-west1:serbitodb" \
-            --env-vars-file=.github/deploy.env.yaml \
-            --set-secrets="SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest,TASKS_SECRET=javi-tasks-secret:latest"
+            --env-vars-file="$ENV_FILE" \
+            --set-secrets="SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest,TASKS_SECRET=javi-tasks-secret:latest,SENTRY_DSN=javi-sentry-dsn:latest"
         # One-time domain mapping (javi.serbito.rs -> service) — see SETUP_CICD.md.
         # Требуются Secret Manager секреты javi-secret-key, javi-database-url,
-        # javi-google-maps-key, javi-infobip-key, javi-infobip-webhook-secret, javi-tasks-secret
+        # javi-google-maps-key, javi-infobip-key, javi-infobip-webhook-secret, javi-tasks-secret,
+        # javi-sentry-dsn (Sentry, org nohandoff / project javi; release = javi@<tag без v>)
         # и роли runtime-SA: roles/cloudsql.client, roles/secretmanager.secretAccessor (на секреты),
         # roles/cloudtasks.enqueuer (постановка задач оценки в очередь javi-rating).
         # INFOBIP_BASE_URL/SENDER/CHANNEL, PUBLIC_BASE_URL, CLOUD_TASKS_* — из дефолтов settings.py.
