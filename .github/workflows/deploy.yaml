@@ -27,7 +27,7 @@ env:
 
 jobs:
   verify: # Sanity-check the landing before shipping
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
       - name: Landing exists and is non-empty
@@ -45,7 +45,7 @@ jobs:
           PY
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)
     needs: verify # Block deploy if the landing check fails
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
