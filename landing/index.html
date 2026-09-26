@@ -127,6 +127,13 @@
 
   footer{border-top:1px solid var(--line);margin-top:40px;padding:24px 0 40px;color:var(--muted);font-size:13px;text-align:center}
   .req{color:var(--brand)}
+
+  /* SERBITO-265: modest cross-promo in the footer (plain links, no third-party JS) */
+  .xpromo{margin:18px auto 0;max-width:680px}
+  .xpromo h2{margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
+  .xpromo ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px}
+  .xpromo a{color:var(--ink);font-weight:600}
+  .xpromo .made{margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -222,6 +229,15 @@
   <footer>
     <p>© 2026 Javi · javi.serbito.rs · <span data-i18n="foot">Obaveštenja o isporuci za prodavnice u Srbiji</span></p>
     <p><a href="/privacy.html" data-i18n="priv">Politika privatnosti</a></p>
+    <nav class="xpromo" id="crosspromo" aria-labelledby="xpromo-h">
+      <h2 id="xpromo-h" data-i18n="xp_h">Drugi projekti</h2>
+      <ul>
+        <li><a href="https://gtd.serbito.rs/?utm_source=javi&amp;utm_medium=crosspromo&amp;utm_campaign=footer">GTD</a> — <span data-i18n="xp_gtd">Besplatan GTD menadžer zadataka sa Telegram botom</span></li>
+        <li><a href="https://poker.serbito.rs/?utm_source=javi&amp;utm_medium=crosspromo&amp;utm_campaign=footer">Planning Poker</a> — <span data-i18n="xp_poker">Besplatan planning poker za scrum timove, bez registracije</span></li>
+        <li><a href="https://serbito.rs/?utm_source=javi&amp;utm_medium=crosspromo&amp;utm_campaign=footer">Serbito</a> — <span data-i18n="xp_serbito">Mali oglasi u Srbiji</span></li>
+      </ul>
+      <p class="made"><span data-i18n="xp_made">Napravio</span> <a href="https://www.linkedin.com/company/nohandoff/">No Handoff</a></p>
+    </nav>
   </footer>
 
 </div>
@@ -246,7 +262,10 @@ const I18N = {
     form_note:"Kontakt koristimo samo da vam se javimo povodom Javi.",
     ok_h:"Hvala!", ok_p:"Primili smo vašu prijavu i javljamo vam se uskoro.",
     foot:"Obaveštenja o isporuci za prodavnice u Srbiji",
-    priv:"Politika privatnosti"
+    priv:"Politika privatnosti",
+    xp_h:"Drugi projekti", xp_gtd:"Besplatan GTD menadžer zadataka sa Telegram botom",
+    xp_poker:"Besplatan planning poker za scrum timove, bez registracije",
+    xp_serbito:"Mali oglasi u Srbiji", xp_made:"Napravio"
   },
   en:{
     meta_title:"Javi — tell your customer when the parcel is on the way",
@@ -266,7 +285,10 @@ const I18N = {
     form_note:"We use your contact only to reach out about Javi.",
     ok_h:"Thank you!", ok_p:"We received your request and will be in touch soon.",
     foot:"Delivery notifications for shops in Serbia",
-    priv:"Privacy policy"
+    priv:"Privacy policy",
+    xp_h:"Other projects", xp_gtd:"Free GTD task manager with a Telegram bot",
+    xp_poker:"Free planning poker for scrum teams, no sign-up",
+    xp_serbito:"Classifieds in Serbia", xp_made:"Made by"
   },
   ru:{
     meta_title:"Javi — сообщите покупателю, когда посылка в пути",
@@ -286,7 +308,10 @@ const I18N = {
     form_note:"Контакт используем только чтобы связаться с вами по поводу Javi.",
     ok_h:"Спасибо!", ok_p:"Мы получили вашу заявку и скоро свяжемся.",
     foot:"Уведомления о доставке для магазинов в Сербии",
-    priv:"Политика конфиденциальности"
+    priv:"Политика конфиденциальности",
+    xp_h:"Другие проекты", xp_gtd:"Бесплатный GTD-менеджер задач с Telegram-ботом",
+    xp_poker:"Бесплатный planning poker для scrum-команд, без регистрации",
+    xp_serbito:"Объявления в Сербии", xp_made:"Сделано в"
   }
 };
 

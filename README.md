@@ -49,3 +49,11 @@ just keep the copyright notice.
 porudžbina kreće i okvirno vreme kada stiže, sa linkom za praćenje (bez aplikacije). Manje
 neuspešnih isporuka, zadovoljniji kupci, više ponovljenih porudžbina. Za prodavnice, restorane
 i online shopove koji dostavljaju svojim kuririma, a nemaju svoj sistem za praćenje.
+
+## Other projects
+
+- **[GTD](https://gtd.serbito.rs/?utm_source=github&utm_medium=crosspromo&utm_campaign=readme)** — free GTD task manager with a Telegram bot · [source](https://github.com/alxndr-bnd/gtd)
+- **[Planning Poker](https://poker.serbito.rs/?utm_source=github&utm_medium=crosspromo&utm_campaign=readme)** — free planning poker for scrum teams, no sign-up · [source](https://github.com/alxndr-bnd/planning-poker)
+- **[Serbito](https://serbito.rs/?utm_source=github&utm_medium=crosspromo&utm_campaign=readme)** — classifieds in Serbia
+
+Made by [No Handoff](https://www.linkedin.com/company/nohandoff/).
