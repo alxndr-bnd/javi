@@ -9,8 +9,9 @@ updates:
     schedule:
       interval: "weekly"
 
-  # FROM lines in the Dockerfile: the python:3.14-slim base and the uv stage
-  # (pinned by tag + digest; Dependabot bumps both together).
+  # FROM lines in /Dockerfile: the python:3.14-slim base and the uv stage, both pinned
+  # by tag + digest; Dependabot bumps the digest (and the uv tag). CI takes its uv version
+  # from the Dockerfile, so a uv bump here moves CI too.
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

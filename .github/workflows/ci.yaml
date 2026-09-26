@@ -24,11 +24,20 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
 
+      # One uv version for CI and the image (SERBITO-294): read it from the Dockerfile's pinned
+      # uv stage, which Dependabot bumps. Never hardcode it here (config/test_dockerfile.py).
+      - name: uv version from Dockerfile
+        id: uv-version
+        run: |
+          version="$(sed -nE 's#^FROM ghcr\.io/astral-sh/uv:([0-9]+\.[0-9]+\.[0-9]+)@sha256:[0-9a-f]{64} AS uv$#\1#p' Dockerfile)"
+          if [ -z "$version" ]; then echo "::error::no pinned uv stage in Dockerfile"; exit 1; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       # uv + Python from .python-version; dependency and interpreter downloads cached,
       # keyed on uv.lock (the repo installs with uv, so this is the pip cache equivalent).
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0 (SHA-pinned)
         with:
-          version: "0.12.17"
+          version: ${{ steps.uv-version.outputs.version }}
           enable-cache: true
           cache-dependency-glob: uv.lock
           cache-python: true
