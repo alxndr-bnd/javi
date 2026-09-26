@@ -1,103 +1,89 @@
-# Настройка CI/CD и домена для проекта Javi
+# CI/CD and domain setup for Javi
 
-Пошаговый гайд: как поднять автоматический деплой (CI/CD) и подключить поддомен
-`javi.serbito.rs` для проекта **Javi** (репозиторий `alxndr-bnd/transport_site`).
+How Javi (`alxndr-bnd/transport_site`) is built, tested and deployed to Cloud Run at
+`javi.serbito.rs`, and the one-time GCP/DNS setup behind it. Same GCP project (`serbito`),
+region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.serbito.rs`.
 
-Деплой устроен так же, как уже работающий `poker.serbito.rs`: тот же GCP-проект
-`serbito`, тот же регион `europe-west1`, тот же Workload Identity Pool `github-pool`.
+## Contents
 
-## Оглавление
-
-1. [Что уже сделано](#1-что-уже-сделано)
-2. [Предварительно: установить pre-commit локально](#2-предварительно-установить-pre-commit-локально)
+1. [What is in the repo](#1-what-is-in-the-repo)
+2. [Local setup: uv and pre-commit](#2-local-setup-uv-and-pre-commit)
 3. [GCP one-time setup](#3-gcp-one-time-setup)
 4. [GitHub secrets](#4-github-secrets)
-5. [DNS / поддомен javi.serbito.rs](#5-dns--поддомен-javiserbitors)
-6. [Первый деплой](#6-первый-деплой)
-7. [Как это работает дальше (ежедневно)](#7-как-это-работает-дальше-ежедневно)
-8. [Этап 1 (на будущее): Django](#8-этап-1-на-будущее-django)
+5. [DNS: javi.serbito.rs](#5-dns-javiserbitors)
+6. [First deploy](#6-first-deploy)
+7. [Day-to-day release flow](#7-day-to-day-release-flow)
+8. [Runtime: Cloud SQL, secrets, env](#8-runtime-cloud-sql-secrets-env)
 
-> **Перед началом подставьте свои значения там, где помечено `<...>`.**
-> Команды `gcloud` предполагают, что у вас установлен и авторизован Google Cloud SDK
-> (`gcloud auth login` и `gcloud config set project serbito`).
+> Commands assume an authenticated Google Cloud SDK
+> (`gcloud auth login`, `gcloud config set project serbito`).
 
 ---
 
-## 1. Что уже сделано
+## 1. What is in the repo
 
-В репозитории уже лежит всё необходимое для CI/CD:
+- **CI** — `.github/workflows/ci.yaml`: the release gate (`ruff check`, `manage.py check`,
+  `pytest`, landing HTML parse) on every PR (incl. Dependabot) and every push to `main`.
+  Tests use the sqlite fallback: no `DATABASE_URL`, no `.env`.
+- **Deploy** — `.github/workflows/deploy.yaml`, triggered only by a pushed `v*.*.*` tag
+  (no `workflow_dispatch`):
+  1. `verify` — the same `ci.yaml` via `workflow_call`;
+  2. `deploy` — build the image with Buildx (registry cache `:buildcache`), push it to
+     Artifact Registry as `:<commit sha>`, Trivy scan (fails on a *fixed* HIGH/CRITICAL
+     vulnerability or a leaked secret), `gcloud run deploy`.
 
-- **CI** `.github/workflows/ci.yaml` — гейт релиза (`ruff check`, `manage.py check`,
-  `pytest`, парсинг лендинга) на каждый PR (включая Dependabot) и каждый пуш в `main`.
-- **Пайплайн** `.github/workflows/deploy.yaml` — GitHub Actions, который при пуше
-  тега вида `v*.*.*` сначала прогоняет job **`verify`** (тот же `ci.yaml` через
-  `workflow_call`), затем собирает Docker-образ, пушит его в Artifact Registry и деплоит
-  в Cloud Run. Авторизация — keyless через Workload Identity Federation (WIF),
-  без ключей в секретах. Ключевые значения (из `env` пайплайна):
-  - `PROJECT_ID=serbito`
-  - `REGION=europe-west1`
-  - `SERVICE=javi`
+  Auth is keyless via Workload Identity Federation. Pipeline `env`:
+  - `PROJECT_ID=serbito`, `REGION=europe-west1`, `SERVICE=javi`
   - `AR_IMAGE=europe-west1-docker.pkg.dev/serbito/javi/javi`
   - `WIF_PROVIDER=projects/488744139718/locations/global/workloadIdentityPools/github-pool/providers/github`
   - `DEPLOYER_SA=javi-deployer@serbito.iam.gserviceaccount.com`
-- **Dockerfile** — образ на базе `nginx:1.27-alpine`, копирует `nginx.conf` и
-  каталог `landing/` и отдаёт статический лендинг (`landing/index.html`) на порту
-  `8080` (требование Cloud Run).
-- **pre-commit** — конфиг `.pre-commit-config.yaml`: `ruff` (lint, с `--fix`) и
-  `ruff-format`; check-yaml, check-merge-conflict, end-of-file-fixer,
-  trailing-whitespace; локальные хуки — проверка, что `landing/index.html`
-  парсится, и `manage.py check` (Django system check). То есть в репозитории уже
-  есть Django-приложение — но на Этапе 0 деплоится именно статический лендинг.
-- **Release-скрипт** `scripts/release_minor.sh` — перед релизом гоняет гейт
-  (`pytest`, `ruff check`, `manage.py check`, парсинг лендинга), коммитит
-  изменения отслеживаемых файлов (`git add -u`; новые файлы — только перечисленные
-  аргументами, о прочих неотслеживаемых печатает предупреждение), поднимает
-  минорную версию (`vMAJOR.MINOR.0`), создаёт git-тег и пушит его (что и триггерит
-  деплой). Версия начинается с `v0.1.0`, если тегов ещё нет.
-
-Дальше нужно один раз настроить инфраструктуру в GCP и DNS.
+- **Dockerfile** — Django + gunicorn:
+  - base `python:3.14-slim` and a `uv` stage (`ghcr.io/astral-sh/uv`), both pinned by
+    tag + digest;
+  - OS packages upgraded (`apt-get upgrade`); pip's vendored SBOM manifests removed
+    (false-positive Trivy CVEs);
+  - dependencies installed with `uv sync --frozen --no-dev` from `pyproject.toml` + `uv.lock`;
+  - `collectstatic` at build time; WhiteNoise serves static files and the landing page
+    (`landing/`) at `/`;
+  - runs as unprivileged `appuser` (uid 10001);
+  - on start: `manage.py migrate`, then gunicorn on `$PORT` (8080 on Cloud Run).
+- **One toolchain for CI and the image** — CI's Python comes from `.python-version` and must
+  match the image's `python:X.Y-slim`; CI's uv version is read from the Dockerfile's `uv`
+  stage. `config/test_dockerfile.py` fails if they drift or a base image loses its digest.
+- **Dependabot** — `.github/dependabot.yml`, weekly: `uv` (Python deps), `docker` (Dockerfile
+  `FROM` digests and the uv tag), `github-actions` (SHA-pinned actions).
+- **pre-commit** — `.pre-commit-config.yaml`: pre-commit-hooks (check-yaml,
+  check-merge-conflict, end-of-file-fixer, trailing-whitespace), `ruff --fix`,
+  `ruff-format`, and local hooks: landing HTML parses, `uv run python manage.py check`.
+- **Release script** — `scripts/release_minor.sh "message" [new_file ...]`, from `main` only:
+  runs the gate (`pytest`, `ruff check`, `manage.py check`, landing parse), stages tracked
+  changes (`git add -u`) plus the listed new files (warns about other untracked files),
+  commits, bumps the minor version (`vMAJOR.MINOR.0`; `v0.1.0` if no tags), then tags and
+  pushes, which triggers the deploy.
 
 ---
 
-## 2. Предварительно: установить pre-commit локально
-
-Чтобы хуки гонялись перед каждым коммитом локально:
+## 2. Local setup: uv and pre-commit
 
 ```bash
-# из корня репозитория
-pip install pre-commit
-# либо, если используете виртуальное окружение:
-# venv/bin/pip install pre-commit
+uv sync                  # .venv with runtime + dev dependencies from uv.lock
+uv run pytest            # the gate, as in CI
+uv run ruff check .
+uv run python manage.py check
 
-pre-commit install
-```
-
-После `pre-commit install` хуки из `.pre-commit-config.yaml` будут автоматически
-запускаться при каждом `git commit`. Если хук что-то поправил (например, ruff
-переформатировал код или убрал лишние пробелы) — добавьте изменения
-(`git add -A`) и закоммитьте ещё раз.
-
-> Хук `django-check` выполняет `manage.py check`, поэтому в окружении должны быть
-> установлены зависимости Django (см. `requirements*.txt` / `venv`). Если используете
-> виртуальное окружение — активируйте его перед коммитом. Тот же гейт срабатывает
-> и в `scripts/release_minor.sh` перед созданием тега.
-
-Прогнать хуки по всем файлам вручную (полезно в первый раз):
-
-```bash
+pre-commit install       # hooks on every commit (install pre-commit first, e.g. `uv tool install pre-commit`)
 pre-commit run --all-files
 ```
+
+If a hook rewrites files (ruff, whitespace), stage the changes and commit again.
 
 ---
 
 ## 3. GCP one-time setup
 
-Выполняется **один раз**. Поскольку проект `serbito` уже используется для
-`poker.serbito.rs`, многое (включённые API, WIF-pool) уже на месте — лишние
-команды просто завершатся без изменений. Команды можно выполнять повторно
-безопасно.
+Idempotent: much of it already exists for poker, so re-running is safe.
 
-### 3.1. Включить нужные API
+### 3.1. Enable APIs
 
 ```bash
 gcloud services enable \
@@ -108,7 +94,9 @@ gcloud services enable \
   --project=serbito
 ```
 
-### 3.2. Создать Artifact Registry репозиторий `javi`
+The Django runtime also uses Cloud SQL, Secret Manager and Cloud Tasks (section 8).
+
+### 3.2. Artifact Registry repository `javi`
 
 ```bash
 gcloud artifacts repositories create javi \
@@ -117,53 +105,29 @@ gcloud artifacts repositories create javi \
   --project=serbito
 ```
 
-> Если репозиторий уже существует — команда вернёт ошибку `ALREADY_EXISTS`, это ок.
+`ALREADY_EXISTS` is fine.
 
-### 3.3. Создать deployer service account и выдать роли
-
-Создаём сервисный аккаунт, от имени которого GitHub Actions деплоит:
+### 3.3. Deployer service account and roles
 
 ```bash
 gcloud iam service-accounts create javi-deployer \
   --display-name="Javi GitHub Actions deployer" \
   --project=serbito
-```
 
-Выдаём ему роли на уровне проекта (управление Cloud Run, пуш образов, запуск
-сервисных аккаунтов, доступ к storage для Artifact Registry):
-
-```bash
 PROJECT_ID=serbito
 SA=javi-deployer@serbito.iam.gserviceaccount.com
-
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:${SA}" \
-  --role="roles/run.admin"
-
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:${SA}" \
-  --role="roles/artifactregistry.writer"
-
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:${SA}" \
-  --role="roles/iam.serviceAccountUser"
-
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:${SA}" \
-  --role="roles/storage.admin"
+for ROLE in roles/run.admin roles/artifactregistry.writer roles/iam.serviceAccountUser roles/storage.admin; do
+  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:${SA}" --role="$ROLE"
+done
 ```
 
-> `roles/iam.serviceAccountUser` нужен, чтобы deployer мог деплоить сервис под
-> runtime-аккаунтом Cloud Run. `roles/storage.admin` нужен для работы с
-> базовым GCS-бакетом Artifact Registry. Если хотите минимизировать права,
-> можно позже сузить `storage.admin` до доступа только к нужному бакету AR.
+- `iam.serviceAccountUser` lets the deployer deploy under the Cloud Run runtime account.
+- `storage.admin` covers Artifact Registry's GCS bucket; can be narrowed to that bucket later.
 
-### 3.4. WIF: привязать репозиторий к существующему provider'у
+### 3.4. WIF: allow this repo to impersonate the deployer
 
-Workload Identity Pool `github-pool` и provider `github` **уже существуют**
-(их создали для poker). Мы их **переиспользуем** — создавать заново НЕ нужно.
-Нужно лишь разрешить deployer-аккаунту имперсонацию из нашего репозитория
-`alxndr-bnd/transport_site`.
+Pool `github-pool` and provider `github` already exist (created for poker); reuse them.
 
 ```bash
 PROJECT_NUMBER=488744139718
@@ -177,170 +141,98 @@ gcloud iam service-accounts add-iam-policy-binding "$SA" \
   --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL}/attribute.repository/${REPO}"
 ```
 
-> ⚠️ **Проверьте перед запуском:**
-> - `PROJECT_NUMBER=488744139718` — это значение взято из `WIF_PROVIDER` в нашем
->   `deploy.yaml` (скопировано из poker). Убедитесь, что номер проекта `serbito`
->   именно такой:
->   ```bash
->   gcloud projects describe serbito --format='value(projectNumber)'
->   ```
-> - Pool `github-pool` и provider `github` существуют:
->   ```bash
->   gcloud iam workload-identity-pools describe github-pool \
->     --location=global --project=serbito
->   gcloud iam workload-identity-pools providers describe github \
->     --location=global --workload-identity-pool=github-pool --project=serbito
->   ```
->   Если их нет (или provider называется иначе), значения в `deploy.yaml`
->   придётся поправить под фактическую настройку.
+Check first:
+
+```bash
+gcloud projects describe serbito --format='value(projectNumber)'   # must be 488744139718
+gcloud iam workload-identity-pools describe github-pool --location=global --project=serbito
+gcloud iam workload-identity-pools providers describe github \
+  --location=global --workload-identity-pool=github-pool --project=serbito
+```
+
+If they differ, fix `WIF_PROVIDER` in `deploy.yaml`.
 
 ---
 
 ## 4. GitHub secrets
 
-**Секреты для нашего workflow НЕ нужны.** Авторизация в GCP идёт через
-Workload Identity Federation (keyless), а все параметры (`PROJECT_ID`, `REGION`,
-`SERVICE`, `AR_IMAGE`, `WIF_PROVIDER`, `DEPLOYER_SA`) зашиты в `env` пайплайна.
-
-> Примечание: в старом README poker упоминался секрет `GCP_SA_KEY` (JSON-ключ
-> сервисного аккаунта). В **нашем** `deploy.yaml` его нет и он не нужен — мы не
-> используем ключи, только WIF. Ничего в GitHub Secrets добавлять не требуется.
-
-Единственный секрет понадобится **на будущее** (Этап 1, когда появится Django) —
-`SECRET_KEY`, и его хранят не в GitHub Secrets, а в **Secret Manager** GCP
-(см. раздел 8).
+None. GCP auth is keyless (WIF) and the pipeline parameters live in `deploy.yaml` `env`.
+Runtime secrets are in GCP Secret Manager (section 8), not in GitHub.
 
 ---
 
-## 5. DNS / поддомен javi.serbito.rs
+## 5. DNS: javi.serbito.rs
 
-Отдельное доменное имя покупать не нужно — у вас уже есть домен `serbito.rs`.
-Подключим поддомен `javi.serbito.rs` к Cloud Run.
-
-> Domain mapping можно создавать только **после** того, как сервис `javi` хоть
-> раз задеплоен (см. раздел 6). Так что этот шаг логично выполнять сразу после
-> первого деплоя.
-
-### 5.1. Создать domain mapping в Cloud Run
+Requires the `javi` service to exist: run it after the first deploy.
 
 ```bash
 gcloud run domain-mappings create \
-  --service=javi \
-  --domain=javi.serbito.rs \
-  --region=europe-west1 \
-  --project=serbito
-```
+  --service=javi --domain=javi.serbito.rs \
+  --region=europe-west1 --project=serbito
 
-### 5.2. Прописать DNS-запись
-
-Команда из 5.1 выведет DNS-запись, которую нужно добавить в зону `serbito.rs`.
-Обычно это **CNAME** на `ghs.googlehosted.com.` (для поддомена), реже —
-набор **A/AAAA** записей. Посмотреть запись повторно можно так:
-
-```bash
+# DNS record to add (usually CNAME javi -> ghs.googlehosted.com.):
 gcloud run domain-mappings describe \
-  --domain=javi.serbito.rs \
-  --region=europe-west1 \
-  --project=serbito \
+  --domain=javi.serbito.rs --region=europe-west1 --project=serbito \
   --format='value(status.resourceRecords)'
 ```
 
-Добавьте эту запись в DNS-зону `serbito.rs` — **там же**, у того же
-регистратора / DNS-провайдера, где вы заводили запись для `poker.serbito.rs`.
-Например (значение подставьте из вывода выше):
-
-```
-Тип:   CNAME
-Имя:   javi            (т.е. javi.serbito.rs)
-Цель:  ghs.googlehosted.com.
-```
-
-### 5.3. Верификация и TLS
-
-- Домен `serbito.rs` **уже верифицирован** в GCP (иначе `poker.serbito.rs` не
-  работал бы), поэтому отдельная верификация владения доменом, скорее всего,
-  **не потребуется**. Если Cloud Run всё же попросит верифицировать домен —
-  следуйте инструкции из вывода команды (через Google Search Console).
-- **TLS-сертификат** Cloud Run выпустит и подключит **автоматически** после того,
-  как DNS-запись прописана и распространилась. Это может занять от ~15 до ~60 минут.
-  Статус можно отслеживать:
-  ```bash
-  gcloud run domain-mappings describe \
-    --domain=javi.serbito.rs \
-    --region=europe-west1 \
-    --project=serbito
-  ```
-  Дождитесь, пока в `status.conditions` всё станет `True`.
+- Add the record in the `serbito.rs` zone, at the same DNS provider as `poker.serbito.rs`.
+- `serbito.rs` is already verified in GCP; if Cloud Run still asks, follow its instructions.
+- Cloud Run issues the TLS certificate automatically once DNS propagates (~15-60 min).
+  Done when all `status.conditions` of the mapping are `True` (same `describe`, no `--format`).
 
 ---
 
-## 6. Первый деплой
+## 6. First deploy
 
-Есть два пути запустить пайплайн.
-
-### Вариант А — вручную через GitHub UI (workflow_dispatch)
-
-1. Открой репозиторий на GitHub → вкладка **Actions**.
-2. Слева выбери workflow **Deploy to Cloud Run**.
-3. Кнопка **Run workflow** → ветка `main` → **Run workflow**.
-
-Удобно для первой проверки, что инфраструктура (раздел 3) настроена правильно.
-
-### Вариант Б — тегом (рекомендуемый рабочий способ)
+Deploys run only from a `v*.*.*` tag. From `main`:
 
 ```bash
 bash scripts/release_minor.sh "first deploy"
 ```
 
-Скрипт создаст тег `v0.1.0` (если тегов ещё нет), запушит его — и это
-триггернёт workflow.
+The service URL (`https://javi-xxxxxxxx-ew.a.run.app`) is in the workflow log, or:
 
-### Что будет после деплоя
+```bash
+gcloud run services describe javi \
+  --region=europe-west1 --project=serbito --format='value(status.url)'
+```
 
-- Сервис `javi` появится в Cloud Run и получит автоматический URL вида
-  `https://javi-xxxxxxxx-ew.a.run.app`. Его можно посмотреть в конце лога
-  workflow (шаг **Show URL**) или командой:
-  ```bash
-  gcloud run services describe javi \
-    --region=europe-west1 --project=serbito \
-    --format='value(status.url)'
-  ```
-- После настройки domain mapping (раздел 5) тот же сервис будет доступен по
-  адресу **https://javi.serbito.rs**.
+After section 5 it is also served at https://javi.serbito.rs.
 
 ---
 
-## 7. Как это работает дальше (ежедневно)
+## 7. Day-to-day release flow
 
-Рабочий цикл после настройки:
-
-1. Вносишь изменения в код / лендинг, коммитишь в `main`
-   (при коммите локально срабатывает **pre-commit** — гейт качества).
-2. Выкатываешь релиз:
-   ```bash
-   bash scripts/release_minor.sh "что изменили" [новый_файл ...]
-   ```
-   Скрипт поднимает минорную версию, создаёт git-тег и пушит его.
-3. Дальше всё автоматически — **GitHub Actions**:
-   - **verify** — гейт из `ci.yaml`: ruff, `manage.py check`, pytest, лендинг;
-   - **build + push** — собирает Docker-образ и пушит в Artifact Registry
-     (`europe-west1-docker.pkg.dev/serbito/javi/javi`);
-   - **deploy** — деплоит новую ревизию в Cloud Run (`javi`, `europe-west1`).
-
-Через минуту-две новая версия уже на `https://javi.serbito.rs`. Никаких ручных
-действий с GCP больше не нужно.
+1. Merge to `main` (CI runs the gate on the PR and on `main`).
+2. `bash scripts/release_minor.sh "what changed" [new_file ...]` — gate, commit, tag, push.
+3. GitHub Actions: `verify` (the CI gate) → build + push the image → Trivy → deploy a new
+   Cloud Run revision (`javi`, `europe-west1`).
 
 ---
 
-## 8. Этап 1 (на будущее): Django
+## 8. Runtime: Cloud SQL, secrets, env
 
-Когда статический лендинг заменим на Django-приложение:
+What `gcloud run deploy` in `deploy.yaml` expects to exist:
 
-- Заменить `Dockerfile` на вариант с Python + `gunicorn` (вместо nginx-лендинга),
-  по-прежнему слушающий порт `8080`.
-- Завести `SECRET_KEY` в **Secret Manager** GCP и подключить его к Cloud Run через
-  `--update-secrets=SECRET_KEY=javi-secret-key:latest` в шаге деплоя; прочие
-  настройки — через `--set-env-vars`.
-- Выдать deployer-SA (или runtime-SA) роль `roles/secretmanager.secretAccessor`.
-- Ужесточить `pre-commit`: добавить запуск тестов (`pytest`/`manage.py test`) как
-  блокирующий гейт перед коммитом, плюс линтеры (ruff/black).
+- **Cloud SQL** instance `serbito:europe-west1:serbitodb` (`--add-cloudsql-instances`).
+- **Secret Manager** secrets, exposed as env vars via `--set-secrets`:
+
+  | Env var | Secret |
+  |---|---|
+  | `SECRET_KEY` | `javi-secret-key` |
+  | `DATABASE_URL` | `javi-database-url` |
+  | `GOOGLE_MAPS_API_KEY` | `javi-google-maps-key` |
+  | `INFOBIP_API_KEY` | `javi-infobip-key` |
+  | `INFOBIP_WEBHOOK_SECRET` | `javi-infobip-webhook-secret` |
+  | `TASKS_SECRET` | `javi-tasks-secret` |
+  | `SENTRY_DSN` | `javi-sentry-dsn` (Sentry org `nohandoff`, project `javi`) |
+
+- **Runtime service account roles**: `roles/cloudsql.client`,
+  `roles/secretmanager.secretAccessor` (on those secrets), `roles/cloudtasks.enqueuer`
+  (rating tasks go to the `javi-rating` queue).
+- **Non-secret env** — `.github/deploy.env.yaml` (`--env-vars-file`); the deploy appends
+  `SENTRY_RELEASE=javi@<tag without v>`. The rest (`INFOBIP_BASE_URL/SENDER/CHANNEL`,
+  `PUBLIC_BASE_URL`, `CLOUD_TASKS_*`) uses the defaults in `config/settings.py`.
+- **Service shape**: public (`--allow-unauthenticated`), 0-1 instances, concurrency 250,
+  port 8080, request timeout 60 s.

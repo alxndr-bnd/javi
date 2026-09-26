@@ -1,10 +1,14 @@
 # uv, pinned by version and digest (supply chain, SERBITO-289). A named stage rather than
 # `COPY --from=<image>`: Dependabot's docker ecosystem only parses and bumps FROM lines.
+# The single source of the uv version: CI (ci.yaml) reads it from this line (SERBITO-294).
 FROM ghcr.io/astral-sh/uv:0.12.19@sha256:04d046b13e60d6bcec73cbc5e1cad25d680dea90c8573340950a0ac2d1aef424 AS uv
 
 # ---- Stage 1: Django + gunicorn (Javi MVP) ----
 # Лендинг Этапа 0 остаётся в образе (landing/) и отдаётся WhiteNoise на /.
-FROM python:3.14-slim
+# Base pinned by tag + multi-arch index digest (SERBITO-294): a re-pushed 3.14-slim can't
+# change prod without a commit; Dependabot (docker) bumps the digest. Python minor must match
+# .python-version (CI's interpreter) — config/test_dockerfile.py checks it.
+FROM python:3.14-slim@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
