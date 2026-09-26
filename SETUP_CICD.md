@@ -27,10 +27,11 @@
 
 В репозитории уже лежит всё необходимое для CI/CD:
 
+- **CI** `.github/workflows/ci.yaml` — гейт релиза (`ruff check`, `manage.py check`,
+  `pytest`, парсинг лендинга) на каждый PR (включая Dependabot) и каждый пуш в `main`.
 - **Пайплайн** `.github/workflows/deploy.yaml` — GitHub Actions, который при пуше
-  тега вида `v*.*.*` (или вручную через `workflow_dispatch`) сначала прогоняет
-  job **`verify`** (проверяет, что `landing/index.html` существует и валидно
-  парсится), затем собирает Docker-образ, пушит его в Artifact Registry и деплоит
+  тега вида `v*.*.*` сначала прогоняет job **`verify`** (тот же `ci.yaml` через
+  `workflow_call`), затем собирает Docker-образ, пушит его в Artifact Registry и деплоит
   в Cloud Run. Авторизация — keyless через Workload Identity Federation (WIF),
   без ключей в секретах. Ключевые значения (из `env` пайплайна):
   - `PROJECT_ID=serbito`
@@ -48,7 +49,9 @@
   парсится, и `manage.py check` (Django system check). То есть в репозитории уже
   есть Django-приложение — но на Этапе 0 деплоится именно статический лендинг.
 - **Release-скрипт** `scripts/release_minor.sh` — перед релизом гоняет гейт
-  (`ruff check`, парсинг лендинга, `manage.py check`), коммитит, поднимает
+  (`pytest`, `ruff check`, `manage.py check`, парсинг лендинга), коммитит
+  изменения отслеживаемых файлов (`git add -u`; новые файлы — только перечисленные
+  аргументами, о прочих неотслеживаемых печатает предупреждение), поднимает
   минорную версию (`vMAJOR.MINOR.0`), создаёт git-тег и пушит его (что и триггерит
   деплой). Версия начинается с `v0.1.0`, если тегов ещё нет.
 
@@ -315,11 +318,11 @@ bash scripts/release_minor.sh "first deploy"
    (при коммите локально срабатывает **pre-commit** — гейт качества).
 2. Выкатываешь релиз:
    ```bash
-   bash scripts/release_minor.sh "что изменили"
+   bash scripts/release_minor.sh "что изменили" [новый_файл ...]
    ```
    Скрипт поднимает минорную версию, создаёт git-тег и пушит его.
 3. Дальше всё автоматически — **GitHub Actions**:
-   - **verify** — проверяет, что лендинг (`index.html`) на месте;
+   - **verify** — гейт из `ci.yaml`: ruff, `manage.py check`, pytest, лендинг;
    - **build + push** — собирает Docker-образ и пушит в Artifact Registry
      (`europe-west1-docker.pkg.dev/serbito/javi/javi`);
    - **deploy** — деплоит новую ревизию в Cloud Run (`javi`, `europe-west1`).

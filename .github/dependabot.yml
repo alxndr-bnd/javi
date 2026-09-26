@@ -9,7 +9,8 @@ updates:
     schedule:
       interval: "weekly"
 
-  # The Cloud Run image base (python:3.12-slim).
+  # FROM lines in the Dockerfile: the python:3.14-slim base and the uv stage
+  # (pinned by tag + digest; Dependabot bumps both together).
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

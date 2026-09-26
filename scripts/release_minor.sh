@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
-# Release helper for javi (Phase 0 — static landing). Adapted from
-# planning-poker. Gates on the landing check, commits, bumps the minor
-# version tag, and pushes — the v*.*.* tag triggers the Cloud Run deploy.
+# Release helper for javi: runs the gate (pytest, ruff, manage.py check, landing parse),
+# commits, bumps the minor version tag and pushes. The v*.*.* tag triggers
+# .github/workflows/deploy.yaml, which re-runs the same gate and deploys to Cloud Run.
 set -euo pipefail
+cd "$(dirname "$0")/.."
 
 msg="${1:-}"
 if [[ -z "$msg" ]]; then
-  echo "Usage: $0 \"commit message\""
+  echo "Usage: $0 \"commit message\" [new_file ...]"
+  echo "  Changes to tracked files are staged automatically (git add -u)."
+  echo "  New files are staged only when listed, so stray drafts never ship."
+  exit 1
+fi
+shift # the rest of "$@" are explicitly listed new files (may be empty)
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [[ "$branch" != "main" ]]; then
+  echo "Release only from main (current: $branch)" >&2
   exit 1
 fi
 
@@ -22,7 +32,17 @@ uv run python manage.py check
 echo "==> landing HTML parses"
 python3 -c "import html.parser; html.parser.HTMLParser().feed(open('landing/index.html',encoding='utf-8').read()); print('landing OK')"
 
-git add .
+git add -u
+if [[ $# -gt 0 ]]; then
+  git add -- "$@"
+fi
+
+untracked="$(git ls-files --others --exclude-standard)"
+if [[ -n "$untracked" ]]; then
+  echo "WARNING: untracked files NOT included in this release (pass them as arguments to add):" >&2
+  echo "$untracked" | sed 's/^/  /' >&2
+fi
+
 if git diff --cached --quiet; then
   echo "Nothing to commit — tagging current HEAD."
 else

@@ -1,3 +1,7 @@
+# uv, pinned by version and digest (supply chain, SERBITO-289). A named stage rather than
+# `COPY --from=<image>`: Dependabot's docker ecosystem only parses and bumps FROM lines.
+FROM ghcr.io/astral-sh/uv:0.12.19@sha256:04d046b13e60d6bcec73cbc5e1cad25d680dea90c8573340950a0ac2d1aef424 AS uv
+
 # ---- Stage 1: Django + gunicorn (Javi MVP) ----
 # Лендинг Этапа 0 остаётся в образе (landing/) и отдаётся WhiteNoise на /.
 FROM python:3.14-slim
@@ -19,7 +23,7 @@ RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 RUN find /usr/local/lib -type f \( -name 'bom.cdx.json' -o -name 'vendor.txt' \) -path '*/pip/_vendor/*' -delete
 
 # uv для установки зависимостей по lock-файлу
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=uv /uv /usr/local/bin/uv
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
