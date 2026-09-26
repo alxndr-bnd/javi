@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-DOCKERFILE = (Path(__file__).resolve().parent.parent / "dockerfile").read_text(encoding="utf-8")
+DOCKERFILE = (Path(__file__).resolve().parent.parent / "Dockerfile").read_text(encoding="utf-8")
 
 
 def test_strips_pip_vendored_sbom():

@@ -87,7 +87,9 @@
     display:inline-block;border:0;border-radius:12px;padding:14px 24px;font-size:16px;font-weight:700;
     cursor:pointer;text-decoration:none;transition:.15s;
   }
-  .btn-primary{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#fff}
+  /* SERBITO-278: darker stops so white text clears WCAG AA (4.5:1) across the whole gradient;
+     was --brand/--brand-2 = 3.71/4.37 */
+  .btn-primary{background:linear-gradient(90deg,#3a5bd0,#6a4be0);color:#fff}
   .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,124,255,.35)}
   .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
 
@@ -126,13 +128,15 @@
   .ok-msg h2{color:var(--ok)}
 
   footer{border-top:1px solid var(--line);margin-top:40px;padding:24px 0 40px;color:var(--muted);font-size:13px;text-align:center}
+  /* SERBITO-278: every footer link (privacy, cross-promo) gets an explicit colour; without it the
+     privacy link fell back to the browser's #0000ee = 1.97:1 on --bg */
+  footer a{color:var(--ink);font-weight:600}
   .req{color:var(--brand)}
 
   /* SERBITO-265: modest cross-promo in the footer (plain links, no third-party JS) */
   .xpromo{margin:18px auto 0;max-width:680px}
   .xpromo h2{margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
   .xpromo ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px}
-  .xpromo a{color:var(--ink);font-weight:600}
   .xpromo .made{margin:10px 0 0}
 </style>
 </head>
