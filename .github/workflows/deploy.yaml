@@ -4,9 +4,10 @@ name: Deploy to Cloud Run
 # Keyless auth via Workload Identity Federation — no service-account JSON key.
 # Mirrors the planning-poker pipeline (same GCP project `serbito`).
 #
-# Pipeline: verify (the release-script gate: ruff, manage.py check, pytest, landing parse)
-# -> deploy (build the Django + gunicorn image, Trivy gate, Cloud Run). A tag pushed
-# without scripts/release_minor.sh still cannot ship untested code (SERBITO-277).
+# Pipeline: verify (the release-script gate from ci.yaml, reused via workflow_call: ruff,
+# manage.py check, pytest, landing parse) -> deploy (build the Django + gunicorn image,
+# Trivy gate, Cloud Run). A tag pushed without scripts/release_minor.sh still cannot ship
+# untested code (SERBITO-277).
 on:
   # Deploy ONLY on a v*.*.* tag (via scripts/release_minor.sh). No
   # workflow_dispatch — that would let unreleased code bypass the tag gate.
@@ -27,37 +28,10 @@ env:
   DEPLOYER_SA: javi-deployer@serbito.iam.gserviceaccount.com
 
 jobs:
-  verify: # Same gate as scripts/release_minor.sh — deploy never runs without it
-    runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)
-    timeout-minutes: 10
+  verify: # Same gate as scripts/release_minor.sh (ci.yaml) — deploy never runs without it
+    uses: ./.github/workflows/ci.yaml
     permissions:
       contents: read # no id-token here: this job runs dependency and test code, not the deploy
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
-
-      # uv + Python from .python-version; dependency and interpreter downloads cached,
-      # keyed on uv.lock (the repo installs with uv, so this is the pip cache equivalent).
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0 (SHA-pinned)
-        with:
-          version: "0.12.17"
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-          cache-python: true
-
-      - name: Install dependencies (locked, incl. dev)
-        run: uv sync --frozen
-
-      # Tests use the sqlite fallback, exactly as locally: no DATABASE_URL, no .env.
-      - name: ruff check
-        run: uv run --frozen ruff check .
-      - name: manage.py check
-        run: uv run --frozen python manage.py check
-      - name: pytest
-        run: uv run --frozen pytest
-      - name: Landing HTML parses
-        run: |
-          test -s landing/index.html
-          python3 -c "import html.parser; html.parser.HTMLParser().feed(open('landing/index.html',encoding='utf-8').read()); print('landing OK')"
 
   deploy:
     runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)

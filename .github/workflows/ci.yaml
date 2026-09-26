@@ -1,0 +1,49 @@
+name: CI
+
+# The release gate (same as scripts/release_minor.sh): ruff, manage.py check, pytest,
+# landing parse. One definition, two callers (SERBITO-290):
+#   - here, on every PR (incl. Dependabot) and every push to main, so nothing merges untested;
+#   - deploy.yaml, via workflow_call, before every v*.*.* tag deploy.
+# Runs on main also seed the uv cache: tag runs can restore caches from the default
+# branch only (a tag's own cache is invisible to the next tag).
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)
+    timeout-minutes: 10
+    permissions:
+      contents: read # no id-token: this job runs dependency and test code, never deploys
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
+
+      # uv + Python from .python-version; dependency and interpreter downloads cached,
+      # keyed on uv.lock (the repo installs with uv, so this is the pip cache equivalent).
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0 (SHA-pinned)
+        with:
+          version: "0.12.17"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          cache-python: true
+
+      - name: Install dependencies (locked, incl. dev)
+        run: uv sync --frozen
+
+      # Tests use the sqlite fallback, exactly as locally: no DATABASE_URL, no .env.
+      - name: ruff check
+        run: uv run --frozen ruff check .
+      - name: manage.py check
+        run: uv run --frozen python manage.py check
+      - name: pytest
+        run: uv run --frozen pytest
+      - name: Landing HTML parses
+        run: |
+          test -s landing/index.html
+          python3 -c "import html.parser; html.parser.HTMLParser().feed(open('landing/index.html',encoding='utf-8').read()); print('landing OK')"
