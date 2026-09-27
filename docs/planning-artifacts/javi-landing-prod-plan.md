@@ -129,7 +129,7 @@
       pip install pre-commit && pre-commit install
       ```
       *Проверка:* `pre-commit run --all-files` проходит зелёным
-      ([`SETUP_CICD.md`, раздел 2](../../SETUP_CICD.md#2-предварительно-установить-pre-commit-локально)).
+      ([`SETUP_CICD.md`, раздел 2](../../SETUP_CICD.md#2-local-setup-uv-and-pre-commit)).
 - [ ] Выпустить релиз (создаёт тег `v0.1.0`, пушит → триггерит workflow):
       ```bash
       bash scripts/release_minor.sh "first deploy"
@@ -142,14 +142,14 @@
         --project=serbito --format='value(status.url)'
       ```
       затем `curl -I <url>` → `200`
-      ([`SETUP_CICD.md`, раздел 6](../../SETUP_CICD.md#6-первый-деплой)).
+      ([`SETUP_CICD.md`, раздел 6](../../SETUP_CICD.md#6-first-deploy)).
       *Проверка:* URL `https://javi-...run.app` отвечает `200`, лендинг открывается.
 
 ---
 
 ## 5. Домен javi.serbito.rs
 
-Команды — [`SETUP_CICD.md`, раздел 5 «DNS / поддомен»](../../SETUP_CICD.md#5-dns--поддомен-javiserbitors).
+Команды — [`SETUP_CICD.md`, раздел 5 «DNS / поддомен»](../../SETUP_CICD.md#5-dns-javiserbitors).
 Делается **после** первого деплоя (domain mapping требует существующий сервис).
 
 - [ ] Создать domain mapping в Cloud Run (`javi.serbito.rs` → service `javi`)
@@ -193,7 +193,7 @@
 - [ ] Подвести итог по окончании бюджета/срока кампании.
       - **≥ 5 заявок** → спрос подтверждён → переходим к **Этапу 1**: оживляем
         Django, строим MVP
-        ([`SETUP_CICD.md`, раздел 8](../../SETUP_CICD.md#8-этап-1-на-будущее-django)).
+        ([`SETUP_CICD.md`, раздел 8](../../SETUP_CICD.md#8-runtime-cloud-sql-secrets-env)).
       - **< 5 заявок** → пересмотр: оффер, текст лендинга, канал, таргетинг.
         Возможно повторить Этап 0 с правками.
       *Проверка:* решение зафиксировано (идём в MVP / итерируем), с цифрами по
