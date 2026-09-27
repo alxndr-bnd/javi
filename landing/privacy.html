@@ -1,17 +1,27 @@
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="sr" data-consent-lang="visitor">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- Google tag (gtag.js) — GA4 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KHME7DK2K0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  // Consent Mode v2 (SERBITO-321): denied until the visitor accepts in the banner (/consent.js);
+  // a stored choice younger than 12 months is applied here, before the tag is configured.
+  (function(){
+    var a = 'denied';
+    try {
+      var c = JSON.parse(localStorage.getItem('javi_consent'));
+      if (c && c.v === 'granted' && Date.now() - c.t < 365 * 864e5) a = 'granted';
+    } catch (e) {}
+    gtag('consent', 'default', {ad_storage: 'denied', analytics_storage: a, ad_user_data: 'denied', ad_personalization: 'denied', wait_for_update: 500});
+  })();
   gtag('js', new Date());
   gtag('config', 'G-KHME7DK2K0');
 </script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KHME7DK2K0"></script>
 
 <title>Javi — Politika privatnosti / Privacy Policy</title>
 <meta name="description" content="Kako Javi prikuplja i koristi podatke iz kontakt forme i analitike poseta. How Javi collects and uses contact form and visit analytics data.">
@@ -41,6 +51,9 @@
   .muted{color:var(--muted);font-size:13px}
   ul{padding-left:20px}
   .back{display:inline-block;margin-top:8px;font-size:14px}
+  /* SERBITO-321: "Cookie settings" reopens the consent banner (/consent.js); looks like a link */
+  .cookie-btn{background:none;border:0;padding:0;font:inherit;color:var(--brand);text-decoration:underline;cursor:pointer}
+  .cookie-btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -60,7 +73,7 @@
     <ul>
       <li>Podatke koje sami unesete u formu: naziv prodavnice, kontakt (email ili telefon/Viber), okvirni mesečni broj porudžbina i opcionu poruku.</li>
       <li>UTM oznake iz linka (utm_source/medium/campaign) — da bismo znali sa kog kanala ste došli.</li>
-      <li>Statistiku poseta preko <strong>Google Analytics 4</strong>: koje stranice otvarate, odakle ste došli, tip uređaja i pregledača i približnu lokaciju (grad, zemlja) izvedenu iz IP adrese. Radi na početnoj stranici, ovoj stranici i u nalogu prodavnice (prijava, registracija, kontrolna tabla). <strong>Ne</strong> radi na stranicama za praćenje dostave (/t/…) koje dobijaju kupci.</li>
+      <li>Statistiku poseta preko <strong>Google Analytics 4</strong> (sa kolačićima samo ako to prihvatite — vidi „Saglasnost za analitiku“): koje stranice otvarate, odakle ste došli, tip uređaja i pregledača i približnu lokaciju (grad, zemlja) izvedenu iz IP adrese. Radi na početnoj stranici, ovoj stranici i u nalogu prodavnice (prijava, registracija, kontrolna tabla). <strong>Ne</strong> radi na stranicama za praćenje dostave (/t/…) koje dobijaju kupci.</li>
       <li>Anonimnu, zbirnu statistiku poseta početne stranice (Cloudflare Web Analytics) — <strong>bez kolačića</strong> i bez praćenja pojedinca.</li>
     </ul>
 
@@ -75,7 +88,10 @@
     </ul>
 
     <h3>Kolačići</h3>
-    <p>Google Analytics postavlja analitičke kolačiće <strong>_ga</strong> (razlikuje posetioce) i <strong>_ga_*</strong> (čuva stanje posete), koji traju do 2 godine. Možete ih blokirati ili obrisati u podešavanjima pregledača ili instalirati <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a>. Cloudflare Web Analytics ne koristi kolačiće. Nalog prodavnice koristi i neophodne kolačiće za prijavu, jezik i zaštitu formi. Izbor jezika na početnoj stranici čuvamo lokalno u vašem pregledaču (localStorage).</p>
+    <p>Samo ako prihvatite analitiku, Google Analytics postavlja analitičke kolačiće <strong>_ga</strong> (razlikuje posetioce) i <strong>_ga_*</strong> (čuva stanje posete), koji traju do 2 godine. Možete ih blokirati ili obrisati u podešavanjima pregledača ili instalirati <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a>. Cloudflare Web Analytics ne koristi kolačiće. Nalog prodavnice koristi i neophodne kolačiće za prijavu, jezik i zaštitu formi. Izbor jezika na početnoj stranici čuvamo lokalno u vašem pregledaču (localStorage).</p>
+
+    <h3>Saglasnost za analitiku</h3>
+    <p>Pri prvoj poseti mali baner vas pita da li dozvoljavate analitičke kolačiće. Dok ne kliknete <strong>Prihvati</strong>, Google Analytics radi u režimu saglasnosti: ne postavlja i ne čita kolačiće i šalje Google-u samo signale bez kolačića — otvorenu stranicu, vreme, tip pregledača i uređaja, približnu lokaciju izvedenu iz IP adrese i vaš izbor, bez identifikatora po kojem bi vas prepoznao pri sledećoj poseti. Google te signale može koristiti za zbirnu, modelovanu statistiku. <strong>Odbij</strong> zadržava to stanje. Vaš izbor i datum čuvamo u vašem pregledaču (localStorage) i ponovo pitamo posle 12 meseci. Izbor možete promeniti bilo kada preko <button type="button" class="cookie-btn" data-consent-open="sr">Podešavanja kolačića</button> na dnu stranice; povlačenje saglasnosti briše kolačiće _ga.</p>
 
     <h3>Čuvanje i vaša prava</h3>
     <p>Podatke čuvamo dok traje provera interesovanja. Imate pravo na pristup, ispravku i brisanje svojih podataka — pišite nam i obrisaćemo ih.</p>
@@ -95,7 +111,7 @@
     <ul>
       <li>What you enter in the form: shop name, contact (email or phone/Viber), approximate monthly order volume, and an optional message.</li>
       <li>UTM tags from the link (utm_source/medium/campaign) — to know which channel you came from.</li>
-      <li>Visit statistics via <strong>Google Analytics 4</strong>: the pages you open, where you came from, device and browser type, and approximate location (city, country) derived from your IP address. It runs on the home page, this page and the shop account (login, sign-up, dashboard). It does <strong>not</strong> run on the delivery tracking pages (/t/…) that customers receive.</li>
+      <li>Visit statistics via <strong>Google Analytics 4</strong> (with cookies only if you accept — see “Analytics consent”): the pages you open, where you came from, device and browser type, and approximate location (city, country) derived from your IP address. It runs on the home page, this page and the shop account (login, sign-up, dashboard). It does <strong>not</strong> run on the delivery tracking pages (/t/…) that customers receive.</li>
       <li>Anonymous, aggregate visit statistics for the home page (Cloudflare Web Analytics) — <strong>cookieless</strong>, no individual tracking.</li>
     </ul>
 
@@ -110,7 +126,10 @@
     </ul>
 
     <h3>Cookies</h3>
-    <p>Google Analytics sets the analytics cookies <strong>_ga</strong> (tells visitors apart) and <strong>_ga_*</strong> (keeps the visit state), which last up to 2 years. You can block or delete them in your browser settings or install the <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a> add-on. Cloudflare Web Analytics uses no cookies. The shop account also uses essential cookies for login, language and form protection. Your language choice on the home page is stored locally in your browser (localStorage).</p>
+    <p>Only if you accept analytics, Google Analytics sets the analytics cookies <strong>_ga</strong> (tells visitors apart) and <strong>_ga_*</strong> (keeps the visit state), which last up to 2 years. You can block or delete them in your browser settings or install the <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a> add-on. Cloudflare Web Analytics uses no cookies. The shop account also uses essential cookies for login, language and form protection. Your language choice on the home page is stored locally in your browser (localStorage).</p>
+
+    <h3>Analytics consent</h3>
+    <p>On your first visit a small banner asks whether you allow analytics cookies. Until you click <strong>Accept</strong>, Google Analytics runs in consent mode: it sets and reads no cookies and sends Google only cookieless pings — the page opened, the time, browser and device type, approximate location derived from the IP address and your choice, with no identifier that recognises you on your next visit. Google may use these pings for aggregate, modelled statistics. <strong>Decline</strong> keeps it that way. We store your choice and its date in your browser (localStorage) and ask again after 12 months. You can change it at any time via <button type="button" class="cookie-btn" data-consent-open="en">Cookie settings</button> at the bottom of the page; withdrawing consent deletes the _ga cookies.</p>
 
     <h3>Retention and your rights</h3>
     <p>We keep the data for the duration of the validation phase. You have the right to access, correct, and delete your data — email us and we will remove it.</p>
@@ -130,7 +149,7 @@
     <ul>
       <li>То, что вы вводите в форму: название магазина, контакт (email или телефон/Viber), примерный объём заказов в месяц и необязательное сообщение.</li>
       <li>UTM-метки из ссылки (utm_source/medium/campaign) — чтобы понимать, с какого канала вы пришли.</li>
-      <li>Статистику посещений через <strong>Google Analytics 4</strong>: какие страницы вы открываете, откуда пришли, тип устройства и браузера и примерное местоположение (город, страна), определённое по IP-адресу. Работает на главной странице, этой странице и в кабинете магазина (вход, регистрация, панель). <strong>Не</strong> работает на страницах отслеживания доставки (/t/…), которые получают покупатели.</li>
+      <li>Статистику посещений через <strong>Google Analytics 4</strong> (с cookies — только если вы согласитесь, см. «Согласие на аналитику»): какие страницы вы открываете, откуда пришли, тип устройства и браузера и примерное местоположение (город, страна), определённое по IP-адресу. Работает на главной странице, этой странице и в кабинете магазина (вход, регистрация, панель). <strong>Не</strong> работает на страницах отслеживания доставки (/t/…), которые получают покупатели.</li>
       <li>Анонимную сводную статистику посещений главной страницы (Cloudflare Web Analytics) — <strong>без cookies</strong> и без отслеживания личности.</li>
     </ul>
 
@@ -145,7 +164,10 @@
     </ul>
 
     <h3>Cookies</h3>
-    <p>Google Analytics устанавливает аналитические cookies <strong>_ga</strong> (различает посетителей) и <strong>_ga_*</strong> (хранит состояние визита) сроком до 2 лет. Их можно заблокировать или удалить в настройках браузера либо установить дополнение <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a>. Cloudflare Web Analytics cookies не использует. Кабинет магазина также использует необходимые cookies для входа, языка и защиты форм. Выбор языка на главной странице хранится локально в вашем браузере (localStorage).</p>
+    <p>Только если вы согласитесь на аналитику, Google Analytics устанавливает аналитические cookies <strong>_ga</strong> (различает посетителей) и <strong>_ga_*</strong> (хранит состояние визита) сроком до 2 лет. Их можно заблокировать или удалить в настройках браузера либо установить дополнение <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a>. Cloudflare Web Analytics cookies не использует. Кабинет магазина также использует необходимые cookies для входа, языка и защиты форм. Выбор языка на главной странице хранится локально в вашем браузере (localStorage).</p>
+
+    <h3>Согласие на аналитику</h3>
+    <p>При первом визите небольшой баннер спрашивает, разрешаете ли вы аналитические cookies. Пока вы не нажмёте <strong>Принять</strong>, Google Analytics работает в режиме согласия: не ставит и не читает cookies и отправляет в Google только запросы без cookies — открытую страницу, время, тип браузера и устройства, примерное местоположение по IP-адресу и ваш выбор, без идентификатора, по которому вас можно узнать при следующем визите. Google может использовать эти запросы для сводной, смоделированной статистики. <strong>Отклонить</strong> оставляет всё как есть. Ваш выбор и его дату мы храним в вашем браузере (localStorage) и спрашиваем снова через 12 месяцев. Изменить решение можно в любой момент через <button type="button" class="cookie-btn" data-consent-open="ru">Настройки cookies</button> внизу страницы; отзыв согласия удаляет cookies _ga.</p>
 
     <h3>Хранение и ваши права</h3>
     <p>Данные храним в течение фазы проверки спроса. Вы вправе запросить доступ, исправление и удаление своих данных — напишите нам, и мы их удалим.</p>
@@ -155,7 +177,12 @@
     <a class="back" href="/">← На главную</a>
   </section>
 
-  <p class="muted">© 2026 Javi · javi.serbito.rs</p>
+  <p class="muted">© 2026 Javi · javi.serbito.rs ·
+    <button type="button" class="cookie-btn" data-consent-open="sr" lang="sr">Podešavanja kolačića</button> ·
+    <button type="button" class="cookie-btn" data-consent-open="en" lang="en">Cookie settings</button> ·
+    <button type="button" class="cookie-btn" data-consent-open="ru" lang="ru">Настройки cookies</button></p>
 </div>
+<!-- Analytics consent banner (SERBITO-321); language: the visitor's landing choice, else the browser's -->
+<script src="/consent.js" defer></script>
 </body>
 </html>

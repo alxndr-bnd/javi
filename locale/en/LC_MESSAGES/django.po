@@ -797,3 +797,11 @@ msgstr ""
 #: tracking/views.py:64
 msgid "Too many requests. Try again later."
 msgstr ""
+
+#: templates/base.html:45
+msgid "Privacy policy"
+msgstr ""
+
+#: templates/base.html:46
+msgid "Cookie settings"
+msgstr ""

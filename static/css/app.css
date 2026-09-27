@@ -158,3 +158,9 @@ a{color:var(--brand)}
 .rate-done{text-align:center;margin-top:24px;font-size:16px;font-weight:700;color:var(--delivered)}
 .track-unsub{text-align:center;margin-top:20px;font-size:12px}
 .track-unsub a{color:var(--muted)}
+/* footer: privacy policy + "Cookie settings", which reopens the consent banner (SERBITO-321) */
+.site-foot{text-align:center;font-size:12px;color:var(--muted);padding:16px 14px 24px}
+.site-foot a,.link-btn{color:var(--ink);text-decoration:underline}
+.link-btn{background:none;border:0;padding:0;font:inherit;cursor:pointer}
+.link-btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+body:has(.fab) .site-foot{padding-bottom:88px}

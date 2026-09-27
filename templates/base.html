@@ -10,13 +10,23 @@
   {# Google tag (gtag.js) — GA4. Customer pages (/t/<token>/) override this block to empty: #}
   {# their URL carries the tracking token, which must never reach Google (SERBITO-306). #}
   {% block analytics %}
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHME7DK2K0"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
+    // Consent Mode v2 (SERBITO-321): denied until the visitor accepts in the banner (/consent.js);
+    // a stored choice younger than 12 months is applied here, before the tag is configured.
+    (function(){
+      var a = 'denied';
+      try {
+        var c = JSON.parse(localStorage.getItem('javi_consent'));
+        if (c && c.v === 'granted' && Date.now() - c.t < 365 * 864e5) a = 'granted';
+      } catch (e) {}
+      gtag('consent', 'default', {ad_storage: 'denied', analytics_storage: a, ad_user_data: 'denied', ad_personalization: 'denied', wait_for_update: 500});
+    })();
     gtag('js', new Date());
     gtag('config', 'G-KHME7DK2K0');
   </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHME7DK2K0"></script>
   {% endblock %}
 
   <title>{% block title %}Javi{% endblock %}</title>
@@ -28,5 +38,14 @@
     <strong>ALPHA</strong> · {% trans "in development — bugs and outages are possible, do not rely on stability" %}
   </div>
   {% block body %}{% endblock %}
+  {# Analytics consent (SERBITO-321): the footer button reopens the banner from /consent.js. #}
+  {# Customer pages (/t/<token>/) override this block to empty, like analytics above. #}
+  {% block consent %}
+  <footer class="site-foot">
+    <a href="/privacy.html#{{ LANGUAGE_CODE }}">{% trans "Privacy policy" %}</a> ·
+    <button type="button" class="link-btn" data-consent-open>{% trans "Cookie settings" %}</button>
+  </footer>
+  <script src="/consent.js" defer></script>
+  {% endblock %}
 </body>
 </html>

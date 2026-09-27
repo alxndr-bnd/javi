@@ -7,3 +7,5 @@ referrer: no page's analytics can read the token from document.referrer.
 {% block analytics %}
   <meta name="referrer" content="strict-origin">
 {% endblock %}
+{# No analytics here, so no consent banner or cookie settings either (SERBITO-321). #}
+{% block consent %}{% endblock %}
