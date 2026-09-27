@@ -29,22 +29,34 @@ RUN find /usr/local/lib -type f \( -name 'bom.cdx.json' -o -name 'vendor.txt' \)
 # uv для установки зависимостей по lock-файлу
 COPY --from=uv /uv /usr/local/bin/uv
 
+# Cold start (SERBITO-323): every process start used to compile all imported modules from
+# source — the base image ships the stdlib without .pyc, uv installs without them, and
+# PYTHONDONTWRITEBYTECODE never caches them. Compile once at build time instead: stdlib here
+# (its own layer, cached), dependencies via --compile-bytecode, app code after COPY.
+RUN python -m compileall -q -j 0 "$(python -c 'import sysconfig; print(sysconfig.get_path("stdlib"))')"
+
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --compile-bytecode
 
 COPY . .
+RUN python -m compileall -q -j 0 -x '/\.venv/' /app
 
 # Собрать статику (manifest) на этапе сборки
 RUN python manage.py collectstatic --noinput
 
 # Run as an unprivileged user (least privilege; Cloud Run binds non-privileged 8080).
-# Added after collectstatic (which needs root write) and before runtime. migrate at
-# startup writes only to the DB, so no image-filesystem write is needed at runtime.
+# Added after collectstatic (which needs root write) and before runtime; nothing writes to
+# the image filesystem at runtime.
 RUN useradd --create-home --uid 10001 appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8080
 
-# Миграции на старте, затем gunicorn на $PORT (Cloud Run = 8080)
+# Только gunicorn на $PORT (Cloud Run = 8080). Миграций на старте нет (SERBITO-323): их
+# гоняет деплой — Cloud Run job javi-migrate до переключения трафика (deploy.yaml). Для
+# локального/self-hosted запуска: `docker run … python manage.py migrate --noinput`.
+# --preload: приложение импортируется один раз в мастере, воркеры форкаются готовыми — на
+# 1 vCPU два воркера не импортируют Django параллельно. БД при импорте не трогается (соединения
+# ленивые), Sentry после fork сам перезапускает свой поток.
 # JSON-форма CMD + exec: gunicorn становится PID 1 и получает SIGTERM от Cloud Run напрямую
-CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 60"]
+CMD ["sh", "-c", "exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 60 --preload"]

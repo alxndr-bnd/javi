@@ -14,6 +14,7 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
 6. [First deploy](#6-first-deploy)
 7. [Day-to-day release flow](#7-day-to-day-release-flow)
 8. [Runtime: Cloud SQL, secrets, env](#8-runtime-cloud-sql-secrets-env)
+9. [Database migrations](#9-database-migrations)
 
 > Commands assume an authenticated Google Cloud SDK
 > (`gcloud auth login`, `gcloud config set project serbito`).
@@ -30,23 +31,29 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
   1. `verify` — the same `ci.yaml` via `workflow_call`;
   2. `deploy` — build the image with Buildx (registry cache `:buildcache`), push it to
      Artifact Registry as `:<commit sha>`, Trivy scan (fails on a *fixed* HIGH/CRITICAL
-     vulnerability or a leaked secret), `gcloud run deploy`.
+     vulnerability or a leaked secret), run the migrate job if migrations changed
+     ([section 9](#9-database-migrations)), then `gcloud run deploy`, which moves traffic.
 
   Auth is keyless via Workload Identity Federation. Pipeline `env`:
   - `PROJECT_ID=serbito`, `REGION=europe-west1`, `SERVICE=javi`
   - `AR_IMAGE=europe-west1-docker.pkg.dev/serbito/javi/javi`
   - `WIF_PROVIDER=projects/488744139718/locations/global/workloadIdentityPools/github-pool/providers/github`
   - `DEPLOYER_SA=javi-deployer@serbito.iam.gserviceaccount.com`
+  - `RUNTIME_SA=488744139718-compute@developer.gserviceaccount.com` (service and migrate job)
+  - `CLOUDSQL_INSTANCE`, `MIGRATE_JOB=javi-migrate`, `RUN_SECRETS` (shared by service and job)
 - **Dockerfile** — Django + gunicorn:
   - base `python:3.14-slim` and a `uv` stage (`ghcr.io/astral-sh/uv`), both pinned by
     tag + digest;
   - OS packages upgraded (`apt-get upgrade`); pip's vendored SBOM manifests removed
     (false-positive Trivy CVEs);
   - dependencies installed with `uv sync --frozen --no-dev` from `pyproject.toml` + `uv.lock`;
+  - bytecode compiled at build time (stdlib, dependencies, app), so a cold start doesn't
+    compile every module from source;
   - `collectstatic` at build time; WhiteNoise serves static files and the landing page
     (`landing/`) at `/`;
   - runs as unprivileged `appuser` (uid 10001);
-  - on start: `manage.py migrate`, then gunicorn on `$PORT` (8080 on Cloud Run).
+  - on start: only gunicorn on `$PORT` (8080 on Cloud Run), 2 workers × 4 threads,
+    `--preload`. No migrations on start: the deploy runs them ([section 9](#9-database-migrations)).
 - **One toolchain for CI and the image** — CI's Python comes from `.python-version` and must
   match the image's `python:X.Y-slim`; CI's uv version is read from the Dockerfile's `uv`
   stage. `config/test_dockerfile.py` fails if they drift or a base image loses its digest.
@@ -122,7 +129,9 @@ for ROLE in roles/run.admin roles/artifactregistry.writer roles/iam.serviceAccou
 done
 ```
 
-- `iam.serviceAccountUser` lets the deployer deploy under the Cloud Run runtime account.
+- `run.admin` covers the service and the `javi-migrate` job (create, update, execute).
+- `iam.serviceAccountUser` lets the deployer deploy the service and the job under the
+  Cloud Run runtime account (`RUNTIME_SA`).
 - `storage.admin` covers Artifact Registry's GCS bucket; can be narrowed to that bucket later.
 
 ### 3.4. WIF: allow this repo to impersonate the deployer
@@ -206,8 +215,9 @@ After section 5 it is also served at https://javi.serbito.rs.
 
 1. Merge to `main` (CI runs the gate on the PR and on `main`).
 2. `bash scripts/release_minor.sh "what changed" [new_file ...]` — gate, commit, tag, push.
-3. GitHub Actions: `verify` (the CI gate) → build + push the image → Trivy → deploy a new
-   Cloud Run revision (`javi`, `europe-west1`).
+3. GitHub Actions: `verify` (the CI gate) → build + push the image → Trivy → migrate job
+   (only if migration files changed) → deploy a new Cloud Run revision (`javi`,
+   `europe-west1`).
 
 ---
 
@@ -235,4 +245,35 @@ What `gcloud run deploy` in `deploy.yaml` expects to exist:
   `SENTRY_RELEASE=javi@<tag without v>`. The rest (`INFOBIP_BASE_URL/SENDER/CHANNEL`,
   `PUBLIC_BASE_URL`, `CLOUD_TASKS_*`) uses the defaults in `config/settings.py`.
 - **Service shape**: public (`--allow-unauthenticated`), 0-1 instances, concurrency 250,
-  port 8080, request timeout 60 s.
+  startup CPU boost, port 8080, request timeout 60 s.
+
+---
+
+## 9. Database migrations
+
+Migrations run in the deploy, not on container start (SERBITO-323). Before, every cold start
+(~28 a day, scale to zero) ran `manage.py migrate` first, which added seconds to the first
+response of the landing, `robots.txt` and `sitemap.xml`.
+
+- **Cloud Run job `javi-migrate`** — same image, runtime SA, Cloud SQL instance, secrets and
+  env file as the service; command `python manage.py migrate --noinput`; 1 task, no retries,
+  10 min timeout. `deploy.yaml` creates or updates it (`gcloud run jobs deploy … --execute-now
+  --wait`), so there is no one-time setup and no new IAM role.
+- **When it runs** — step `Detect pending migrations`: only if a `*/migrations/*.py` file
+  (not `__init__.py`) changed since the commit the service runs now (the tag of its live
+  image). Fallback baseline: the previous tag. Fail-safe — it runs when the job doesn't exist
+  yet, when there is no baseline, or when the diff fails.
+- **Order** — the job runs before `gcloud run deploy`, which is what moves traffic. A failed
+  migration fails the workflow; the new revision isn't deployed and the old one keeps serving.
+- **Compatibility rule** — for a moment the *old* code runs against the *new* schema. Keep
+  migrations backward compatible: add columns/tables first, drop or rename in a later release.
+
+Run it by hand (e.g. after a failed deploy, once fixed):
+
+```bash
+gcloud run jobs execute javi-migrate --region=europe-west1 --project=serbito --wait
+gcloud run jobs executions list --job=javi-migrate --region=europe-west1 --project=serbito
+```
+
+Local or self-hosted Docker: the image no longer migrates on start, so run it once per
+schema change: `docker run --rm --env-file .env <image> python manage.py migrate --noinput`.

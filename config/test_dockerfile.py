@@ -19,10 +19,30 @@ def test_strips_pip_vendored_sbom():
     assert "-path '*/pip/_vendor/*' -delete" in DOCKERFILE
 
 
+CMD = next(line for line in DOCKERFILE.splitlines() if line.startswith("CMD"))
+
+
 def test_cmd_is_exec_form_and_execs_gunicorn():
-    cmd = next(line for line in DOCKERFILE.splitlines() if line.startswith("CMD"))
-    assert cmd.startswith('CMD ["')
-    assert "exec gunicorn" in cmd
+    assert CMD.startswith('CMD ["')
+    assert "exec gunicorn" in CMD
+
+
+def test_container_start_does_not_migrate():
+    # Миграции гоняет деплой (Cloud Run job до переключения трафика), не каждый холодный
+    # старт (SERBITO-323). Никакого entrypoint-скрипта, который мог бы вернуть их на старт.
+    assert "migrate" not in CMD
+    assert not re.search(r"^ENTRYPOINT", DOCKERFILE, re.M)
+    assert "--preload" in CMD  # Django импортируется один раз, а не в каждом воркере
+
+
+def test_bytecode_is_compiled_at_build_time():
+    # Без .pyc каждый старт процесса компилировал stdlib, зависимости и код из исходников:
+    # python:*-slim удаляет .pyc stdlib, uv по умолчанию их не создаёт (SERBITO-323).
+    assert re.search(r"^RUN python -m compileall .*sysconfig.*stdlib", DOCKERFILE, re.M)
+    assert re.search(r"^RUN uv sync --frozen --no-dev --compile-bytecode$", DOCKERFILE, re.M)
+    lines = DOCKERFILE.splitlines()
+    copy_app = lines.index("COPY . .")
+    assert re.match(r"RUN python -m compileall .* /app$", lines[copy_app + 1])
 
 
 def test_uv_image_pinned_by_version_and_digest():
