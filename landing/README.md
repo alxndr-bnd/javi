@@ -44,3 +44,14 @@ cd landing && python3 -m http.server 8080
 ## Открытое (не блокирует запуск)
 - Базовая веб-аналитика (Plausible / GA4) — добавить счётчик для конверсии «визит → заявка».
 - Политика конфиденциальности (нужна для рекламных площадок и сбора контактов) — короткая страница.
+
+## SEO: robots.txt and sitemap.xml (SERBITO-303)
+
+- `sitemap.xml` is hand-kept on purpose: two pages, and the image has no `.git` (file dates
+  would be build dates, not edit dates). `config/test_seo.py` fails unless it lists exactly
+  the public `landing/*.html` pages (a page with `<meta name="robots" content="noindex…">`
+  is not public) and each URL answers 200. New landing page → add a `<url>` here.
+- `robots.txt` disallows every private prefix Django serves; the same test fails when a new
+  top-level route in `config/urls.py` is neither disallowed nor listed as crawlable.
+  `/t/` stays crawlable so bots see its noindex; everything Django renders sends
+  `X-Robots-Tag: noindex, nofollow` (`common/middleware.py`).
