@@ -6,8 +6,8 @@ name: Deploy to Cloud Run
 #
 # Pipeline: verify (the release-script gate from ci.yaml, reused via workflow_call: ruff,
 # manage.py check, pytest, landing parse) -> deploy (build the Django + gunicorn image,
-# Trivy gate, Cloud Run). A tag pushed without scripts/release_minor.sh still cannot ship
-# untested code (SERBITO-277).
+# Trivy gate, migrate job when migrations changed, Cloud Run). A tag pushed without
+# scripts/release_minor.sh still cannot ship untested code (SERBITO-277).
 on:
   # Deploy ONLY on a v*.*.* tag (via scripts/release_minor.sh). No
   # workflow_dispatch — that would let unreleased code bypass the tag gate.
@@ -26,6 +26,12 @@ env:
   AR_IMAGE: europe-west1-docker.pkg.dev/serbito/javi/javi
   WIF_PROVIDER: projects/488744139718/locations/global/workloadIdentityPools/github-pool/providers/github
   DEPLOYER_SA: javi-deployer@serbito.iam.gserviceaccount.com
+  # The service and the migrate job run as the same identity, with the same Cloud SQL
+  # instance, secrets and env file — the job sees exactly the settings the app will.
+  RUNTIME_SA: 488744139718-compute@developer.gserviceaccount.com
+  CLOUDSQL_INSTANCE: serbito:europe-west1:serbitodb
+  MIGRATE_JOB: javi-migrate
+  RUN_SECRETS: SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest,TASKS_SECRET=javi-tasks-secret:latest,SENTRY_DSN=javi-sentry-dsn:latest
 
 jobs:
   verify: # Same gate as scripts/release_minor.sh (ci.yaml) — deploy never runs without it
@@ -38,6 +44,8 @@ jobs:
     needs: verify # No deploy unless lint, system check and tests pass
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
+        with:
+          fetch-depth: 0 # full history + tags: the migration diff against the live commit
 
       - id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3 (SHA-pinned)
@@ -72,30 +80,99 @@ jobs:
             --ignore-unfixed --exit-code 1 --format table --timeout 10m \
             "${{ env.AR_IMAGE }}:${{ github.sha }}"
 
-      - name: Deploy to Cloud Run
+      - name: Runtime env file
         run: |
           # SENTRY_RELEASE (javi@X.Y.Z из тега) дописываем в копию env-файла: gcloud не
-          # разрешает сочетать --env-vars-file с --update-env-vars.
-          ENV_FILE="$RUNNER_TEMP/deploy.env.yaml"
-          cp .github/deploy.env.yaml "$ENV_FILE"
-          echo "SENTRY_RELEASE: \"javi@${GITHUB_REF_NAME#v}\"" >> "$ENV_FILE"
+          # разрешает сочетать --env-vars-file с --update-env-vars. Один файл на job и сервис.
+          cp .github/deploy.env.yaml "$RUNNER_TEMP/deploy.env.yaml"
+          echo "SENTRY_RELEASE: \"javi@${GITHUB_REF_NAME#v}\"" >> "$RUNNER_TEMP/deploy.env.yaml"
+
+      # --- Migrations run in the deploy, not on container start (SERBITO-323) ---
+      # Every cold start used to run `manage.py migrate` first (~28 starts a day, "No
+      # migrations to apply"). Now the Cloud Run job $MIGRATE_JOB runs them, only when
+      # migration files changed. Baseline = the commit the service runs now (its image tag),
+      # not the previous tag: a tag whose deploy failed would otherwise hide its migrations
+      # (serbito, 2026-09-07). Fail-safe: no job yet / no baseline / diff fails -> migrate.
+      - name: Detect pending migrations
+        id: migrations
+        run: |
+          if ! gcloud run jobs describe "$MIGRATE_JOB" --region "$REGION" --format='value(metadata.name)' >/dev/null 2>&1; then
+            echo "Job $MIGRATE_JOB not found — it is created and run (fail-safe)."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LIVE_IMAGE="$(gcloud run services describe "$SERVICE" --region "$REGION" \
+            --format='value(spec.template.spec.containers[0].image)' 2>/dev/null || true)"
+          LIVE_SHA="${LIVE_IMAGE##*:}"
+          if [ -n "$LIVE_SHA" ] && git cat-file -e "${LIVE_SHA}^{commit}" 2>/dev/null; then
+            BASE="$LIVE_SHA"
+            echo "Baseline: the commit the service runs now ($BASE)."
+          else
+            BASE="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
+            echo "Live image unusable ('$LIVE_IMAGE') — baseline: previous tag ${BASE:-<none>}."
+          fi
+          if [ -z "$BASE" ] || ! FILES="$(git diff --name-only "$BASE" HEAD)"; then
+            echo "No usable baseline — running migrations (fail-safe)."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED="$(printf '%s\n' "$FILES" | grep -E '(^|/)migrations/[^/]+\.py$' | grep -v '/__init__\.py$' || true)"
+          if [ -n "$CHANGED" ]; then
+            printf 'Migration files changed since %s:\n%s\n' "$BASE" "$CHANGED"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No migration files changed since $BASE — skipping $MIGRATE_JOB."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Runs BEFORE the service deploy moves traffic: a failed migration fails this step, and
+      # the new revision never ships (the old one keeps serving). So migrations must stay
+      # compatible with the running code (add first, drop in a later release). The job is
+      # created or updated to the new image each time (idempotent) and executed; --wait
+      # makes gcloud exit non-zero if the execution fails. No retries: a half-applied
+      # migration needs a human, not a replay.
+      - name: Migrate database (Cloud Run job)
+        if: steps.migrations.outputs.changed == 'true'
+        run: |
+          gcloud run jobs deploy "$MIGRATE_JOB" \
+            --image "$AR_IMAGE:${{ github.sha }}" \
+            --region "$REGION" \
+            --service-account "$RUNTIME_SA" \
+            --set-cloudsql-instances "$CLOUDSQL_INSTANCE" \
+            --env-vars-file "$RUNNER_TEMP/deploy.env.yaml" \
+            --set-secrets "$RUN_SECRETS" \
+            --command=python \
+            --args=manage.py,migrate,--noinput \
+            --tasks 1 \
+            --max-retries 0 \
+            --task-timeout 10m \
+            --cpu 1 \
+            --memory 512Mi \
+            --execute-now \
+            --wait
+
+      - name: Deploy to Cloud Run
+        run: |
           gcloud run deploy "$SERVICE" \
             --image "$AR_IMAGE:${{ github.sha }}" \
             --region "$REGION" \
             --platform managed \
             --allow-unauthenticated \
+            --service-account "$RUNTIME_SA" \
             --min-instances=0 \
             --max-instances=1 \
             --concurrency=250 \
+            --cpu-boost \
             --port=8080 \
             --timeout=60 \
-            --add-cloudsql-instances="serbito:europe-west1:serbitodb" \
-            --env-vars-file="$ENV_FILE" \
-            --set-secrets="SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest,TASKS_SECRET=javi-tasks-secret:latest,SENTRY_DSN=javi-sentry-dsn:latest"
+            --add-cloudsql-instances="$CLOUDSQL_INSTANCE" \
+            --env-vars-file="$RUNNER_TEMP/deploy.env.yaml" \
+            --set-secrets="$RUN_SECRETS"
         # One-time domain mapping (javi.serbito.rs -> service) — see SETUP_CICD.md.
         # Требуются Secret Manager секреты javi-secret-key, javi-database-url,
         # javi-google-maps-key, javi-infobip-key, javi-infobip-webhook-secret, javi-tasks-secret,
-        # javi-sentry-dsn (Sentry, org nohandoff / project javi; release = javi@<tag без v>)
+        # javi-sentry-dsn (Sentry, org nohandoff / project javi; release = javi@<тег без v>)
         # и роли runtime-SA: roles/cloudsql.client, roles/secretmanager.secretAccessor (на секреты),
         # roles/cloudtasks.enqueuer (постановка задач оценки в очередь javi-rating).
+        # Deployer-SA: roles/run.admin (сервис и job) + roles/iam.serviceAccountUser (actAs RUNTIME_SA).
         # INFOBIP_BASE_URL/SENDER/CHANNEL, PUBLIC_BASE_URL, CLOUD_TASKS_* — из дефолтов settings.py.
