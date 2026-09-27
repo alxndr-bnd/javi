@@ -832,3 +832,11 @@ msgstr "Više vam nećemo slati poruke o ocenjivanju."
 #: tracking/views.py:64
 msgid "Too many requests. Try again later."
 msgstr "Previše zahteva. Pokušajte kasnije."
+
+#: templates/base.html:45
+msgid "Privacy policy"
+msgstr "Politika privatnosti"
+
+#: templates/base.html:46
+msgid "Cookie settings"
+msgstr "Podešavanja kolačića"
