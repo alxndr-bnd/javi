@@ -40,7 +40,7 @@ def _assert_no_ga(body):
 
 def _assert_ga(body):
     assert f"googletagmanager.com/gtag/js?id={GA_ID}" in body
-    assert f"gtag('config', '{GA_ID}')" in body
+    assert f"gtag('config', '{GA_ID}'" in body
 
 
 @pytest.fixture

@@ -9,6 +9,9 @@
  *   older than 12 months counts as no choice, so the banner asks again.
  * - Accept grants analytics_storage only: the site runs GA4 and no ads tags, so ad_* stay denied.
  * - Decline keeps analytics denied and deletes _ga* cookies (withdrawal from "Cookie settings").
+ *   GA is configured with cookie_domain 'none' (host-only), so that means the host's cookies;
+ *   the first withdrawal also clears _ga* left on parent domains (.serbito.rs) by earlier
+ *   versions, which set them there — once, so later ones never touch sibling sites' cookies.
  * - Language: <html lang> (the landing switches it client-side; the app sets it via Django
  *   i18n); data-consent-lang="visitor" (privacy page) uses the landing's saved choice instead.
  * - Any [data-consent-open] element reopens the banner; its value, if any, forces the language.
@@ -17,6 +20,7 @@
 (function () {
   "use strict";
   var KEY = "javi_consent";
+  var LEGACY = "javi_ga_parent_cleared"; // parent-domain _ga* cleanup done (see dropGaCookies)
   var YEAR = 365 * 864e5;
   var T = {
     sr: {
@@ -86,12 +90,15 @@
   }
 
   function dropGaCookies() {
+    var parent = true; // storage blocked: clean parent domains every time rather than never
+    try { parent = !localStorage.getItem(LEGACY); localStorage.setItem(LEGACY, "1"); } catch (e) { /* keep true */ }
     var parts = location.hostname.split(".");
     document.cookie.split(";").forEach(function (c) {
       var name = c.split("=")[0].trim();
       if (name.indexOf("_ga") !== 0) return;
-      document.cookie = name + "=; Max-Age=0; path=/";
-      for (var i = 0; i < parts.length - 1; i++) {
+      document.cookie = name + "=; Max-Age=0; path=/"; // host-only, as GA sets them now
+      if (!parent) return;
+      for (var i = 1; i < parts.length - 1; i++) { // .serbito.rs for javi.serbito.rs
         document.cookie = name + "=; Max-Age=0; path=/; domain=." + parts.slice(i).join(".");
       }
     });

@@ -2,7 +2,8 @@
 
 - Landing, privacy page and app pages set the Consent Mode v2 default (everything denied, or a
   stored choice) inline, before gtag config and before gtag.js loads. The snippet is the same on
-  all three, so a fix in one place cannot silently miss the others.
+  all three, so a fix in one place cannot silently miss the others. GA's cookies are host-only
+  (cookie_domain 'none'), not shared with the other *.serbito.rs products.
 - The banner (landing/consent.js, served at /consent.js) speaks sr/en/ru; each page has a
   "Cookie settings" control (data-consent-open) that reopens it.
 - privacy.html explains consent, what is sent while denied and how to change it, in sr/en/ru.
@@ -24,7 +25,7 @@ LANDING = Path(__file__).resolve().parent.parent / "landing"
 CONSENT_JS = (LANDING / "consent.js").read_text(encoding="utf-8")
 GA_ID = "G-KHME7DK2K0"
 DEFAULT = "gtag('consent', 'default'"
-CONFIG = f"gtag('config', '{GA_ID}')"
+CONFIG = f"gtag('config', '{GA_ID}', {{cookie_domain: 'none'}});"
 LOADER = f"googletagmanager.com/gtag/js?id={GA_ID}"
 SCRIPT = '<script src="/consent.js" defer></script>'
 LANGS = ["sr", "en", "ru"]
@@ -167,6 +168,16 @@ def test_banner_behaviour_contract():
     assert 'name.indexOf("_ga") !== 0' in CONSENT_JS
     assert '"/privacy.html#" + l' in CONSENT_JS
     assert 'var KEY = "javi_consent";' in CONSENT_JS and "365 * 864e5" in CONSENT_JS
+
+
+def test_withdrawal_clears_parent_domain_cookies_only_once():
+    """Host-only _ga* always; the .serbito.rs ones earlier versions left, on the first run only."""
+    drop = CONSENT_JS[CONSENT_JS.index("function dropGaCookies") :]
+    drop = drop[: drop.index("\n  }\n")]
+    assert 'document.cookie = name + "=; Max-Age=0; path=/";' in drop  # host-only
+    assert 'parent = !localStorage.getItem(LEGACY); localStorage.setItem(LEGACY, "1");' in drop
+    assert "if (!parent) return;" in drop
+    assert "for (var i = 1; i < parts.length - 1; i++)" in drop  # parents, never the TLD
 
 
 # --- privacy page explains consent ---
