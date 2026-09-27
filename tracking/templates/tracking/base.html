@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% comment %}
+Base for customer pages under /t/<token>/ (SERBITO-306). The URL carries the customer's tracking
+token, so these pages load no analytics at all, and links out send only the origin as the
+referrer: no page's analytics can read the token from document.referrer.
+{% endcomment %}
+{% block analytics %}
+  <meta name="referrer" content="strict-origin">
+{% endblock %}
