@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.utils import timezone
 
 
 class Notification(models.Model):
@@ -105,3 +106,39 @@ class OptOut(models.Model):
 
     def __str__(self):
         return self.phone
+
+
+class OutboundSend(models.Model):
+    """Журнал отправок получателям — основа лимитов (SERBITO-345, см. notifications/quotas.py).
+
+    Строка пишется ДО вызова провайдера, когда отправка прошла все лимиты: считаем попытки,
+    а не только успешные (иначе сбойные номера жгли бы квоту бесплатно). Notification
+    переиспользуется при resend, поэтому считать по нему нельзя — нужен отдельный журнал.
+    SET_NULL: удаление магазина/доставки не обнуляет глобальный счётчик и счётчик номера.
+    """
+
+    class Kind(models.TextChoices):
+        ON_THE_WAY = "on_the_way", "on_the_way"
+        RESEND = "resend", "resend"
+        RATING_REQUEST = "rating_request", "rating_request"
+
+    shop = models.ForeignKey(
+        "deliveries.Shop", on_delete=models.SET_NULL, null=True, related_name="outbound_sends"
+    )
+    delivery = models.ForeignKey(
+        "deliveries.Delivery", on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    phone = models.CharField("телефон (E.164)", max_length=20)
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["shop", "created_at"], name="outbound_shop_created"),
+            models.Index(fields=["phone", "created_at"], name="outbound_phone_created"),
+            models.Index(fields=["delivery", "kind"], name="outbound_delivery_kind"),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} → {self.phone} (shop {self.shop_id})"

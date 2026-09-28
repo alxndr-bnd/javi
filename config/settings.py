@@ -161,6 +161,22 @@ FREE_QUOTA_SMS = env.int("FREE_QUOTA_SMS", default=1000)
 # по Тихоокеанскому времени — выравниваем границу месяца под него (а не под UTC).
 QUOTA_RESET_TZ = env("QUOTA_RESET_TZ", default="America/Los_Angeles")
 
+# Лимиты исходящих Viber/SMS (SERBITO-345): открытая регистрация не должна давать
+# безлимитный отправитель на любые номера. Проверяются ДО отправки (notifications/quotas.py).
+# День/месяц — по Белграду (TIME_ZONE). Лимит 0 — отправка запрещена (не «безлимит»).
+# Проверенный магазин (Shop.sending_verified) — обычные лимиты; индивидуальные — в админке.
+SEND_LIMIT_SHOP_DAY = env.int("SEND_LIMIT_SHOP_DAY", default=50)
+SEND_LIMIT_SHOP_MONTH = env.int("SEND_LIMIT_SHOP_MONTH", default=500)
+# Новый (непроверенный) магазин — пробные лимиты и только сербские мобильные номера.
+SEND_LIMIT_TRIAL_DAY = env.int("SEND_LIMIT_TRIAL_DAY", default=10)
+SEND_LIMIT_TRIAL_MONTH = env.int("SEND_LIMIT_TRIAL_MONTH", default=30)
+# Один номер за день по ВСЕМ магазинам (доставка = «в пути» + запрос оценки = 2 сообщения).
+SEND_LIMIT_RECIPIENT_DAY = env.int("SEND_LIMIT_RECIPIENT_DAY", default=5)
+# Переотправок одной доставки (каждая — новая отправка во всех лимитах выше).
+SEND_LIMIT_RESENDS_PER_DELIVERY = env.int("SEND_LIMIT_RESENDS_PER_DELIVERY", default=3)
+# Глобальный предохранитель на весь сервис за день; упор → logger.error (→ Sentry).
+SEND_LIMIT_GLOBAL_DAY = env.int("SEND_LIMIT_GLOBAL_DAY", default=500)
+
 # Интеграции — провайдер карт (геокодинг + ETA). Ключ из env/Secret Manager, не в коде.
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 MAPS_PROVIDER = env(

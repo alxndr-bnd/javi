@@ -29,8 +29,10 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
 from common.phone import InvalidPhone, normalize_phone
+from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
 from common.timewindow import BELGRADE, format_eta
 from notifications.models import Notification
+from notifications.quotas import QuotaExceeded
 
 from .models import ApiIdempotencyKey, Delivery
 from .services import (
@@ -252,6 +254,24 @@ _DELIVERY_RESPONSES = {
 }
 
 
+# Лимиты отправки (SERBITO-345): сообщение не ушло, состояние доставки не изменилось.
+_SEND_LIMIT_RESPONSES = {
+    403: OpenApiResponse(
+        description=_(
+            "destination_not_allowed: new stores can message only Serbian mobile numbers "
+            "until verified."
+        )
+    ),
+    429: OpenApiResponse(
+        description=_(
+            "Sending limit reached: daily_limit, monthly_limit, recipient_daily_limit "
+            "or resend_limit."
+        )
+    ),
+    503: OpenApiResponse(description=_("global_limit: sending is paused for today.")),
+}
+
+
 # --- Эндпоинты ------------------------------------------------------------
 
 
@@ -459,6 +479,7 @@ class DeliveryStartView(_ShopScopedView):
             400: OpenApiResponse(description=_("Invalid eta format (expected HH:MM).")),
             404: _DELIVERY_RESPONSES[404],
             422: OpenApiResponse(description=_("Route unavailable — pass eta (HH:MM).")),
+            **_SEND_LIMIT_RESPONSES,
         },
     )
     def post(self, request, pk: int):
@@ -467,7 +488,10 @@ class DeliveryStartView(_ShopScopedView):
         serializer.is_valid(raise_exception=False)
         manual_eta = self._parse_eta((serializer.validated_data or {}).get("eta", ""))
 
-        result = start_delivery(delivery, manual_eta=manual_eta)
+        try:
+            result = start_delivery(delivery, manual_eta=manual_eta)
+        except QuotaExceeded as exc:
+            raise ApiError(exc.code, exc.message, exc.http_status) from None
         if result.needs_manual_eta:
             raise ApiError(
                 "eta_required",
@@ -572,6 +596,7 @@ class DeliveryResendView(_ShopScopedView):
             ),
             404: _DELIVERY_RESPONSES[404],
             409: OpenApiResponse(description=_("Delivery has not started — nothing to resend.")),
+            **_SEND_LIMIT_RESPONSES,
         },
     )
     def post(self, request, pk: int):
@@ -589,7 +614,10 @@ class DeliveryResendView(_ShopScopedView):
                     "invalid_phone", _("Invalid recipient phone number."), 400
                 ) from None
 
-        result = resend_on_the_way(delivery, new_phone=new_phone)
+        try:
+            result = resend_on_the_way(delivery, new_phone=new_phone)
+        except QuotaExceeded as exc:
+            raise ApiError(exc.code, exc.message, exc.http_status) from None
         if result is None:
             raise ApiError(
                 "not_started",
@@ -617,7 +645,11 @@ def serialize_shop(shop) -> dict:
 
 
 class ShopSerializer(serializers.Serializer):
-    name = serializers.CharField(required=False, help_text=_("Store name."))
+    name = serializers.CharField(
+        required=False,
+        max_length=SHOP_NAME_MAX_LEN,
+        help_text=_("Store name (shown to customers; no links or phone numbers)."),
+    )
     address = serializers.CharField(
         required=False, allow_blank=True,
         help_text=_("Store address; geocoded server-side into the ETA origin."),
@@ -630,6 +662,10 @@ class ShopSerializer(serializers.Serializer):
         required=False, allow_blank=True,
         help_text=_("Secret for the Javi-Signature HMAC of webhook bodies."),
     )
+
+    def validate_name(self, value):
+        # Название уходит в Viber/SMS клиентам — без ссылок и номеров (SERBITO-345).
+        return clean_shop_name(value)
 
 
 class ShopView(_ShopScopedView):

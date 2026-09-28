@@ -351,16 +351,16 @@ msgstr "Mapa trenutno ne može da izračuna rutu — unesite vreme ručno."
 #: deliveries/services.py:152
 #, python-format
 msgid ""
-"Your order from %(shop)s is on its way. Arriving approximately by %(time)s. "
-"Track: %(link)s"
+"Your order from \"%(shop)s\" is on its way. Arriving approximately by "
+"%(time)s. Track: %(link)s"
 msgstr ""
-"Vaša porudžbina iz %(shop)s je u dostavi. Stiže okvirno do %(time)s. "
+"Vaša porudžbina iz \"%(shop)s\" je u dostavi. Stiže okvirno do %(time)s. "
 "Pratite: %(link)s"
 
 #: deliveries/services.py:307
 #, python-format
-msgid "How did the delivery from %(shop)s go? Rate it: %(link)s"
-msgstr "Kako je prošla dostava iz %(shop)s? Ocenite: %(link)s"
+msgid "How did the delivery from \"%(shop)s\" go? Rate it: %(link)s"
+msgstr "Kako je prošla dostava iz \"%(shop)s\"? Ocenite: %(link)s"
 
 #: deliveries/templates/deliveries/_delivery_card.html:11
 #: deliveries/templates/deliveries/delivery_confirm_eta.html:19
@@ -840,3 +840,60 @@ msgstr "Politika privatnosti"
 #: templates/base.html:46
 msgid "Cookie settings"
 msgstr "Podešavanja kolačića"
+
+#: notifications/quotas.py
+#, python-format
+msgid "This notification has already been resent %(limit)d time."
+msgid_plural "This notification has already been resent %(limit)d times."
+msgstr[0] "Ovo obaveštenje je već ponovo poslato %(limit)d put."
+msgstr[1] "Ovo obaveštenje je već ponovo poslato %(limit)d puta."
+msgstr[2] "Ovo obaveštenje je već ponovo poslato %(limit)d puta."
+
+#: notifications/quotas.py
+#, python-format
+msgid "New stores can send messages only to Serbian mobile numbers until the store is verified."
+msgstr "Nove prodavnice mogu da šalju poruke samo na srpske mobilne brojeve dok prodavnica ne bude verifikovana."
+
+#: notifications/quotas.py
+msgid "This number has already received the maximum number of messages today. Try again tomorrow."
+msgstr "Ovaj broj je danas već primio najveći dozvoljeni broj poruka. Pokušajte ponovo sutra."
+
+#: notifications/quotas.py
+#, python-format
+msgid "Daily message limit reached (%(limit)d per day). You can send again tomorrow."
+msgstr "Dostignut je dnevni limit poruka (%(limit)d dnevno). Ponovo možete slati sutra."
+
+#: notifications/quotas.py
+#, python-format
+msgid "Monthly message limit reached (%(limit)d per month)."
+msgstr "Dostignut je mesečni limit poruka (%(limit)d mesečno)."
+
+#: notifications/quotas.py
+msgid "New stores have lower limits until the store is verified."
+msgstr "Nove prodavnice imaju niže limite dok prodavnica ne bude verifikovana."
+
+#: notifications/quotas.py
+msgid "Sending is paused for today. Please try again later."
+msgstr "Slanje je za danas pauzirano. Pokušajte ponovo kasnije."
+
+#: common/text.py
+msgid "Store name can't contain links, email addresses, phone numbers or quotation marks."
+msgstr "Naziv prodavnice ne može da sadrži linkove, email adrese, brojeve telefona ni navodnike."
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Customer messages"
+msgstr "Poruke kupcima"
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "Today: %(used)s of %(limit)s"
+msgstr "Danas: %(used)s od %(limit)s"
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "This month: %(used)s of %(limit)s"
+msgstr "Ovog meseca: %(used)s od %(limit)s"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Trial store: lower limits and Serbian mobile numbers only until we verify the store."
+msgstr "Probna prodavnica: niži limiti i samo srpski mobilni brojevi dok ne verifikujemo prodavnicu."

@@ -44,6 +44,19 @@ class Shop(models.Model):
     webhook_url = models.URLField("URL вебхука", blank=True)
     webhook_secret = models.CharField("секрет вебхука (HMAC)", max_length=200, blank=True)
 
+    # Лимиты отправки (SERBITO-345, notifications/quotas.py). Новый магазин — «пробный»:
+    # низкие лимиты и только сербские мобильные, пока его не проверит staff (галочка в админке).
+    sending_verified = models.BooleanField(
+        "проверен для отправки",
+        default=False,
+        help_text="Снимает пробные лимиты: обычные дневной/месячный лимиты и любые номера.",
+    )
+    # Индивидуальные лимиты (тариф): пусто → по умолчанию из настроек (пробные/обычные).
+    daily_send_limit = models.PositiveIntegerField("лимит сообщений в день", null=True, blank=True)
+    monthly_send_limit = models.PositiveIntegerField(
+        "лимит сообщений в месяц", null=True, blank=True
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Когда магазин аутентифицирован по API-ключу, DRF кладёт его в `request.user`

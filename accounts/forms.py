@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
 
+from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
+
 User = get_user_model()
 
 
@@ -11,7 +13,7 @@ class RegisterForm(UserCreationForm):
 
     store_name = forms.CharField(
         label=_("Store name"),
-        max_length=200,
+        max_length=SHOP_NAME_MAX_LEN,
         widget=forms.TextInput(attrs={"autocomplete": "organization"}),
     )
 
@@ -26,6 +28,10 @@ class RegisterForm(UserCreationForm):
         )
         self.fields["password1"].widget.attrs.update({"autocomplete": "new-password"})
         self.fields["password2"].widget.attrs.update({"autocomplete": "new-password"})
+
+    def clean_store_name(self):
+        # Название уходит в Viber/SMS клиентам — без ссылок и номеров (SERBITO-345).
+        return clean_shop_name(self.cleaned_data["store_name"])
 
     def clean_email(self):
         email = User.objects.normalize_email(self.cleaned_data["email"]).lower()

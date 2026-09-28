@@ -2,6 +2,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from common.phone import InvalidPhone, normalize_phone
+from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
 
 INVALID_PHONE_MSG = _("Invalid number. E.g. 064 123 4567")
 
@@ -12,7 +13,7 @@ class ShopOriginForm(forms.Form):
     Геокодинг адреса — в сервисе после валидации.
     """
 
-    name = forms.CharField(label=_("Store name"), max_length=200)
+    name = forms.CharField(label=_("Store name"), max_length=SHOP_NAME_MAX_LEN)
     address = forms.CharField(
         label=_("Store address"),
         max_length=300,
@@ -35,6 +36,10 @@ class ShopOriginForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={"autocomplete": "off"}),
     )
+
+    def clean_name(self):
+        # Название уходит в Viber/SMS клиентам — без ссылок и номеров (SERBITO-345).
+        return clean_shop_name(self.cleaned_data["name"])
 
 
 class DeliveryForm(forms.Form):
