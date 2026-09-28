@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Notification, NotificationAttempt, OptOut
+from .models import Notification, NotificationAttempt, OptOut, OutboundSend
 
 
 @admin.register(Notification)
@@ -21,3 +21,13 @@ class NotificationAttemptAdmin(admin.ModelAdmin):
 class OptOutAdmin(admin.ModelAdmin):
     list_display = ("phone", "scope", "created_at")
     search_fields = ("phone",)
+
+
+@admin.register(OutboundSend)
+class OutboundSendAdmin(admin.ModelAdmin):
+    """Журнал отправок (лимиты SERBITO-345): кто, кому и сколько слал."""
+
+    list_display = ("created_at", "shop", "kind", "phone", "delivery")
+    list_filter = ("kind",)
+    search_fields = ("phone", "shop__name", "shop__owner__email")
+    date_hierarchy = "created_at"

@@ -328,13 +328,13 @@ msgstr ""
 #: deliveries/services.py:152
 #, python-format
 msgid ""
-"Your order from %(shop)s is on its way. Arriving approximately by %(time)s. "
-"Track: %(link)s"
+"Your order from \"%(shop)s\" is on its way. Arriving approximately by "
+"%(time)s. Track: %(link)s"
 msgstr ""
 
 #: deliveries/services.py:307
 #, python-format
-msgid "How did the delivery from %(shop)s go? Rate it: %(link)s"
+msgid "How did the delivery from \"%(shop)s\" go? Rate it: %(link)s"
 msgstr ""
 
 #: deliveries/templates/deliveries/_delivery_card.html:11
@@ -804,4 +804,60 @@ msgstr ""
 
 #: templates/base.html:46
 msgid "Cookie settings"
+msgstr ""
+
+#: notifications/quotas.py
+#, python-format
+msgid "This notification has already been resent %(limit)d time."
+msgid_plural "This notification has already been resent %(limit)d times."
+msgstr[0] ""
+msgstr[1] ""
+
+#: notifications/quotas.py
+#, python-format
+msgid "New stores can send messages only to Serbian mobile numbers until the store is verified."
+msgstr ""
+
+#: notifications/quotas.py
+msgid "This number has already received the maximum number of messages today. Try again tomorrow."
+msgstr ""
+
+#: notifications/quotas.py
+#, python-format
+msgid "Daily message limit reached (%(limit)d per day). You can send again tomorrow."
+msgstr ""
+
+#: notifications/quotas.py
+#, python-format
+msgid "Monthly message limit reached (%(limit)d per month)."
+msgstr ""
+
+#: notifications/quotas.py
+msgid "New stores have lower limits until the store is verified."
+msgstr ""
+
+#: notifications/quotas.py
+msgid "Sending is paused for today. Please try again later."
+msgstr ""
+
+#: common/text.py
+msgid "Store name can't contain links, email addresses, phone numbers or quotation marks."
+msgstr ""
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Customer messages"
+msgstr ""
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "Today: %(used)s of %(limit)s"
+msgstr ""
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "This month: %(used)s of %(limit)s"
+msgstr ""
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Trial store: lower limits and Serbian mobile numbers only until we verify the store."
 msgstr ""

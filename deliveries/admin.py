@@ -5,11 +5,15 @@ from .models import ApiKey, Delivery, Shop
 
 @admin.register(Shop)
 class ShopAdmin(admin.ModelAdmin):
-    list_display = ("name", "owner", "webhook_url", "created_at")
+    list_display = ("name", "owner", "sending_verified", "webhook_url", "created_at")
+    list_filter = ("sending_verified",)
     search_fields = ("name", "owner__email")
     fields = (
         "owner",
         "name",
+        "sending_verified",
+        "daily_send_limit",
+        "monthly_send_limit",
         "origin_address",
         "origin_lat",
         "origin_lng",

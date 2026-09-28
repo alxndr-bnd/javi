@@ -13,6 +13,7 @@ from django.views.generic import TemplateView
 from common.phone import InvalidPhone, normalize_phone
 from common.timewindow import BELGRADE, format_eta
 from notifications.models import Notification, OptOut
+from notifications.quotas import QuotaExceeded, shop_usage
 
 from .forms import DeliveryForm, ManualEtaForm, RecipientPhoneForm, ShopOriginForm
 from .models import ApiKey, Delivery
@@ -102,7 +103,8 @@ class ShopProfileView(LoginRequiredMixin, View):
 
     def _context(self, shop, form):
         api_keys = list(shop.api_keys.all()) if shop is not None else []
-        return {"form": form, "shop": shop, "api_keys": api_keys}
+        usage = shop_usage(shop) if shop is not None else None
+        return {"form": form, "shop": shop, "api_keys": api_keys, "send_usage": usage}
 
     def get(self, request):
         shop = getattr(request.user, "shop", None)  # изоляция: только свой магазин
@@ -256,7 +258,12 @@ class DeliveryStartView(LoginRequiredMixin, View):
                 return render(request, self.template_name, {"form": form, "delivery": delivery})
             today = timezone.now().astimezone(BELGRADE).date()
             manual_eta = datetime.combine(today, form.cleaned_data["eta_time"], tzinfo=BELGRADE)
-            result = start_delivery(delivery, manual_eta=manual_eta)
+            try:
+                result = start_delivery(delivery, manual_eta=manual_eta)
+            except QuotaExceeded as exc:
+                # Лимит отправки: доставка не стартовала, клиент не уведомлён.
+                messages.error(request, exc.message)
+                return redirect("deliveries:list")
             if result.already:
                 messages.info(request, _("Delivery is already in progress."))
             elif result.ok:
@@ -301,7 +308,11 @@ class DeliveryResendView(LoginRequiredMixin, View):
         if not form.is_valid():
             messages.error(request, _("Invalid number. E.g. 064 123 4567"))
             return redirect("deliveries:list")
-        result = resend_on_the_way(delivery, new_phone=form.cleaned_data["phone_result"])
+        try:
+            result = resend_on_the_way(delivery, new_phone=form.cleaned_data["phone_result"])
+        except QuotaExceeded as exc:
+            messages.error(request, exc.message)
+            return redirect("deliveries:list")
         if result is None:
             messages.error(request, _("Unable to resend."))
         elif result.ok:

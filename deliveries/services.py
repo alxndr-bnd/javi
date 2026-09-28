@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext
 
 from common.phone import PhoneResult
+from common.text import sanitize_shop_name
 from common.timewindow import format_eta, rating_send_time
 from integrations.providers import (
     chain_channel_paths,
@@ -20,7 +21,8 @@ from integrations.providers import (
     get_messaging_provider_for,
     get_routes_provider,
 )
-from notifications.models import Notification, NotificationAttempt
+from notifications.models import Notification, NotificationAttempt, OutboundSend
+from notifications.quotas import QuotaExceeded, reserve_send
 from notifications.services import is_opted_out
 from tasks.scheduler import get_task_scheduler
 
@@ -153,12 +155,21 @@ def emit_delivery_event(delivery: Delivery, event: str, extra: dict | None = Non
     notify_merchant(delivery.shop, event, delivery_event_payload(delivery, extra))
 
 
+def _message_shop_name(shop: Shop) -> str:
+    """Название магазина для текста сообщения: без ссылок/номеров/кавычек, ≤40 символов.
+
+    В шаблоне оно стоит в кавычках — явно отделено от нашего текста (SERBITO-345).
+    Пустое после очистки (старые данные) → нейтральное «Javi».
+    """
+    return sanitize_shop_name(shop.name) or "Javi"
+
+
 def _on_the_way_text(delivery: Delivery, token: str) -> str:
     return gettext(
-        "Your order from %(shop)s is on its way. "
+        'Your order from "%(shop)s" is on its way. '
         "Arriving approximately by %(time)s. Track: %(link)s"
     ) % {
-        "shop": delivery.shop.name,
+        "shop": _message_shop_name(delivery.shop),
         "time": format_eta(delivery.eta_at),
         "link": _tracking_link(token),
     }
@@ -348,6 +359,16 @@ def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) ->
             return StartResult(needs_manual_eta=True)
         eta_source = "auto"
 
+    # Лимиты — ДО смены статуса и отправки: упёрлись → доставка остаётся «готова»,
+    # магазин видит причину (QuotaExceeded летит в view/API).
+    reserve_send(
+        delivery.shop,
+        delivery.recipient_phone,
+        kind=OutboundSend.Kind.ON_THE_WAY,
+        delivery=delivery,
+        risky=delivery.phone_risk,
+    )
+
     delivery.status = Delivery.Status.ON_THE_WAY
     delivery.started_at = now
     delivery.eta_at = eta_at
@@ -433,16 +454,26 @@ def resend_on_the_way(delivery: Delivery, new_phone: PhoneResult | None = None):
 
     Опционально правит номер. Переиспользует существующий on_the_way-Notification
     (новый logical_message_id), статус → queued → sent/failed.
-    """
-    if new_phone is not None:
-        delivery.recipient_phone = new_phone.e164
-        delivery.phone_risk = new_phone.is_risky
-        delivery.save(update_fields=["recipient_phone", "phone_risk"])
 
+    Лимиты (SERBITO-345): каждая переотправка — новая отправка во всех лимитах (магазин,
+    номер, глобальный) плюс не больше SEND_LIMIT_RESENDS_PER_DELIVERY на доставку; новый
+    номер проверяется как новый получатель. Упёрлись → QuotaExceeded, номер не меняем.
+    """
     notification = delivery.notifications.filter(kind=Notification.Kind.ON_THE_WAY).first()
     token_obj = getattr(delivery, "tracking_token", None)
     if notification is None or token_obj is None:
         return None
+
+    phone = new_phone.e164 if new_phone is not None else delivery.recipient_phone
+    risky = new_phone.is_risky if new_phone is not None else delivery.phone_risk
+    reserve_send(
+        delivery.shop, phone, kind=OutboundSend.Kind.RESEND, delivery=delivery, risky=risky
+    )
+
+    if new_phone is not None:
+        delivery.recipient_phone = new_phone.e164
+        delivery.phone_risk = new_phone.is_risky
+        delivery.save(update_fields=["recipient_phone", "phone_risk"])
 
     notification.logical_message_id = uuid.uuid4()
     notification.status = Notification.Status.QUEUED
@@ -459,13 +490,25 @@ def send_rating_request(delivery: Delivery):
         return None
     if is_opted_out(delivery.recipient_phone):
         return None  # не-критичное сообщение отписавшимся не шлём (FR-23)
+    try:
+        reserve_send(
+            delivery.shop,
+            delivery.recipient_phone,
+            kind=OutboundSend.Kind.RATING_REQUEST,
+            delivery=delivery,
+            risky=delivery.phone_risk,
+        )
+    except QuotaExceeded as exc:
+        # Не-критичное сообщение: упёрлись в лимит — молча пропускаем (без ретраев задачи).
+        logger.info("rating request skipped for delivery %s: %s", delivery.id, exc.code)
+        return None
     notification = Notification.objects.create(
         delivery=delivery,
         kind=Notification.Kind.RATING_REQUEST,
         status=Notification.Status.QUEUED,
     )
-    text = gettext("How did the delivery from %(shop)s go? Rate it: %(link)s") % {
-        "shop": delivery.shop.name,
+    text = gettext('How did the delivery from "%(shop)s" go? Rate it: %(link)s') % {
+        "shop": _message_shop_name(delivery.shop),
         "link": _tracking_link(token_obj.token),
     }
     return _send_and_record(notification, delivery, text)

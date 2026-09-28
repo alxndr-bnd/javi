@@ -28,6 +28,10 @@ Sign up, generate an API key in your store profile, and drive the whole flow ove
 - Create an order, mark it dispatched, get the tracking URL, and receive **signed webhooks**
   on every status change. Industry-standard statuses (`pending` → `ready_for_pickup` →
   `out_for_delivery` → `delivered`).
+- **Sending limits** protect customers and the sender ID: per store per day and month, per
+  phone number per day, and 3 resends per delivery. New stores start on a trial (lower
+  limits, Serbian mobile numbers only) until verified. Over a limit nothing is sent and the
+  API answers `429` (`403` for a number the store may not message yet).
 
 ## Tech
 

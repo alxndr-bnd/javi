@@ -70,6 +70,21 @@
     </form>
   </div>
 
+  {% if send_usage %}
+  <div class="h" style="margin-top:28px">{% trans "Customer messages" %}</div>
+  <div class="card">
+    <div style="font-size:14px">
+      {% blocktrans with used=send_usage.day_used limit=send_usage.day_limit %}Today: {{ used }} of {{ limit }}{% endblocktrans %}
+      · {% blocktrans with used=send_usage.month_used limit=send_usage.month_limit %}This month: {{ used }} of {{ limit }}{% endblocktrans %}
+    </div>
+    {% if send_usage.trial %}
+    <div class="muted" style="font-size:13px;margin-top:6px">
+      {% trans "Trial store: lower limits and Serbian mobile numbers only until we verify the store." %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <div class="h" style="margin-top:28px">{% trans "API keys" %}</div>
   <div class="card">
     <div class="muted" style="font-size:13px;margin-bottom:12px">
