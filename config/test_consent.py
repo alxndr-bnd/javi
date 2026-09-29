@@ -15,9 +15,8 @@ from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.core.cache import cache
 
-from deliveries.models import Delivery, Shop, TrackingToken
+from deliveries.models import Shop
 
 pytestmark = pytest.mark.django_db
 
@@ -42,21 +41,6 @@ def _body(resp):
 def shop(db):
     user = get_user_model().objects.create_user(email="consent@shop.rs", password="pass12345")
     return Shop.objects.create(owner=user, name="Pizza Napoli")
-
-
-@pytest.fixture
-def token(shop):
-    cache.clear()  # the tracking page rate limiter lives in the cache
-    delivery = Delivery.objects.create(
-        shop=shop,
-        recipient_name="Ana",
-        recipient_phone="+381641234567",
-        dest_address="Adresa 1, Beograd",
-        dest_city="Beograd",
-        status=Delivery.Status.ON_THE_WAY,
-    )
-    yield TrackingToken.objects.create(delivery=delivery)
-    cache.clear()
 
 
 def _page(client, shop, name, lang="en"):
@@ -204,24 +188,3 @@ def test_privacy_explains_consent(lang, heading):
     assert "localStorage" in consent and "12" in consent  # where the choice lives, re-ask
     assert f'data-consent-open="{lang}"' in consent  # how to change it
     assert "_ga" in consent  # withdrawal deletes the cookies
-
-
-# --- /t/ tracking pages: no banner, no settings ---
-
-
-def _assert_no_consent(body):
-    for marker in ("consent.js", "data-consent-open", "gtag(", "Cookie settings"):
-        assert marker not in body, f"{marker!r} on a tracking page"
-
-
-@pytest.mark.parametrize("suffix", ["", "odjava/"])
-def test_tracking_pages_have_no_banner(client, token, suffix):
-    resp = client.get(f"/t/{token.token}/{suffix}")
-    assert resp.status_code == 200
-    _assert_no_consent(_body(resp))
-
-
-def test_unknown_tracking_token_has_no_banner(client, token):
-    resp = client.get("/t/unknown-token/")
-    assert resp.status_code == 404
-    _assert_no_consent(_body(resp))

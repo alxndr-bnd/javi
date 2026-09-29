@@ -9,14 +9,12 @@
 """
 
 import re
-from datetime import timedelta
 from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.utils import timezone
 
 from deliveries.models import Delivery, Shop, TrackingToken
 
@@ -64,34 +62,7 @@ def token(shop):
     cache.clear()
 
 
-# --- tracking pages: no GA ---
-
-
-def test_tracking_page_has_no_ga(client, token):
-    resp = client.get(f"/t/{token.token}/")
-    assert resp.status_code == 200
-    _assert_no_ga(_body(resp))
-
-
-def test_expired_tracking_page_has_no_ga(client, token):
-    token.expires_at = timezone.now() - timedelta(days=1)
-    token.save(update_fields=["expires_at"])
-    resp = client.get(f"/t/{token.token}/")
-    assert resp.status_code == 410
-    _assert_no_ga(_body(resp))
-
-
-@pytest.mark.parametrize("path", ["/t/unknown-token/", "/t/unknown-token/odjava/"])
-def test_unknown_tracking_token_has_no_ga(client, token, path):
-    resp = client.get(path)
-    assert resp.status_code == 404
-    _assert_no_ga(_body(resp))
-
-
-def test_unsubscribe_page_has_no_ga(client, token):
-    resp = client.get(f"/t/{token.token}/odjava/")
-    assert resp.status_code == 200
-    _assert_no_ga(_body(resp))
+# --- tracking pages: no GA — tracking/tests.py::test_tracking_pages_stay_private ---
 
 
 class _Links(HTMLParser):

@@ -10,18 +10,12 @@
 
 import re
 import xml.etree.ElementTree as ET
-from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 
 import pytest
-from django.contrib.auth import get_user_model
-from django.core.cache import cache
 from django.urls import get_resolver
-from django.utils import timezone
-
-from deliveries.models import Delivery, Shop, TrackingToken
 
 LANDING = Path(__file__).resolve().parent.parent / "landing"
 SITE = "https://javi.serbito.rs"
@@ -118,45 +112,8 @@ def test_sitemap_is_served(client):
 # --- noindex on Django pages ---
 
 
-@pytest.fixture
-def token(db):
-    cache.clear()  # the tracking page rate limiter lives in the cache
-    user = get_user_model().objects.create_user(email="seo@shop.rs", password="pass12345")
-    shop = Shop.objects.create(owner=user, name="Pizza Napoli")
-    delivery = Delivery.objects.create(
-        shop=shop,
-        recipient_name="Ana",
-        recipient_phone="+381641234567",
-        dest_address="Adresa 1, Beograd",
-        dest_city="Beograd",
-    )
-    yield TrackingToken.objects.create(delivery=delivery)
-    cache.clear()
-
-
-def test_tracking_page_is_noindex(client, token):
-    resp = client.get(f"/t/{token.token}/")
-    assert resp.status_code == 200
-    assert resp.headers["X-Robots-Tag"] == NOINDEX
-    assert META_NOINDEX in resp.content.decode()
-
-
-def test_expired_tracking_page_is_noindex(client, token):
-    token.expires_at = timezone.now() - timedelta(days=1)
-    token.save(update_fields=["expires_at"])
-    resp = client.get(f"/t/{token.token}/")
-    assert resp.status_code == 410
-    assert resp.headers["X-Robots-Tag"] == NOINDEX
-    assert META_NOINDEX in resp.content.decode()
-
-
-@pytest.mark.parametrize(
-    "path", ["/t/unknown-token/", "/t/unknown-token/odjava/", "/t/unknown-token"]
-)
-def test_unknown_tracking_token_is_noindex(client, token, path):
-    resp = client.get(path)
-    assert resp.status_code in (301, 404)
-    assert resp.headers["X-Robots-Tag"] == NOINDEX
+# /t/ pages (live, expired, unknown) are noindex:
+# tracking/tests.py::test_tracking_pages_stay_private
 
 
 @pytest.mark.parametrize(
