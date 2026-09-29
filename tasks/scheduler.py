@@ -11,6 +11,9 @@ from django.utils.module_loading import import_string
 
 logger = logging.getLogger(__name__)
 
+# Заголовок с общим секретом колбэков Cloud Tasks (проверяет tasks/views.py).
+TASKS_SECRET_HEADER = "X-Tasks-Secret"
+
 
 class TaskScheduler(ABC):
     @abstractmethod
@@ -60,17 +63,20 @@ class CloudTasksScheduler(TaskScheduler):
             settings.CLOUD_TASKS_LOCATION,
             settings.CLOUD_TASKS_QUEUE,
         )
-        url = (
-            f"{settings.CLOUD_TASKS_SERVICE_URL.rstrip('/')}{path}"
-            f"?secret={settings.TASKS_SECRET}"
-        )
+        # Секрет — в заголовке, не в URL: URL задачи виден в логах запросов и в самой задаче
+        # (SERBITO-362, JAVI-3). Cloud Tasks передаёт заголовки http_request как есть.
+        url = f"{settings.CLOUD_TASKS_SERVICE_URL.rstrip('/')}{path}"
         ts = timestamp_pb2.Timestamp()
         ts.FromDatetime(run_at)
         client.create_task(
             request={
                 "parent": parent,
                 "task": {
-                    "http_request": {"http_method": tasks_v2.HttpMethod.POST, "url": url},
+                    "http_request": {
+                        "http_method": tasks_v2.HttpMethod.POST,
+                        "url": url,
+                        "headers": {TASKS_SECRET_HEADER: settings.TASKS_SECRET},
+                    },
                     "schedule_time": ts,
                 },
             }

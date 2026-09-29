@@ -1,3 +1,4 @@
+import base64
 import json
 
 import pytest
@@ -135,5 +136,43 @@ def test_optout_webhook_wrong_secret_403(client):
         f"{OPTOUT_URL}?secret=wrong",
         data=json.dumps({"results": []}),
         content_type="application/json",
+    )
+    assert resp.status_code == 403
+
+
+# --- SERBITO-362 (JAVI-3): header / Basic auth (Infobip subscription), constant-time ---
+
+_DELIVERED = {"results": [{"messageId": "m-1", "status": {"groupName": "DELIVERED"}}]}
+
+
+@pytest.mark.parametrize(
+    "auth",
+    [
+        {"HTTP_X_WEBHOOK_SECRET": SECRET},
+        {"HTTP_AUTHORIZATION": "Basic " + base64.b64encode(f"infobip:{SECRET}".encode()).decode()},
+    ],
+)
+@override_settings(INFOBIP_WEBHOOK_SECRET=SECRET)
+def test_reports_accept_secret_in_header_or_basic_auth(client, auth):
+    notif = _notification()
+    resp = client.post(URL, data=json.dumps(_DELIVERED), content_type="application/json", **auth)
+    assert resp.status_code == 200
+    notif.refresh_from_db()
+    assert notif.status == Notification.Status.DELIVERED
+
+
+@override_settings(INFOBIP_WEBHOOK_SECRET=SECRET)
+@pytest.mark.parametrize("url", [URL, "/webhooks/infobip/optout/"])
+def test_webhooks_reject_wrong_header(client, url):
+    resp = client.post(
+        url, data="{}", content_type="application/json", HTTP_X_WEBHOOK_SECRET="wrong"
+    )
+    assert resp.status_code == 403
+
+
+@override_settings(INFOBIP_WEBHOOK_SECRET="")
+def test_webhooks_fail_closed_without_configured_secret(client):
+    resp = client.post(
+        f"{URL}?secret=", data="{}", content_type="application/json", HTTP_X_WEBHOOK_SECRET=""
     )
     assert resp.status_code == 403

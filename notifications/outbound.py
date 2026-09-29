@@ -22,6 +22,7 @@ import logging
 
 from django.utils import timezone
 
+from common.validators import is_https_url
 from tasks.scheduler import get_task_scheduler
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,10 @@ def notify_merchant(shop, event: str, payload: dict) -> None:
     """
     webhook_url = getattr(shop, "webhook_url", "")
     if not webhook_url:
+        return
+    if not is_https_url(webhook_url):
+        # Тело — данные клиента; по http не шлём (JAVI-10). Старые http-URL — до правки магазином.
+        logger.warning("webhook skipped for shop %s: URL is not https", getattr(shop, "id", "?"))
         return
     try:
         body = json.dumps(

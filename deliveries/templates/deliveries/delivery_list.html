@@ -38,7 +38,7 @@
   <a class="btn btn-primary" href="{% url 'deliveries:create' %}">{% trans "New delivery" %}…</a>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 (function () {
   var current = "{{ feed_sig }}";
   var feedUrl = "{% url 'deliveries:feed' %}";

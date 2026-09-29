@@ -567,3 +567,52 @@ def test_default_chain_unchanged_when_flags_off():
         "integrations.infobip.ViberProvider",
         "integrations.infobip.SmsProvider",
     ]
+
+
+# --- SERBITO-362 ---
+
+
+@override_settings(
+    INFOBIP_WEBHOOK_SECRET="whsec",
+    INFOBIP_WEBHOOK_SECRET_IN_URL=False,
+    PUBLIC_BASE_URL="https://javi.serbito.rs",
+)
+def test_no_secret_in_report_url_when_subscription_is_used():
+    """JAVI-3: with an Infobip subscription (Basic auth) the message carries no report URL."""
+    with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
+        _infobip().send_text("+381641234567", "hi")
+        InfobipProvider(
+            base_url="https://x", api_key="k", sender="S", channel="sms"
+        ).send_text("+381641234567", "hi")
+    for call in post.call_args_list:
+        msg = call.kwargs["json"]["messages"][0]
+        assert "webhooks" not in msg and "notifyUrl" not in msg
+        assert "whsec" not in str(msg)
+
+
+def _http_error(url, status=403):
+    response = requests.Response()
+    response.status_code = status
+    response.url = url
+    return requests.HTTPError(f"{status} Client Error: Forbidden for url: {url}", response=response)
+
+
+def test_geocoding_error_log_has_no_key_or_address(caplog):
+    """JAVI-5: requests' error text holds the URL with the API key and the customer address."""
+    url = "https://maps.googleapis.com/maps/api/geocode/json?address=Tajna+adresa+5&key=AIzaKEY"
+    with patch("integrations.google_maps.requests.get", side_effect=_http_error(url)):
+        assert GoogleMapsProvider(api_key="AIzaKEY").geocode("Tajna adresa 5") is None
+    text = caplog.text
+    assert "Geocoding request failed: HTTPError: HTTP 403" in text
+    assert "AIzaKEY" not in text and "Tajna" not in text
+
+
+def test_routes_connection_error_log_has_no_url(caplog):
+    from integrations.google_maps import GoogleRoutesProvider
+
+    error = requests.ConnectionError("Max retries exceeded with url: /x?key=AIzaKEY")
+    with patch("integrations.google_maps.requests.post", side_effect=error):
+        provider = GoogleRoutesProvider(api_key="AIzaKEY")
+        assert provider.route_duration_seconds((1, 2), (3, 4)) is None
+    assert "Routes request failed: ConnectionError" in caplog.text
+    assert "AIzaKEY" not in caplog.text

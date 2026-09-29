@@ -125,14 +125,38 @@ def test_recipient_can_mark_received(client):
 
 
 def test_unsubscribe_adds_to_blocklist(client):
-    """AC#1: ссылка отписки → OptOut + подтверждение."""
+    """AC#1: ссылка отписки → подтверждение → POST → OptOut + «Odjavljeni ste»."""
+    from notifications.models import OptOut
+
+    token = _token(Delivery.Status.ON_THE_WAY)
+    resp = client.post(f"/t/{token.token}/odjava/")
+    assert resp.status_code == 200
+    assert "You have been unsubscribed" in resp.content.decode()
+    assert OptOut.objects.filter(phone=token.delivery.recipient_phone).exists()
+
+
+def test_unsubscribe_get_only_asks_for_confirmation(client):
+    """JAVI-9: GET (link previews, scanners) changes nothing; it shows a POST form."""
     from notifications.models import OptOut
 
     token = _token(Delivery.Status.ON_THE_WAY)
     resp = client.get(f"/t/{token.token}/odjava/")
+    body = resp.content.decode()
     assert resp.status_code == 200
-    assert "You have been unsubscribed" in resp.content.decode()
-    assert OptOut.objects.filter(phone=token.delivery.recipient_phone).exists()
+    assert "Unsubscribe from notifications?" in body
+    assert f'<form method="post" action="/t/{token.token}/odjava/"' in body
+    assert "You have been unsubscribed" not in body
+    assert not OptOut.objects.exists()
+
+
+def test_unsubscribe_expired_token_is_gone(client):
+    from notifications.models import OptOut
+
+    token = _token()
+    token.expires_at = timezone.now() - timedelta(minutes=1)
+    token.save()
+    assert client.post(f"/t/{token.token}/odjava/").status_code == 410
+    assert not OptOut.objects.exists()
 
 
 @override_settings(TRACKING_RATE_LIMIT=2)
@@ -143,3 +167,35 @@ def test_rate_limit_429(client):
     assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 200
     assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 200
     assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 429
+
+
+@override_settings(TRACKING_RATE_LIMIT=2)
+@pytest.mark.parametrize(
+    ("method", "suffix"),
+    [("get", ""), ("post", "oceni/"), ("post", "primljeno/"), ("get", "odjava/"),
+     ("post", "odjava/")],
+)
+def test_rate_limit_covers_every_tracking_endpoint(client, method, suffix):
+    """JAVI-8: the limit applies to all /t/ endpoints, not just the status page."""
+    token = _token()
+    url = f"/t/{token.token}/{suffix}"
+    call = getattr(client, method)
+    assert call(url, REMOTE_ADDR="9.9.9.9").status_code != 429
+    assert call(url, REMOTE_ADDR="9.9.9.9").status_code != 429
+    assert call(url, REMOTE_ADDR="9.9.9.9").status_code == 429
+
+
+@override_settings(TRACKING_RATE_LIMIT=2, TRUSTED_PROXY_HOPS=1)
+def test_rate_limit_keys_on_real_client_ip_not_spoofed_xff(client):
+    """JAVI-8: behind Cloud Run REMOTE_ADDR is the front end; a forged leftmost XFF entry
+    must not buy a fresh bucket, and different real clients have their own buckets."""
+    token = _token()
+    url = f"/t/{token.token}/"
+    front_end = {"REMOTE_ADDR": "169.254.1.1"}
+    for spoof in ("1.1.1.1", "2.2.2.2"):
+        xff = f"{spoof}, 203.0.113.7"
+        assert client.get(url, HTTP_X_FORWARDED_FOR=xff, **front_end).status_code == 200
+    xff = "3.3.3.3, 203.0.113.7"
+    assert client.get(url, HTTP_X_FORWARDED_FOR=xff, **front_end).status_code == 429
+    other = "203.0.113.8"
+    assert client.get(url, HTTP_X_FORWARDED_FOR=other, **front_end).status_code == 200

@@ -64,7 +64,7 @@
   {% endif %}
 </header>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 // Закрыть «⋯»-меню по клику вне него / Esc (прогрессивное улучшение).
 (function () {
   var m = document.querySelector(".menu");

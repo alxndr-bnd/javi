@@ -31,6 +31,7 @@ from rest_framework.views import exception_handler as drf_exception_handler
 from common.phone import InvalidPhone, normalize_phone
 from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
 from common.timewindow import BELGRADE, format_eta
+from common.validators import validate_https_url
 from notifications.models import Notification
 from notifications.quotas import QuotaExceeded
 
@@ -656,11 +657,12 @@ class ShopSerializer(serializers.Serializer):
     )
     webhook_url = serializers.URLField(
         required=False, allow_blank=True,
-        help_text=_("Merchant URL that receives signed event webhooks."),
+        validators=[validate_https_url],
+        help_text=_("Merchant https URL that receives signed event webhooks."),
     )
     webhook_secret = serializers.CharField(
-        required=False, allow_blank=True,
-        help_text=_("Secret for the Javi-Signature HMAC of webhook bodies."),
+        required=False, allow_blank=True, write_only=True, max_length=200,
+        help_text=_("Secret for the Javi-Signature HMAC of webhook bodies (write-only)."),
     )
 
     def validate_name(self, value):

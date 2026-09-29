@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 from common.phone import InvalidPhone, normalize_phone
 from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
+from common.validators import validate_https_url
 
 INVALID_PHONE_MSG = _("Invalid number. E.g. 064 123 4567")
 
@@ -28,14 +29,19 @@ class ShopOriginForm(forms.Form):
         label=_("Webhook URL"),
         required=False,
         assume_scheme="https",
+        validators=[validate_https_url],
         widget=forms.URLInput(attrs={"placeholder": "https://your-shop.example/javi-webhook"}),
     )
+    # Только запись (SERBITO-362, JAVI-10): сохранённый секрет в форму не возвращаем —
+    # пустое поле = оставить как есть, clear_webhook_secret = удалить.
     webhook_secret = forms.CharField(
         label=_("Webhook secret"),
         max_length=200,
         required=False,
-        widget=forms.TextInput(attrs={"autocomplete": "off"}),
+        strip=True,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}, render_value=False),
     )
+    clear_webhook_secret = forms.BooleanField(label=_("Remove the secret"), required=False)
 
     def clean_name(self):
         # Название уходит в Viber/SMS клиентам — без ссылок и номеров (SERBITO-345).

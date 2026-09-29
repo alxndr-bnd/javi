@@ -1,12 +1,13 @@
 """Тесты публичного API v1 (deliveries). Без сети — фейк-провайдеры через override_settings."""
 
 import json
+import re
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 
-from deliveries.models import ApiIdempotencyKey, ApiKey, Delivery, Shop
+from deliveries.models import ApiIdempotencyKey, ApiKey, Delivery, Shop, hash_api_key
 from integrations.testing import FakeMessagingProvider
 
 pytestmark = pytest.mark.django_db
@@ -574,11 +575,26 @@ def test_docs_endpoint_public_200(client):
 def test_generate_key_view_shows_plaintext_once(client):
     shop = _make_shop_with_origin()
     client.login(username="api@shop.rs", password="pass12345")
-    resp = client.post("/app/api-kljucevi/novi/", follow=True)
-    assert resp.status_code == 200
+    resp = client.post("/app/api-kljucevi/novi/")
+    assert resp.status_code == 200  # the key page itself, no redirect
     body = resp.content.decode()
-    assert "javi_live_" in body  # полный ключ показан в сообщении
+    assert "javi_live_" in body  # полный ключ показан один раз — на этой странице
     assert shop.api_keys.count() == 1
+
+
+def test_new_key_is_not_in_a_cookie_and_not_cached(client):
+    """JAVI-13: the key used to ride in the signed (readable) messages cookie."""
+    shop = _make_shop_with_origin()
+    client.login(username="api@shop.rs", password="pass12345")
+    resp = client.post("/app/api-kljucevi/novi/")
+    full_key = re.search(r"javi_live_[\w-]+", resp.content.decode()).group(0)
+    assert shop.api_keys.get().key_hash == hash_api_key(full_key)
+    assert "no-store" in resp["Cache-Control"]
+    for morsel in resp.cookies.values():
+        assert full_key not in morsel.value and "javi_live_" not in morsel.value
+    # shown once: the profile afterwards has only the masked form
+    profile = client.get("/app/prodavnica/").content.decode()
+    assert full_key not in profile
 
 
 def test_revoke_key_view(client):
@@ -685,3 +701,47 @@ def test_list_oldest_first_by_default_and_sort_override(client):
 
     desc = client.get("/api/v1/deliveries?sort=-created_at", **_auth(key)).json()
     assert [d["id"] for d in desc] == [newer.pk, older.pk]  # override
+
+
+# --- SERBITO-362 (JAVI-10): webhook over https only; the secret is write-only ---
+
+
+@pytest.mark.parametrize("url", ["http://merchant.example/hook", "ftp://merchant.example/"])
+def test_patch_shop_webhook_requires_https(client, url):
+    shop, key = _shop_and_key()
+    resp = client.patch(
+        SHOP_URL, data=json.dumps({"webhook_url": url}), content_type="application/json",
+        **_auth(key),
+    )
+    assert resp.status_code == 400
+    shop.refresh_from_db()
+    assert shop.webhook_url == ""
+
+
+def test_shop_api_never_returns_the_webhook_secret(client):
+    shop, key = _shop_and_key()
+    shop.webhook_url, shop.webhook_secret = "https://m.example/h", "whsec_hidden"
+    shop.save()
+    for resp in (
+        client.get(SHOP_URL, **_auth(key)),
+        client.patch(SHOP_URL, data="{}", content_type="application/json", **_auth(key)),
+    ):
+        assert "whsec_hidden" not in resp.content.decode()
+        assert resp.json()["webhook_configured"] is True
+
+
+# --- SERBITO-357: API keys per shop are capped ---
+
+
+@override_settings(API_KEYS_PER_SHOP=2)
+def test_api_key_cap_counts_active_keys_only(client):
+    shop = _make_shop_with_origin()
+    client.login(username="api@shop.rs", password="pass12345")
+    assert client.post("/app/api-kljucevi/novi/").status_code == 200
+    assert client.post("/app/api-kljucevi/novi/").status_code == 200
+    resp = client.post("/app/api-kljucevi/novi/", follow=True)
+    assert "You already have 2 active API keys" in resp.content.decode()
+    assert shop.api_keys.count() == 2
+    shop.api_keys.first().revoke()
+    assert client.post("/app/api-kljucevi/novi/").status_code == 200
+    assert shop.api_keys.filter(revoked_at__isnull=True).count() == 2

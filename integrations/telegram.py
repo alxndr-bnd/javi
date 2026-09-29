@@ -15,6 +15,8 @@ import logging
 import requests
 from django.conf import settings
 
+from common.redact import describe_request_error
+
 from .base import MessagingProvider, SendResult
 
 logger = logging.getLogger(__name__)
@@ -54,11 +56,12 @@ class TelegramProvider(MessagingProvider):
             resp.raise_for_status()
             data = resp.json()
         except (requests.RequestException, ValueError) as exc:
-            logger.error("Telegram send failed: %s", exc)
+            # Текст исключения requests содержит URL, а в нём токен бота (JAVI-5).
+            logger.error("Telegram send failed: %s", describe_request_error(exc))
             return SendResult(ok=False, channel="")
 
         if not data.get("ok"):
-            logger.error("Telegram API вернул ok=false: %s", data)
+            logger.error("Telegram API вернул ok=false: %s", data.get("description"))
             return SendResult(ok=False, channel="")
 
         mid = (data.get("result") or {}).get("message_id")

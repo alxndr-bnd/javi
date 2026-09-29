@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "API key created" %} · Javi{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="topbar">
+    <a href="{% url 'deliveries:list' %}" class="logo">javi<span>.</span></a>
+  </div>
+
+  <div class="h">{% trans "API key created" %}</div>
+  <div class="card">
+    <div class="msg msg-success">{% trans "Copy it now — it will not be shown again." %}</div>
+    <div class="field">
+      <label for="api-key">{% trans "Key" %}</label>
+      <input id="api-key" type="text" readonly value="{{ full_key }}" autocomplete="off" spellcheck="false">
+    </div>
+    <a href="{% url 'deliveries:profile' %}" class="btn btn-primary">{% trans "Back to the store" %}</a>
+  </div>
+</div>
+{% endblock %}

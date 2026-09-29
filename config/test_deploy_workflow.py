@@ -172,3 +172,8 @@ def test_detect_is_fail_safe(repo, job_exists):
     commit("deliveries/views.py", "b")
     # No job yet (first deploy after SERBITO-323) or no baseline at all -> migrate.
     assert detect(job_exists=job_exists, live_image="") == "changed=true"
+
+
+def test_admin_path_comes_from_secret_manager():
+    # SERBITO-362: the admin's URL is not in the public repo; without it the admin is off.
+    assert "ADMIN_PATH=javi-admin-path:latest" in ENV["RUN_SECRETS"]

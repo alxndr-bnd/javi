@@ -14,6 +14,8 @@ import requests
 from django.conf import settings
 from django.urls import reverse
 
+from common.redact import describe_request_error
+
 from .base import MessagingProvider, SendResult
 
 logger = logging.getLogger(__name__)
@@ -56,7 +58,7 @@ class _InfobipTransport:
             resp.raise_for_status()
             data = resp.json()
         except (requests.RequestException, ValueError) as exc:
-            logger.error("Infobip send failed (%s): %s", url, exc)
+            logger.error("Infobip send failed (%s): %s", url, describe_request_error(exc))
             return False, None
         try:
             return True, data["messages"][0].get("messageId")
@@ -64,9 +66,14 @@ class _InfobipTransport:
             return True, None
 
     def _report_url(self) -> str | None:
-        """URL нашего вебхука отчётов о доставке (с секретом). None если секрет не задан."""
+        """URL нашего вебхука отчётов о доставке (с секретом). None если секрет не задан.
+
+        Infobip не шлёт свои заголовки на URL из сообщения, поэтому секрет здесь — в query
+        (SERBITO-362, JAVI-3). INFOBIP_WEBHOOK_SECRET_IN_URL=False — URL в сообщение не
+        кладём: отчёты приходят по подписке Infobip с Basic auth (пароль = секрет).
+        """
         secret = settings.INFOBIP_WEBHOOK_SECRET
-        if not secret:
+        if not secret or not settings.INFOBIP_WEBHOOK_SECRET_IN_URL:
             return None
         base = settings.PUBLIC_BASE_URL.rstrip("/")
         return f"{base}{reverse('notifications:infobip_reports')}?secret={secret}"

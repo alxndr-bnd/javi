@@ -57,8 +57,12 @@ def test_robots_disallows_private_prefix(prefix):
 
 
 def test_robots_covers_every_django_prefix():
-    """A new top-level route must be disallowed or deliberately listed as crawlable."""
-    assert _top_level_prefixes() == set(PRIVATE_PREFIXES) | CRAWLABLE_PREFIXES
+    """A new top-level route must be disallowed or deliberately listed as crawlable.
+
+    The admin moved to a secret ADMIN_PATH (SERBITO-362) and is not mounted without it; that
+    path stays out of robots.txt (listing it would publish it), /admin/ stays disallowed.
+    """
+    assert _top_level_prefixes() | {"admin/"} == set(PRIVATE_PREFIXES) | CRAWLABLE_PREFIXES
 
 
 @pytest.mark.parametrize("path", ["/", "/privacy.html", "/t/", "/t/some-token/"])
