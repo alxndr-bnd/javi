@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.cache import patch_cache_control
 from django.utils.translation import gettext as _
 from django.views import View
 from django.views.generic import TemplateView
@@ -115,7 +116,7 @@ class ShopProfileView(LoginRequiredMixin, View):
                 "name": shop.name,
                 "address": shop.origin_address,
                 "webhook_url": shop.webhook_url,
-                "webhook_secret": shop.webhook_secret,
+                # webhook_secret не отдаём обратно в форму (JAVI-10) — только «задан/не задан».
             }
         )
         return render(request, self.template_name, self._context(shop, form))
@@ -129,7 +130,11 @@ class ShopProfileView(LoginRequiredMixin, View):
             # Название + настройки вебхука сохраняем всегда (независимо от геокода адреса).
             shop.name = form.cleaned_data["name"]
             shop.webhook_url = form.cleaned_data["webhook_url"]
-            shop.webhook_secret = form.cleaned_data["webhook_secret"]
+            # Секрет — только запись: пустое поле оставляет сохранённый, галочка удаляет.
+            if form.cleaned_data["clear_webhook_secret"]:
+                shop.webhook_secret = ""
+            elif form.cleaned_data["webhook_secret"]:
+                shop.webhook_secret = form.cleaned_data["webhook_secret"]
             shop.save(update_fields=["name", "webhook_url", "webhook_secret"])
             if set_shop_origin(shop, form.cleaned_data["address"]):
                 messages.success(request, _("Saved."))
@@ -145,20 +150,26 @@ class ShopProfileView(LoginRequiredMixin, View):
 
 
 class ApiKeyCreateView(LoginRequiredMixin, View):
-    """Генерация API-ключа. Полный ключ показывается ОДИН раз через message."""
+    """Генерация API-ключа. Полный ключ показывается ОДИН раз — прямо в ответе на POST.
+
+    Раньше ключ ехал через messages, т.е. в подписанной (не зашифрованной) куке — его видно в
+    браузере, прокси и логах (SERBITO-362, JAVI-13). Теперь он есть только в этой странице,
+    которая не кешируется; обновление страницы ключ не покажет (браузер переспросит POST).
+    """
 
     def post(self, request):
         shop = getattr(request.user, "shop", None)
         if shop is None:
             messages.error(request, _("Account is not linked to a store."))
             return redirect("deliveries:profile")
-        _key_obj, full_key = ApiKey.generate(shop)
-        messages.success(
+        key_obj, full_key = ApiKey.generate(shop)
+        response = render(
             request,
-            _("API key created. Copy it now — it will not be shown again: %(key)s")
-            % {"key": full_key},
+            "deliveries/api_key_created.html",
+            {"shop": shop, "api_key": key_obj, "full_key": full_key},
         )
-        return redirect("deliveries:profile")
+        patch_cache_control(response, no_store=True, private=True)
+        return response
 
 
 class ApiKeyRevokeView(LoginRequiredMixin, View):

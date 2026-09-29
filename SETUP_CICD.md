@@ -237,6 +237,13 @@ What `gcloud run deploy` in `deploy.yaml` expects to exist:
   | `INFOBIP_WEBHOOK_SECRET` | `javi-infobip-webhook-secret` |
   | `TASKS_SECRET` | `javi-tasks-secret` |
   | `SENTRY_DSN` | `javi-sentry-dsn` (Sentry org `nohandoff`, project `javi`) |
+  | `ADMIN_PATH` | `javi-admin-path` — the admin's non-obvious URL prefix, e.g. `ops-<random>/` (SERBITO-362). Without it the admin is not mounted. |
+
+  Without `SECRET_KEY` or `ALLOWED_HOSTS` the web server refuses to start (`config/checks.py`).
+  Cloud Tasks callbacks get `TASKS_SECRET` in the `X-Tasks-Secret` header. Infobip delivery
+  reports still carry `?secret=` in the per-message URL (Infobip sends no custom headers there);
+  to drop it, create an Infobip subscription with Basic auth (password = the webhook secret)
+  and set `INFOBIP_WEBHOOK_SECRET_IN_URL=False`.
 
 - **Runtime service account roles**: `roles/cloudsql.client`,
   `roles/secretmanager.secretAccessor` (on those secrets), `roles/cloudtasks.enqueuer`

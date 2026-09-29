@@ -39,6 +39,7 @@ def test_initialized_on_cloud_run_with_release_and_production_env():
     assert kwargs["release"] == "javi@1.2.0"
     assert kwargs["environment"] == "production"
     assert kwargs["send_default_pii"] is False
+    assert kwargs["include_local_variables"] is False  # JAVI-6: no PII from frame locals
     assert kwargs["traces_sample_rate"] == 0.1
     assert any(isinstance(i, DjangoIntegration) for i in kwargs["integrations"])
     assert kwargs["before_send"] is scrub_tracking_tokens
@@ -132,7 +133,8 @@ def tracking_token(db):
 
 def test_error_on_tracking_page_reaches_sentry_without_token(sentry_events, tracking_token):
     referer = f"https://javi.serbito.rs/t/{tracking_token}/"
-    # Fails after the token is loaded, so frame vars hold the request and TrackingToken reprs.
+    # Fails after the token is loaded: frame locals would hold the request, TrackingToken and
+    # Delivery reprs ("name — address"), so they are not sent at all (SERBITO-362, JAVI-6).
     with mock.patch("tracking.views._stepper", side_effect=RuntimeError("boom")):
         status = _wsgi_get(f"/t/{tracking_token}/", HTTP_REFERER=referer)
     assert status.startswith("500")
@@ -144,7 +146,8 @@ def test_error_on_tracking_page_reaches_sentry_without_token(sentry_events, trac
     assert error["request"]["url"] == "http://testserver/t/:token/"
     assert error["request"]["headers"]["Referer"] == "https://javi.serbito.rs/t/:token/"
     frames = error["exception"]["values"][-1]["stacktrace"]["frames"]
-    assert any(f.get("function") == "status" and f.get("vars") for f in frames)
+    assert any(f.get("function") == "status" for f in frames)
+    assert not any(f.get("vars") for f in frames)
     for event in sentry_events:
         assert tracking_token not in json.dumps(event)
 
@@ -226,3 +229,50 @@ def test_non_tracking_page_transaction_keeps_its_url(sentry_events, db):
     (transaction,) = [e for e in sentry_events if e.get("type") == "transaction"]
     assert transaction["request"]["url"] == "http://testserver/accounts/login/"
     assert ":token" not in json.dumps(transaction)
+
+
+# --- SERBITO-362: secrets never reach Sentry -----------------------------------------------
+
+
+def test_scrubs_secret_query_values_bot_tokens_and_secret_headers():
+    event = {
+        "request": {
+            "url": "https://javi.serbito.rs/webhooks/infobip/reports/",
+            "query_string": "secret=s3cr3t-value&page=2",
+            "headers": {
+                "X-Tasks-Secret": "tasks-secret",
+                "X-Webhook-Secret": "hook-secret",
+                "X-Telegram-Bot-Api-Secret-Token": "tg-secret",
+                "Authorization": "Basic Zm9vOmJhcg==",
+                "User-Agent": "Infobip",
+            },
+        },
+        "breadcrumbs": {
+            "values": [
+                {"message": "POST https://api.telegram.org/bot123456:AAF-x_y/sendMessage"},
+                {"message": "GET /maps/api/geocode/json?address=Ulica+1&key=AIzaSyX"},
+            ]
+        },
+    }
+    scrubbed = scrub_tracking_tokens(event, {})
+    text = json.dumps(scrubbed)
+    for secret in ("s3cr3t-value", "tasks-secret", "hook-secret", "tg-secret", "AAF-x_y",
+                   "AIzaSyX", "Zm9vOmJhcg=="):
+        assert secret not in text
+    assert scrubbed["request"]["query_string"] == "secret=[Filtered]&page=2"
+    assert scrubbed["request"]["headers"]["User-Agent"] == "Infobip"
+    crumbs = scrubbed["breadcrumbs"]["values"]
+    assert crumbs[0]["message"] == "POST https://api.telegram.org/bot[Filtered]/sendMessage"
+
+
+def test_webhook_request_with_query_secret_reaches_sentry_scrubbed(sentry_events, settings, db):
+    settings.INFOBIP_WEBHOOK_SECRET = "right-secret"
+    status = _wsgi_get(
+        "/webhooks/infobip/reports/",
+        QUERY_STRING="secret=wrong-secret",
+        HTTP_X_WEBHOOK_SECRET="header-secret",
+    )
+    assert status.startswith("403")
+    (transaction,) = [e for e in sentry_events if e.get("type") == "transaction"]
+    text = json.dumps(transaction)
+    assert "wrong-secret" not in text and "header-secret" not in text

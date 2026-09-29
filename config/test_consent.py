@@ -27,7 +27,8 @@ GA_ID = "G-KHME7DK2K0"
 DEFAULT = "gtag('consent', 'default'"
 CONFIG = f"gtag('config', '{GA_ID}', {{cookie_domain: 'none'}});"
 LOADER = f"googletagmanager.com/gtag/js?id={GA_ID}"
-SCRIPT = '<script src="/consent.js" defer></script>'
+# Django pages add a CSP nonce (SERBITO-362); the static landing has none.
+SCRIPT = re.compile(r'<script(?: nonce="[^"]+")? src="/consent.js" defer></script>')
 LANGS = ["sr", "en", "ru"]
 
 
@@ -71,7 +72,10 @@ def _page(client, shop, name, lang="en"):
 
 def _consent_script(body):
     match = re.search(
-        r"<script>((?:(?!</script>).)*?gtag\('consent', 'default'.*?)</script>", body, re.S
+        r'<script(?: nonce="[^"]+")?>'
+        r"((?:(?!</script>).)*?gtag\('consent', 'default'.*?)</script>",
+        body,
+        re.S,
     )
     assert match, "no inline Consent Mode default"
     return " ".join(match.group(1).split())
@@ -104,7 +108,7 @@ def test_consent_default_is_the_same_everywhere(client, shop):
 @pytest.mark.parametrize("name", ["landing", "privacy", "app", "login"])
 def test_page_loads_the_banner(client, shop, name):
     body = _page(client, shop, name)
-    assert SCRIPT in body
+    assert SCRIPT.search(body)
     assert "data-consent-open" in body
 
 

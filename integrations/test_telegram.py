@@ -108,3 +108,15 @@ def test_enabled_chain_prepends_telegram_and_falls_through_to_viber():
     assert result.attempts[0].ok is False
     assert result.attempts[-1].channel == "viber"
     assert result.attempts[-1].ok is True
+
+
+@override_settings(TELEGRAM_ENABLED=True, TELEGRAM_BOT_TOKEN="123456:SECRET-bot_token")
+def test_error_log_has_no_bot_token(caplog):
+    """JAVI-5: the bot token is in the URL path, and requests repeats the URL in errors."""
+    TelegramContact.objects.create(phone=PHONE, chat_id="555")
+    url = "https://api.telegram.org/bot123456:SECRET-bot_token/sendMessage"
+    error = requests.ConnectionError(f"Max retries exceeded with url: {url}")
+    with patch("integrations.telegram.requests.post", side_effect=error):
+        assert TelegramProvider().send_text(PHONE, "hello").ok is False
+    assert "Telegram send failed: ConnectionError" in caplog.text
+    assert "SECRET-bot_token" not in caplog.text

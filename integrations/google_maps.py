@@ -7,6 +7,8 @@ import logging
 import requests
 from django.conf import settings
 
+from common.redact import describe_request_error
+
 from .base import GeocodeResult, MapsProvider, RoutesProvider
 
 logger = logging.getLogger(__name__)
@@ -52,8 +54,8 @@ class GoogleMapsProvider(MapsProvider):
             resp.raise_for_status()
             data = resp.json()
         except (requests.RequestException, ValueError) as exc:
-            # Не логируем params (там ключ) — только тип/сообщение ошибки.
-            logger.error("Geocoding request failed: %s", exc)
+            # Текст исключения requests содержит URL: ключ и адрес клиента (JAVI-5) — не логируем.
+            logger.error("Geocoding request failed: %s", describe_request_error(exc))
             return None
 
         status = data.get("status")
@@ -105,7 +107,7 @@ class GoogleRoutesProvider(RoutesProvider):
             resp.raise_for_status()
             data = resp.json()
         except (requests.RequestException, ValueError) as exc:
-            logger.error("Routes request failed: %s", exc)
+            logger.error("Routes request failed: %s", describe_request_error(exc))
             return None
 
         routes = data.get("routes") or []

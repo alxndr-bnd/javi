@@ -62,7 +62,7 @@ def test_send_rating_callback_sends_request(client):
     shop = _make_shop()
     delivery = _delivery(shop)
     TrackingToken.objects.create(delivery=delivery)
-    resp = client.post(f"/tasks/send-rating/{delivery.id}/?secret={SECRET}")
+    resp = client.post(f"/tasks/send-rating/{delivery.id}/", HTTP_X_TASKS_SECRET=SECRET)
     assert resp.status_code == 200
     assert delivery.notifications.filter(kind=Notification.Kind.RATING_REQUEST).count() == 1
 
@@ -72,8 +72,8 @@ def test_send_rating_idempotent(client):
     shop = _make_shop()
     delivery = _delivery(shop)
     TrackingToken.objects.create(delivery=delivery)
-    client.post(f"/tasks/send-rating/{delivery.id}/?secret={SECRET}")
-    client.post(f"/tasks/send-rating/{delivery.id}/?secret={SECRET}")
+    client.post(f"/tasks/send-rating/{delivery.id}/", HTTP_X_TASKS_SECRET=SECRET)
+    client.post(f"/tasks/send-rating/{delivery.id}/", HTTP_X_TASKS_SECRET=SECRET)
     assert delivery.notifications.filter(kind=Notification.Kind.RATING_REQUEST).count() == 1
 
 
@@ -159,3 +159,52 @@ def test_escalate_callback_secret_guarded(client):
     delivery = _delivery(_make_shop())
     assert client.post(f"/tasks/escalate/{delivery.id}/?secret=wrong").status_code == 403
     assert client.post(f"/tasks/escalate/{delivery.id}/?secret={SECRET}").status_code == 200
+
+
+# --- SERBITO-362 (JAVI-3): the secret travels in a header, compared in constant time ---
+
+
+@override_settings(MESSAGING_PROVIDER=MSG_OK, TASKS_SECRET=SECRET)
+def test_legacy_query_secret_still_accepted_for_already_queued_tasks(client):
+    shop = _make_shop()
+    delivery = _delivery(shop)
+    TrackingToken.objects.create(delivery=delivery)
+    assert client.post(f"/tasks/send-rating/{delivery.id}/?secret={SECRET}").status_code == 200
+
+
+@override_settings(TASKS_SECRET=SECRET)
+@pytest.mark.parametrize("headers", [{}, {"HTTP_X_TASKS_SECRET": "wrong"}])
+def test_callbacks_reject_missing_or_wrong_header(client, headers):
+    delivery = _delivery(_make_shop())
+    assert client.post(f"/tasks/send-rating/{delivery.id}/", **headers).status_code == 403
+    assert client.post(f"/tasks/escalate/{delivery.id}/", **headers).status_code == 403
+
+
+@override_settings(TASKS_SECRET="")
+def test_callbacks_fail_closed_without_configured_secret(client):
+    delivery = _delivery(_make_shop())
+    resp = client.post(f"/tasks/send-rating/{delivery.id}/?secret=", HTTP_X_TASKS_SECRET="")
+    assert resp.status_code == 403
+
+
+@override_settings(
+    TASKS_SECRET=SECRET,
+    CLOUD_TASKS_SERVICE_URL="https://javi.serbito.rs",
+    CLOUD_TASKS_PROJECT="p",
+    CLOUD_TASKS_LOCATION="l",
+    CLOUD_TASKS_QUEUE="q",
+)
+def test_cloud_tasks_put_the_secret_in_a_header_not_the_url():
+    from datetime import UTC, datetime
+    from unittest import mock
+
+    from tasks.scheduler import CloudTasksScheduler
+
+    with mock.patch("google.cloud.tasks_v2.CloudTasksClient") as client_cls:
+        client_cls.return_value.queue_path.return_value = "queue"
+        CloudTasksScheduler().schedule_rating_request(7, datetime(2026, 9, 29, 12, tzinfo=UTC))
+    task = client_cls.return_value.create_task.call_args.kwargs["request"]["task"]
+    http = task["http_request"]
+    assert http["url"] == "https://javi.serbito.rs/tasks/send-rating/7/"
+    assert SECRET not in http["url"]
+    assert http["headers"] == {"X-Tasks-Secret": SECRET}

@@ -5,13 +5,16 @@ from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
+from common.secrets import request_has_secret
 from deliveries.models import Delivery
 from deliveries.services import escalate_delivery, send_rating_request
 
+from .scheduler import TASKS_SECRET_HEADER
+
 
 def _secret_ok(request) -> bool:
-    secret = request.GET.get("secret") or request.headers.get("X-Tasks-Secret", "")
-    return bool(settings.TASKS_SECRET) and secret == settings.TASKS_SECRET
+    # Заголовок X-Tasks-Secret, constant-time; ?secret= — только для задач до SERBITO-362.
+    return request_has_secret(request, settings.TASKS_SECRET, header=TASKS_SECRET_HEADER)
 
 
 @csrf_exempt

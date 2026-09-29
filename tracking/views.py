@@ -1,5 +1,6 @@
+from functools import wraps
+
 from django.conf import settings
-from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -7,6 +8,8 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from django.views.decorators.http import require_POST
 
+from common import ratelimit
+from common.client_ip import client_ip
 from common.timewindow import format_eta
 from deliveries.models import Delivery, Rating, TrackingToken
 
@@ -39,15 +42,26 @@ def _stepper(status: str) -> list[dict]:
     return steps
 
 
-def _rate_limited(request) -> bool:
-    """Простой лимитер по IP на Django cache (окно 60 c)."""
-    ip = request.META.get("REMOTE_ADDR", "") or "unknown"
-    key = f"track_rl:{ip}"
-    count = cache.get(key, 0)
-    if count >= settings.TRACKING_RATE_LIMIT:
-        return True
-    cache.set(key, count + 1, timeout=60)
-    return False
+def rate_limited(view):
+    """Лимит запросов с одного IP в минуту на ВСЕ страницы /t/ (SERBITO-362, JAVI-8).
+
+    IP — реальный клиент (common.client_ip), не адрес фронтенда Google; счётчик — в БД,
+    общий для воркеров и переживает холодный старт (common.ratelimit).
+    """
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        allowed = ratelimit.hit(
+            "tracking",
+            client_ip(request),
+            limit=settings.TRACKING_RATE_LIMIT,
+            window_seconds=60,
+        )
+        if not allowed:
+            return HttpResponse(_("Too many requests. Try again later."), status=429)
+        return view(request, *args, **kwargs)
+
+    return wrapper
 
 
 def _active_token(token: str):
@@ -58,11 +72,9 @@ def _active_token(token: str):
     return token_obj
 
 
+@rate_limited
 def status(request, token):
     """Публичная брендовая страница статуса (без логина). Минимум данных (NFR-3)."""
-    if _rate_limited(request):
-        return HttpResponse(_("Too many requests. Try again later."), status=429)
-
     token_obj = _active_token(token)
     if token_obj is None:
         return render(request, "tracking/status.html", {"expired": True}, status=410)
@@ -82,6 +94,7 @@ def status(request, token):
     return render(request, "tracking/status.html", ctx)
 
 
+@rate_limited
 @require_POST
 def mark_received(request, token):
     """Получатель подтверждает получение заказа → статус delivered (идемпотентно)."""
@@ -98,17 +111,25 @@ def mark_received(request, token):
     return redirect("tracking:status", token=token)
 
 
+@rate_limited
 def unsubscribe(request, token):
-    """Отписка получателя по ссылке (без логина): номер → блоклист, «Odjavljeni ste»."""
+    """Отписка получателя по ссылке (без логина): номер → блоклист, «Odjavljeni ste».
+
+    GET только показывает подтверждение, отписывает POST (SERBITO-362, JAVI-9): ссылку
+    открывают и превью мессенджеров, и сканеры ссылок — они не должны отписывать клиента.
+    """
     from notifications.services import opt_out
 
     token_obj = _active_token(token)
     if token_obj is None:
         return render(request, "tracking/status.html", {"expired": True}, status=410)
+    if request.method != "POST":
+        return render(request, "tracking/unsubscribe_confirm.html", {"token": token})
     opt_out(token_obj.delivery.recipient_phone)
     return render(request, "tracking/unsubscribed.html", {})
 
 
+@rate_limited
 @require_POST
 def rate(request, token):
     """Захват оценки 1–5 с публичной страницы (без логина, без дублей)."""

@@ -41,7 +41,7 @@
 
   {% if d.on_the_way_notif.status == "failed" %}
     <form method="post" action="{% url 'deliveries:resend' d.pk %}" class="card-action"
-          onsubmit="return confirm('{% trans "Send the message again?" %}');">
+          data-confirm="{% trans "Send the message again?" %}">
       {% csrf_token %}
       <div class="field" style="margin-bottom:8px">
         <input type="text" name="recipient_phone" inputmode="tel"
@@ -53,14 +53,14 @@
 
   {% if d.status == "on_the_way" %}
     <form method="post" action="{% url 'deliveries:mark_delivered' d.pk %}" class="card-action"
-          onsubmit="return confirm('{% trans "Mark as delivered?" %}');">
+          data-confirm="{% trans "Mark as delivered?" %}">
       {% csrf_token %}
       <button type="submit" class="btn btn-ghost">{% trans "Mark delivered" %}</button>
     </form>
   {% endif %}
 
   <form method="post" action="{% url 'deliveries:delete' d.pk %}" class="card-delete"
-        onsubmit="return confirm('{% trans "Delete this delivery?" %}');">
+        data-confirm="{% trans "Delete this delivery?" %}">
     {% csrf_token %}
     <button type="submit" class="btn-link-danger">{% trans "Delete delivery" %}</button>
   </form>

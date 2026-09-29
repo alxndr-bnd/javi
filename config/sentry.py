@@ -14,6 +14,8 @@ from typing import Any
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
+from common.redact import FILTERED, redact
+
 # SERBITO-314: a /t/<token>/ URL opens a customer's delivery status, so the token must not
 # reach Sentry. send_default_pii=False keeps the path, so we rewrite it to /t/:token/.
 # "/t/" counts only at a path start: string start, after a quote/space/"="/"(" etc. (reprs,
@@ -45,6 +47,7 @@ def _strings(value: Any):
 
 def _rewrite(value: Any, bare_tokens: set[str]) -> Any:
     if isinstance(value, str):
+        value = redact(value)  # ?secret=/&key= values, Telegram bot tokens (SERBITO-362)
         value = _TRACKING_URL.sub(rf"\g<prefix>/t/{TOKEN_PLACEHOLDER}", value)
         for token in bare_tokens:
             value = value.replace(token, TOKEN_PLACEHOLDER)
@@ -56,11 +59,25 @@ def _rewrite(value: Any, bare_tokens: set[str]) -> Any:
     return value
 
 
+# Request headers whose value is a credential. Sentry's own list covers Authorization, Cookie
+# and X-Api-Key, not our X-Tasks-Secret / X-Webhook-Secret / Telegram's secret token.
+_SECRET_HEADER = re.compile(r"(?i)secret|token|signature|api[-_]?key|auth")
+
+
+def _filter_secret_headers(event: dict) -> None:
+    headers = (event.get("request") or {}).get("headers")
+    if isinstance(headers, dict):
+        for name in headers:
+            if _SECRET_HEADER.search(name):
+                headers[name] = FILTERED
+
+
 def scrub_tracking_tokens(event: dict, hint: dict | None = None) -> dict:
     """before_send / before_send_transaction: replace tracking tokens with ":token".
 
     Walks the whole (already serialized) event, so request.url, the Referer header, the
     transaction name, breadcrumbs, spans, log messages and frame-variable reprs are covered.
+    Secrets go too (SERBITO-362): secret query values, bot tokens and secret headers.
     """
     bare_tokens = {
         match["token"]
@@ -68,7 +85,9 @@ def scrub_tracking_tokens(event: dict, hint: dict | None = None) -> dict:
         for match in _TRACKING_URL.finditer(text)
         if match["token"] not in _NOT_TOKENS and len(match["token"]) >= _MIN_BARE_TOKEN_LEN
     }
-    return _rewrite(event, bare_tokens)
+    event = _rewrite(event, bare_tokens)
+    _filter_secret_headers(event)
+    return event
 
 
 def init_sentry(environ: Mapping[str, str] = os.environ) -> bool:
@@ -85,6 +104,9 @@ def init_sentry(environ: Mapping[str, str] = os.environ) -> bool:
         traces_sample_rate=0.1,
         # PII (IP, cookies, user) не шлём: в данных магазинов телефоны/адреса клиентов.
         send_default_pii=False,
+        # Локальные переменные кадров — тоже нет (SERBITO-362, JAVI-6): repr Delivery —
+        # «имя — адрес», в кадрах бывают телефоны, тексты сообщений и ключи.
+        include_local_variables=False,
         before_send=scrub_tracking_tokens,
         before_send_transaction=scrub_tracking_tokens,
     )

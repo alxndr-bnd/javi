@@ -63,7 +63,15 @@
         {% endif %}
         <div class="muted" style="font-size:13px;margin-top:6px">
           {% trans "Used to sign the Javi-Signature header so you can verify requests are from us." %}
+          {% if shop.webhook_secret %}
+            {% trans "A secret is set; it is not shown again. Leave the field empty to keep it." %}
+          {% endif %}
         </div>
+        {% if shop.webhook_secret %}
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px">
+          {{ form.clear_webhook_secret }} {{ form.clear_webhook_secret.label }}
+        </label>
+        {% endif %}
       </div>
 
       <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>

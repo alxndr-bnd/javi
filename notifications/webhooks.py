@@ -10,6 +10,7 @@ from django.http import HttpResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 
 from common.phone import InvalidPhone, normalize_phone
+from common.secrets import request_has_secret, secret_matches
 
 from .models import Notification, TelegramContact
 from .services import opt_out
@@ -17,9 +18,15 @@ from .services import opt_out
 logger = logging.getLogger(__name__)
 
 
+WEBHOOK_SECRET_HEADER = "X-Webhook-Secret"
+
+
 def _check_secret(request) -> bool:
-    secret = request.GET.get("secret") or request.headers.get("X-Webhook-Secret", "")
-    return bool(settings.INFOBIP_WEBHOOK_SECRET) and secret == settings.INFOBIP_WEBHOOK_SECRET
+    # Заголовок / Basic auth (подписка Infobip) / ?secret= (URL отчёта в сообщении), constant-time.
+    return request_has_secret(
+        request, settings.INFOBIP_WEBHOOK_SECRET, header=WEBHOOK_SECRET_HEADER
+    )
+
 
 # Порядок прогресса статуса — не понижаем (idempotent, без даунгрейда read→delivered).
 _ORDER = [
@@ -133,9 +140,8 @@ def telegram_webhook(request):
     Защита — секрет в заголовке `X-Telegram-Bot-Api-Secret-Token` (Telegram шлёт его сам,
     если задан при setWebhook). К нерелевантным апдейтам толерантны: игнор + 200.
     """
-    secret = settings.TELEGRAM_WEBHOOK_SECRET
-    header = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
-    if not secret or header != secret:
+    header = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+    if not secret_matches(header, settings.TELEGRAM_WEBHOOK_SECRET):
         return HttpResponseForbidden("forbidden")
 
     try:
@@ -148,6 +154,13 @@ def telegram_webhook(request):
     chat = message.get("chat") or {}
     chat_id = chat.get("id")
     raw_phone = contact.get("phone_number") if isinstance(contact, dict) else None
+
+    # Только СВОЙ контакт (SERBITO-362, JAVI-4): переслать можно любую карточку, и тогда
+    # уведомления чужого номера ушли бы в этот чат. Своя — contact.user_id == from.id.
+    sender_id = (message.get("from") or {}).get("id")
+    if raw_phone and (sender_id is None or contact.get("user_id") != sender_id):
+        logger.info("Telegram: ignored a contact card that is not the sender's own")
+        return HttpResponse(status=200)
 
     if raw_phone and chat_id is not None:
         try:

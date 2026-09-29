@@ -77,6 +77,15 @@ def test_no_webhook_when_url_empty():
     assert RecordingWebhookScheduler.webhooks == []
 
 
+@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK, TASK_SCHEDULER=SCHED)
+def test_no_webhook_to_a_plain_http_url():
+    """JAVI-10: a pre-existing http:// URL gets nothing (the body holds customer data)."""
+    RecordingWebhookScheduler.webhooks = []
+    delivery = _delivery(_shop(webhook_url="http://merchant.example/hook"))
+    start_delivery(delivery)
+    assert RecordingWebhookScheduler.webhooks == []
+
+
 @override_settings(
     INFOBIP_WEBHOOK_SECRET=INFOBIP_SECRET, TASK_SCHEDULER=SCHED, MESSAGING_PROVIDER=MSG_OK
 )

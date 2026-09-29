@@ -25,11 +25,13 @@ def _post(body: dict, *, secret=SECRET):
     )
 
 
-def _shared_contact_update(phone="+381641234567", chat_id=555):
+def _shared_contact_update(phone="+381641234567", chat_id=555, from_id=None):
+    # Private chat with the bot: chat.id == from.id; the user shares their own card.
     return {
         "update_id": 1,
         "message": {
             "chat": {"id": chat_id},
+            "from": {"id": chat_id if from_id is None else from_id},
             "contact": {"phone_number": phone, "user_id": chat_id},
         },
     }
@@ -83,4 +85,21 @@ def test_unrelated_update_ignored():
 def test_invalid_phone_ignored():
     resp = _post(_shared_contact_update(phone="not-a-number", chat_id=3))
     assert resp.status_code == 200
+    assert TelegramContact.objects.count() == 0
+
+
+@override_settings(TELEGRAM_WEBHOOK_SECRET=SECRET)
+def test_someone_elses_contact_card_is_ignored():
+    """JAVI-4: a forwarded card (contact.user_id != from.id) must not subscribe that number."""
+    resp = _post(_shared_contact_update(phone="+381641234567", chat_id=555, from_id=777))
+    assert resp.status_code == 200
+    assert TelegramContact.objects.count() == 0
+
+
+@override_settings(TELEGRAM_WEBHOOK_SECRET=SECRET)
+def test_contact_without_user_id_is_ignored():
+    """A card typed in by hand has no user_id — it is nobody's own number."""
+    update = _shared_contact_update(phone="+381641234567", chat_id=555)
+    del update["message"]["contact"]["user_id"]
+    assert _post(update).status_code == 200
     assert TelegramContact.objects.count() == 0

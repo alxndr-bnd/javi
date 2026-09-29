@@ -18,7 +18,6 @@ class ShopAdmin(admin.ModelAdmin):
         "origin_lat",
         "origin_lng",
         "webhook_url",
-        "webhook_secret",
         "completed_expanded",
         "kanban_view",
     )

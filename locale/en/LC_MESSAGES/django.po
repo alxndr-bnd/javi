@@ -861,3 +861,36 @@ msgstr ""
 #: deliveries/templates/deliveries/shop_profile.html
 msgid "Trial store: lower limits and Serbian mobile numbers only until we verify the store."
 msgstr ""
+
+#: tracking/templates/tracking/unsubscribe_confirm.html
+msgid "Unsubscribe from notifications?"
+msgstr ""
+
+#: accounts/forms.py
+#, python-format
+msgid "Too many failed sign-in attempts. Try again in %(minutes)d minutes."
+msgstr ""
+
+#: common/validators.py
+msgid "The webhook URL must start with https://."
+msgstr ""
+
+#: deliveries/forms.py
+msgid "Remove the secret"
+msgstr ""
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "A secret is set; it is not shown again. Leave the field empty to keep it."
+msgstr ""
+
+#: deliveries/templates/deliveries/api_key_created.html
+msgid "API key created"
+msgstr ""
+
+#: deliveries/templates/deliveries/api_key_created.html
+msgid "Copy it now — it will not be shown again."
+msgstr ""
+
+#: deliveries/templates/deliveries/api_key_created.html
+msgid "Back to the store"
+msgstr ""

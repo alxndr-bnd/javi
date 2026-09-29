@@ -1,9 +1,12 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.utils.translation import gettext_lazy as _
 
 from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
+
+from .lockout import is_locked
 
 User = get_user_model()
 
@@ -38,3 +41,21 @@ class RegisterForm(UserCreationForm):
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError(_("An account with this email already exists."))
         return email
+
+
+class LoginForm(AuthenticationForm):
+    """Sign-in that says so when it is locked after too many failures (SERBITO-362)."""
+
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        "locked": _("Too many failed sign-in attempts. Try again in %(minutes)d minutes."),
+    }
+
+    def clean(self):
+        if is_locked(self.request, self.data.get("username")):
+            raise forms.ValidationError(
+                self.error_messages["locked"],
+                code="locked",
+                params={"minutes": settings.LOGIN_LOCKOUT_MINUTES},
+            )
+        return super().clean()

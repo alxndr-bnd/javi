@@ -897,3 +897,36 @@ msgstr "Ovog meseca: %(used)s od %(limit)s"
 #: deliveries/templates/deliveries/shop_profile.html
 msgid "Trial store: lower limits and Serbian mobile numbers only until we verify the store."
 msgstr "Probna prodavnica: niži limiti i samo srpski mobilni brojevi dok ne verifikujemo prodavnicu."
+
+#: tracking/templates/tracking/unsubscribe_confirm.html
+msgid "Unsubscribe from notifications?"
+msgstr "Odjaviti se sa obaveštenja?"
+
+#: accounts/forms.py
+#, python-format
+msgid "Too many failed sign-in attempts. Try again in %(minutes)d minutes."
+msgstr "Previše neuspešnih pokušaja prijave. Pokušajte ponovo za %(minutes)d minuta."
+
+#: common/validators.py
+msgid "The webhook URL must start with https://."
+msgstr "URL vebhuka mora da počinje sa https://."
+
+#: deliveries/forms.py
+msgid "Remove the secret"
+msgstr "Ukloni tajnu"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "A secret is set; it is not shown again. Leave the field empty to keep it."
+msgstr "Tajna je sačuvana i više se ne prikazuje. Ostavite polje prazno da je zadržite."
+
+#: deliveries/templates/deliveries/api_key_created.html
+msgid "API key created"
+msgstr "API ključ je kreiran"
+
+#: deliveries/templates/deliveries/api_key_created.html
+msgid "Copy it now — it will not be shown again."
+msgstr "Kopirajte ga sada — više se neće prikazati."
+
+#: deliveries/templates/deliveries/api_key_created.html
+msgid "Back to the store"
+msgstr "Nazad na prodavnicu"
