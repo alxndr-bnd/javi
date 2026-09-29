@@ -86,91 +86,43 @@ def test_no_webhook_to_a_plain_http_url():
     assert RecordingWebhookScheduler.webhooks == []
 
 
+S = Notification.Status
+
+
 @override_settings(
     INFOBIP_WEBHOOK_SECRET=INFOBIP_SECRET, TASK_SCHEDULER=SCHED, MESSAGING_PROVIDER=MSG_OK
 )
-def test_notification_delivered_emitted(client):
+@pytest.mark.parametrize(
+    ("before", "result", "after", "event"),
+    [
+        (S.SENT, {"status": {"groupName": "DELIVERED"}}, S.DELIVERED, "notification.delivered"),
+        (S.DELIVERED, {"seen": True}, S.READ, "notification.read"),
+        (S.SENT, {"status": {"groupName": "UNDELIVERABLE"}}, S.FAILED, "notification.failed"),
+        # READ → DELIVERED не понижается: статус не меняется — и не эмитим
+        (S.READ, {"status": {"groupName": "DELIVERED"}}, S.READ, None),
+    ],
+)
+def test_infobip_report_sets_status_and_notifies_merchant(client, before, result, after, event):
+    """Отчёт Infobip → статус уведомления и вебхук мерчанту (только если статус сменился)."""
     RecordingWebhookScheduler.webhooks = []
-    shop = _shop()
-    delivery = _delivery(shop)
+    delivery = _delivery(_shop())
     TrackingToken.objects.create(delivery=delivery)
     notif = Notification.objects.create(
         delivery=delivery, kind=Notification.Kind.ON_THE_WAY,
-        provider_message_id="m-1", status=Notification.Status.SENT,
+        provider_message_id="m-1", status=before,
     )
-    client.post(
+    resp = client.post(
         f"/webhooks/infobip/reports/?secret={INFOBIP_SECRET}",
-        data=json.dumps({"results": [{"messageId": "m-1", "status": {"groupName": "DELIVERED"}}]}),
+        data=json.dumps({"results": [{"messageId": "m-1", **result}]}),
         content_type="application/json",
     )
-    body = _by_event("notification.delivered")
-    assert body is not None
-    assert body["data"]["id"] == delivery.id
-    assert body["data"]["notification_status"] == Notification.Status.DELIVERED
+    assert resp.status_code == 200
     notif.refresh_from_db()
-    assert notif.status == Notification.Status.DELIVERED
-
-
-@override_settings(
-    INFOBIP_WEBHOOK_SECRET=INFOBIP_SECRET, TASK_SCHEDULER=SCHED, MESSAGING_PROVIDER=MSG_OK
-)
-def test_notification_read_emitted(client):
-    RecordingWebhookScheduler.webhooks = []
-    shop = _shop()
-    delivery = _delivery(shop)
-    TrackingToken.objects.create(delivery=delivery)
-    Notification.objects.create(
-        delivery=delivery, kind=Notification.Kind.ON_THE_WAY,
-        provider_message_id="m-2", status=Notification.Status.DELIVERED,
-    )
-    client.post(
-        f"/webhooks/infobip/reports/?secret={INFOBIP_SECRET}",
-        data=json.dumps({"results": [{"messageId": "m-2", "seen": True}]}),
-        content_type="application/json",
-    )
-    assert "notification.read" in _events()
-
-
-@override_settings(
-    INFOBIP_WEBHOOK_SECRET=INFOBIP_SECRET, TASK_SCHEDULER=SCHED, MESSAGING_PROVIDER=MSG_OK
-)
-def test_notification_failed_emitted(client):
-    RecordingWebhookScheduler.webhooks = []
-    shop = _shop()
-    delivery = _delivery(shop)
-    TrackingToken.objects.create(delivery=delivery)
-    Notification.objects.create(
-        delivery=delivery, kind=Notification.Kind.ON_THE_WAY,
-        provider_message_id="m-3", status=Notification.Status.SENT,
-    )
-    client.post(
-        f"/webhooks/infobip/reports/?secret={INFOBIP_SECRET}",
-        data=json.dumps(
-            {"results": [{"messageId": "m-3", "status": {"groupName": "UNDELIVERABLE"}}]}
-        ),
-        content_type="application/json",
-    )
-    assert "notification.failed" in _events()
-
-
-@override_settings(
-    INFOBIP_WEBHOOK_SECRET=INFOBIP_SECRET, TASK_SCHEDULER=SCHED, MESSAGING_PROVIDER=MSG_OK
-)
-def test_no_emit_when_status_unchanged(client):
-    RecordingWebhookScheduler.webhooks = []
-    shop = _shop()
-    delivery = _delivery(shop)
-    Notification.objects.create(
-        delivery=delivery, kind=Notification.Kind.ON_THE_WAY,
-        provider_message_id="m-4", status=Notification.Status.READ,
-    )
-    # READ → DELIVERED не понижается, статус не меняется → не эмитим.
-    client.post(
-        f"/webhooks/infobip/reports/?secret={INFOBIP_SECRET}",
-        data=json.dumps({"results": [{"messageId": "m-4", "status": {"groupName": "DELIVERED"}}]}),
-        content_type="application/json",
-    )
-    assert _events() == []
+    assert notif.status == after
+    assert _events() == ([event] if event else [])
+    if event:
+        data = _by_event(event)["data"]
+        assert (data["id"], data["notification_status"]) == (delivery.id, after)
 
 
 @override_settings(TASK_SCHEDULER=SCHED)
