@@ -930,3 +930,17 @@ msgstr "Kopirajte ga sada — više se neće prikazati."
 #: deliveries/templates/deliveries/api_key_created.html
 msgid "Back to the store"
 msgstr "Nazad na prodavnicu"
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "Write to <a href=\"mailto:%(email)s\">%(email)s</a> to get verified."
+msgstr "Pišite na <a href=\"mailto:%(email)s\">%(email)s</a> da biste bili verifikovani."
+
+#: accounts/views.py
+msgid "Too many new accounts from your network today. Try again tomorrow."
+msgstr "Danas je sa vaše mreže otvoreno previše naloga. Pokušajte ponovo sutra."
+
+#: deliveries/views.py
+#, python-format
+msgid "You already have %(count)d active API keys. Revoke one to create a new key."
+msgstr "Već imate %(count)d aktivnih API ključeva. Opozovite jedan da biste napravili novi."

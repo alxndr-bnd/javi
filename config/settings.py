@@ -257,6 +257,13 @@ SEND_LIMIT_RESENDS_PER_DELIVERY = env.int("SEND_LIMIT_RESENDS_PER_DELIVERY", def
 # Глобальный предохранитель на весь сервис за день; упор → logger.error (→ Sentry).
 SEND_LIMIT_GLOBAL_DAY = env.int("SEND_LIMIT_GLOBAL_DAY", default=500)
 
+# Пробный магазин (SERBITO-357): куда писать, чтобы проверили (показываем на «Prodavnica»).
+SHOP_VERIFY_EMAIL = env("SHOP_VERIFY_EMAIL", default="alexander.bondarchuk@gmail.com")
+# Регистраций с одного IP клиента за сутки (UTC); сверх — 429 на форме регистрации.
+SIGNUP_LIMIT_PER_IP_DAY = env.int("SIGNUP_LIMIT_PER_IP_DAY", default=3)
+# Активных (не отозванных) API-ключей у магазина.
+API_KEYS_PER_SHOP = env.int("API_KEYS_PER_SHOP", default=5)
+
 # Интеграции — провайдер карт (геокодинг + ETA). Ключ из env/Secret Manager, не в коде.
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 MAPS_PROVIDER = env(

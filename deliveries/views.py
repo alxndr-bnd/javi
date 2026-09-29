@@ -1,6 +1,7 @@
 import hashlib
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
@@ -105,7 +106,13 @@ class ShopProfileView(LoginRequiredMixin, View):
     def _context(self, shop, form):
         api_keys = list(shop.api_keys.all()) if shop is not None else []
         usage = shop_usage(shop) if shop is not None else None
-        return {"form": form, "shop": shop, "api_keys": api_keys, "send_usage": usage}
+        return {
+            "form": form,
+            "shop": shop,
+            "api_keys": api_keys,
+            "send_usage": usage,
+            "verify_email": settings.SHOP_VERIFY_EMAIL,
+        }
 
     def get(self, request):
         shop = getattr(request.user, "shop", None)  # изоляция: только свой магазин
@@ -161,6 +168,15 @@ class ApiKeyCreateView(LoginRequiredMixin, View):
         shop = getattr(request.user, "shop", None)
         if shop is None:
             messages.error(request, _("Account is not linked to a store."))
+            return redirect("deliveries:profile")
+        active = shop.api_keys.filter(revoked_at__isnull=True).count()
+        if active >= settings.API_KEYS_PER_SHOP:
+            # Лимит ключей (SERBITO-357): новый — только после отзыва старого.
+            messages.error(
+                request,
+                _("You already have %(count)d active API keys. Revoke one to create a new key.")
+                % {"count": active},
+            )
             return redirect("deliveries:profile")
         key_obj, full_key = ApiKey.generate(shop)
         response = render(

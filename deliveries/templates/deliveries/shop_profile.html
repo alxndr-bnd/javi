@@ -88,6 +88,9 @@
     {% if send_usage.trial %}
     <div class="muted" style="font-size:13px;margin-top:6px">
       {% trans "Trial store: lower limits and Serbian mobile numbers only until we verify the store." %}
+      {% if verify_email %}
+        {% blocktrans with email=verify_email %}Write to <a href="mailto:{{ email }}">{{ email }}</a> to get verified.{% endblocktrans %}
+      {% endif %}
     </div>
     {% endif %}
   </div>

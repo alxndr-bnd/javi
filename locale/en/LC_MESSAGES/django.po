@@ -894,3 +894,17 @@ msgstr ""
 #: deliveries/templates/deliveries/api_key_created.html
 msgid "Back to the store"
 msgstr ""
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "Write to <a href=\"mailto:%(email)s\">%(email)s</a> to get verified."
+msgstr ""
+
+#: accounts/views.py
+msgid "Too many new accounts from your network today. Try again tomorrow."
+msgstr ""
+
+#: deliveries/views.py
+#, python-format
+msgid "You already have %(count)d active API keys. Revoke one to create a new key."
+msgstr ""

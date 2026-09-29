@@ -728,3 +728,20 @@ def test_shop_api_never_returns_the_webhook_secret(client):
     ):
         assert "whsec_hidden" not in resp.content.decode()
         assert resp.json()["webhook_configured"] is True
+
+
+# --- SERBITO-357: API keys per shop are capped ---
+
+
+@override_settings(API_KEYS_PER_SHOP=2)
+def test_api_key_cap_counts_active_keys_only(client):
+    shop = _make_shop_with_origin()
+    client.login(username="api@shop.rs", password="pass12345")
+    assert client.post("/app/api-kljucevi/novi/").status_code == 200
+    assert client.post("/app/api-kljucevi/novi/").status_code == 200
+    resp = client.post("/app/api-kljucevi/novi/", follow=True)
+    assert "You already have 2 active API keys" in resp.content.decode()
+    assert shop.api_keys.count() == 2
+    shop.api_keys.first().revoke()
+    assert client.post("/app/api-kljucevi/novi/").status_code == 200
+    assert shop.api_keys.filter(revoked_at__isnull=True).count() == 2
