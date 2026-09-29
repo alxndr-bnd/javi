@@ -627,12 +627,6 @@ def test_profile_lists_keys(client):
     assert obj.masked in resp.content.decode()
 
 
-def test_create_key_requires_login(client):
-    resp = client.post("/app/api-kljucevi/novi/")
-    assert resp.status_code == 302
-    assert "/accounts/login/" in resp["Location"]
-
-
 # --- /api/v1/shop (store profile + webhook config; UI↔API parity) ---
 
 SHOP_URL = "/api/v1/shop"
@@ -681,6 +675,7 @@ def test_patch_shop_webhook(client):
 
 
 # --- сортировка списка: дефолт старые→новые, ?sort override ---
+
 
 def test_list_oldest_first_by_default_and_sort_override(client):
     from datetime import timedelta

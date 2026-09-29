@@ -59,11 +59,6 @@ def test_webhook_url_validated(client):
     assert shop.webhook_url == ""  # невалидный URL не сохранён
 
 
-def test_profile_requires_login(client):
-    resp = client.get(PROFILE)
-    assert resp.status_code == 302  # redirect to login
-
-
 # --- SERBITO-362 (JAVI-10): https only; the secret is write-only and never echoed back ---
 
 
