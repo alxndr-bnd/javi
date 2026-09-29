@@ -67,10 +67,6 @@ def test_on_the_way_step_has_active(client):
     assert "step--active" in body  # U dostavi — текущий
 
 
-def test_unknown_token_404(client):
-    assert client.get("/t/nonexistent-token/").status_code == 404
-
-
 def test_expired_link_410(client):
     token = _token()
     token.expires_at = timezone.now() - timedelta(hours=1)
@@ -160,16 +156,6 @@ def test_unsubscribe_expired_token_is_gone(client):
 
 
 @override_settings(TRACKING_RATE_LIMIT=2)
-def test_rate_limit_429(client):
-    """AC#5: сверх лимита запросов с одного IP → 429."""
-    token = _token()
-    url = f"/t/{token.token}/"
-    assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 200
-    assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 200
-    assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 429
-
-
-@override_settings(TRACKING_RATE_LIMIT=2)
 @pytest.mark.parametrize(
     ("method", "suffix"),
     [("get", ""), ("post", "oceni/"), ("post", "primljeno/"), ("get", "odjava/"),
@@ -199,3 +185,41 @@ def test_rate_limit_keys_on_real_client_ip_not_spoofed_xff(client):
     assert client.get(url, HTTP_X_FORWARDED_FOR=xff, **front_end).status_code == 429
     other = "203.0.113.8"
     assert client.get(url, HTTP_X_FORWARDED_FOR=other, **front_end).status_code == 200
+
+
+# --- /t/ is private to the recipient (SERBITO-303, -306, -321): noindex, no GA, no consent
+# banner or settings — whatever state the link is in ---
+
+NOINDEX = "noindex, nofollow"
+META_NOINDEX = '<meta name="robots" content="noindex, nofollow">'
+NOT_ON_TRACKING = [
+    *("googletagmanager.com", "google-analytics.com", "gtag(", "G-KHME7DK2K0"),
+    *("consent.js", "data-consent-open", "Cookie settings"),
+]
+
+
+@pytest.mark.parametrize(
+    ("state", "suffix", "status"),
+    [
+        ("live", "", 200),
+        ("live", "odjava/", 200),
+        ("expired", "", 410),
+        ("unknown", "", 404),
+        ("unknown", "odjava/", 404),
+        ("unknown", None, 301),  # no trailing slash
+    ],
+)
+def test_tracking_pages_stay_private(client, state, suffix, status):
+    token = _token()
+    if state == "expired":
+        token.expires_at = timezone.now() - timedelta(days=1)
+        token.save(update_fields=["expires_at"])
+    key = "unknown-token" if state == "unknown" else token.token
+    resp = client.get(f"/t/{key}" if suffix is None else f"/t/{key}/{suffix}")
+    assert resp.status_code == status
+    assert resp.headers["X-Robots-Tag"] == NOINDEX
+    body = b"".join(resp.streaming_content) if resp.streaming else resp.content
+    for marker in NOT_ON_TRACKING:
+        assert marker not in body.decode(), marker
+    if state != "unknown" and suffix == "":
+        assert META_NOINDEX in body.decode()

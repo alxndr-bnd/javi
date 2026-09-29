@@ -34,37 +34,8 @@ def _post(client, payload):
     )
 
 
-@override_settings(INFOBIP_WEBHOOK_SECRET=SECRET)
-def test_delivered_report_updates_status(client):
-    n = _notification()
-    resp = _post(client, {"results": [{"messageId": "m-1", "status": {"groupName": "DELIVERED"}}]})
-    assert resp.status_code == 200
-    n.refresh_from_db()
-    assert n.status == Notification.Status.DELIVERED
-
-
-@override_settings(INFOBIP_WEBHOOK_SECRET=SECRET)
-def test_seen_report_sets_read(client):
-    n = _notification(status=Notification.Status.DELIVERED)
-    _post(client, {"results": [{"messageId": "m-1", "seen": True}]})
-    n.refresh_from_db()
-    assert n.status == Notification.Status.READ
-
-
-@override_settings(INFOBIP_WEBHOOK_SECRET=SECRET)
-def test_undeliverable_sets_failed(client):
-    n = _notification()
-    _post(client, {"results": [{"messageId": "m-1", "status": {"groupName": "UNDELIVERABLE"}}]})
-    n.refresh_from_db()
-    assert n.status == Notification.Status.FAILED
-
-
-@override_settings(INFOBIP_WEBHOOK_SECRET=SECRET)
-def test_no_downgrade_read_to_delivered(client):
-    n = _notification(status=Notification.Status.READ)
-    _post(client, {"results": [{"messageId": "m-1", "status": {"groupName": "DELIVERED"}}]})
-    n.refresh_from_db()
-    assert n.status == Notification.Status.READ  # не понижаем
+# Статусы из отчётов (DELIVERED, seen → READ, UNDELIVERABLE → FAILED, без понижения) и
+# вебхук мерчанту — test_webhook_events.py::test_infobip_report_sets_status_and_notifies_merchant
 
 
 @override_settings(INFOBIP_WEBHOOK_SECRET=SECRET)

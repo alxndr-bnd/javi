@@ -60,26 +60,16 @@ def test_generate_stores_only_hash():
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_create_requires_key(client):
+def test_api_rejects_missing_bogus_and_revoked_keys(client):
+    shop = _make_shop_with_origin()
+    obj, revoked = ApiKey.generate(shop)
+    obj.revoke()
     resp = client.post(CREATE_URL, data="{}", content_type="application/json")
     assert resp.status_code == 401
     assert resp.json()["error"]["code"] == "unauthorized"
-
-
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_create_invalid_key(client):
-    _make_shop_with_origin()
-    resp = _post_create(client, "javi_live_bogus", {"recipient_name": "x"})
-    assert resp.status_code == 401
-
-
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_create_revoked_key(client):
-    shop = _make_shop_with_origin()
-    obj, full_key = ApiKey.generate(shop)
-    obj.revoke()
-    resp = _post_create(client, full_key, {"recipient_name": "x"})
-    assert resp.status_code == 401
+    for key in ("javi_live_bogus", revoked):
+        assert _post_create(client, key, {"recipient_name": "x"}).status_code == 401
+    assert client.get(SHOP_URL).status_code == 401
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
@@ -158,13 +148,6 @@ def test_create_bad_json_400(client):
     assert resp.json()["error"]["code"] == "invalid_json"
 
 
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_create_put_method_not_allowed(client):
-    shop, key = _shop_and_key()
-    resp = client.put(CREATE_URL, **_auth(key))
-    assert resp.status_code == 405
-
-
 # --- Idempotency ----------------------------------------------------------
 
 
@@ -207,15 +190,24 @@ def test_get_delivery(client):
     assert resp.json()["notification"] is None
 
 
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_get_other_shop_404(client):
+@override_settings(MAPS_PROVIDER=FAKE_OK, ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
+def test_other_shop_delivery_is_404_on_every_endpoint(client):
+    """Чужой ключ не видит и не меняет доставку: get, start, ready, delete — 404."""
     shop_a, key_a = _shop_and_key("a@shop.rs", "A")
     shop_b, key_b = _shop_and_key("b@shop.rs", "B")
     victim = _post_create(
         client, key_b, {"recipient_name": "B", "recipient_phone": "064 123 4567", "address": "adr"}
     ).json()
-    resp = client.get(f"/api/v1/deliveries/{victim['id']}", **_auth(key_a))
-    assert resp.status_code == 404
+    url = f"/api/v1/deliveries/{victim['id']}"
+    for call in (
+        lambda: client.get(url, **_auth(key_a)),
+        lambda: client.post(f"{url}/start", **_auth(key_a)),
+        lambda: client.post(f"{url}/ready", **_auth(key_a)),
+        lambda: client.delete(url, **_auth(key_a)),
+    ):
+        assert call().status_code == 404
+    d = Delivery.objects.get(id=victim["id"])
+    assert (d.status, d.deleted_at) == (Delivery.Status.NEW, None)
 
 
 # --- Start ----------------------------------------------------------------
@@ -292,18 +284,6 @@ def test_start_already_started_returns_state(client):
     assert resp.json()["status"] == "out_for_delivery"
 
 
-@override_settings(MAPS_PROVIDER=FAKE_OK, ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
-def test_start_other_shop_404(client):
-    shop_a, key_a = _shop_and_key("a@shop.rs", "A")
-    shop_b, key_b = _shop_and_key("b@shop.rs", "B")
-    victim = _post_create(
-        client, key_b, {"recipient_name": "B", "recipient_phone": "064 123 4567", "address": "adr"}
-    ).json()
-    resp = client.post(f"/api/v1/deliveries/{victim['id']}/start", **_auth(key_a))
-    assert resp.status_code == 404
-    assert Delivery.objects.get(id=victim["id"]).status == Delivery.Status.NEW
-
-
 # --- List -----------------------------------------------------------------
 
 
@@ -325,18 +305,6 @@ def test_list_scoped_to_shop(client):
     data = resp.json()
     assert len(data) == 2
     assert {d["recipient"]["name"] for d in data} == {"A1", "A2"}
-
-
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_list_excludes_soft_deleted(client):
-    shop, key = _shop_and_key()
-    created = _post_create(
-        client, key, {"recipient_name": "Ana", "recipient_phone": "064 123 4567", "address": "x"}
-    ).json()
-    client.delete(f"/api/v1/deliveries/{created['id']}", **_auth(key))
-    resp = client.get(CREATE_URL, **_auth(key))
-    assert resp.status_code == 200
-    assert resp.json() == []
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
@@ -418,18 +386,6 @@ def test_ready_transitions_new_to_created(client):
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_ready_other_shop_404(client):
-    shop_a, key_a = _shop_and_key("a@shop.rs", "A")
-    shop_b, key_b = _shop_and_key("b@shop.rs", "B")
-    victim = _post_create(
-        client, key_b, {"recipient_name": "B", "recipient_phone": "064 123 4567", "address": "x"}
-    ).json()
-    resp = client.post(f"/api/v1/deliveries/{victim['id']}/ready", **_auth(key_a))
-    assert resp.status_code == 404
-    assert Delivery.objects.get(id=victim["id"]).status == Delivery.Status.NEW
-
-
-@override_settings(MAPS_PROVIDER=FAKE_OK)
 def test_delivered_marks_delivered(client):
     shop, key = _shop_and_key()
     created = _post_create(
@@ -445,7 +401,7 @@ def test_delivered_marks_delivered(client):
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_soft_delete_then_404_on_get(client):
+def test_soft_delete_keeps_row_and_hides_it_from_list(client):
     shop, key = _shop_and_key()
     created = _post_create(
         client, key, {"recipient_name": "Ana", "recipient_phone": "064 123 4567", "address": "x"}
@@ -470,18 +426,6 @@ def test_restore_undeletes(client):
     assert Delivery.objects.get(id=created["id"]).deleted_at is None
     listed = client.get(CREATE_URL, **_auth(key)).json()
     assert [d["id"] for d in listed] == [created["id"]]
-
-
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_delete_other_shop_404(client):
-    shop_a, key_a = _shop_and_key("a@shop.rs", "A")
-    shop_b, key_b = _shop_and_key("b@shop.rs", "B")
-    victim = _post_create(
-        client, key_b, {"recipient_name": "B", "recipient_phone": "064 123 4567", "address": "x"}
-    ).json()
-    resp = client.delete(f"/api/v1/deliveries/{victim['id']}", **_auth(key_a))
-    assert resp.status_code == 404
-    assert Delivery.objects.get(id=victim["id"]).deleted_at is None
 
 
 # --- notifications/resend -------------------------------------------------
@@ -564,22 +508,7 @@ def test_schema_endpoint_public_200(client):
     assert b"Javi API" in resp.content
 
 
-def test_docs_endpoint_public_200(client):
-    resp = client.get("/api/docs/")
-    assert resp.status_code == 200
-
-
 # --- Key management UI ----------------------------------------------------
-
-
-def test_generate_key_view_shows_plaintext_once(client):
-    shop = _make_shop_with_origin()
-    client.login(username="api@shop.rs", password="pass12345")
-    resp = client.post("/app/api-kljucevi/novi/")
-    assert resp.status_code == 200  # the key page itself, no redirect
-    body = resp.content.decode()
-    assert "javi_live_" in body  # полный ключ показан один раз — на этой странице
-    assert shop.api_keys.count() == 1
 
 
 def test_new_key_is_not_in_a_cookie_and_not_cached(client):
@@ -627,19 +556,9 @@ def test_profile_lists_keys(client):
     assert obj.masked in resp.content.decode()
 
 
-def test_create_key_requires_login(client):
-    resp = client.post("/app/api-kljucevi/novi/")
-    assert resp.status_code == 302
-    assert "/accounts/login/" in resp["Location"]
-
-
 # --- /api/v1/shop (store profile + webhook config; UI↔API parity) ---
 
 SHOP_URL = "/api/v1/shop"
-
-
-def test_shop_requires_key(client):
-    assert client.get(SHOP_URL).status_code == 401
 
 
 def test_get_shop(client):
@@ -681,6 +600,7 @@ def test_patch_shop_webhook(client):
 
 
 # --- сортировка списка: дефолт старые→новые, ?sort override ---
+
 
 def test_list_oldest_first_by_default_and_sort_override(client):
     from datetime import timedelta

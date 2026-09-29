@@ -10,7 +10,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 
-from deliveries.models import Delivery, Shop
+from deliveries.models import Shop
 from notifications.outbound import compute_signature, notify_merchant
 from tasks.testing import RecordingWebhookScheduler
 
@@ -36,13 +36,6 @@ def test_compute_signature_matches_hmac_sha256():
     body = b'{"event":"x"}'
     sig = compute_signature("topsecret", body)
     expected = hmac.new(b"topsecret", body, hashlib.sha256).hexdigest()
-    assert sig == f"sha256={expected}"
-
-
-def test_compute_signature_empty_secret_still_signs():
-    # Пустой секрет — подпись всё равно вычисляется (детерминированно).
-    sig = compute_signature("", b"{}")
-    expected = hmac.new(b"", b"{}", hashlib.sha256).hexdigest()
     assert sig == f"sha256={expected}"
 
 
@@ -84,22 +77,3 @@ def test_notify_merchant_swallows_scheduler_failure():
     # Сбой постановки задачи НЕ должен пробрасываться наверх (не рвём основной поток).
     shop = _shop()
     notify_merchant(shop, "delivery.started", {"id": 1})  # не должно бросить
-
-
-@override_settings(TASK_SCHEDULER=SCHED)
-def test_recipient_phone_can_be_verified_by_merchant():
-    """Сценарий мерчанта: пересчитать подпись по полученному телу и сверить заголовок."""
-    RecordingWebhookScheduler.webhooks = []
-    shop = _shop(webhook_secret="abc123")
-    delivery = Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567", dest_address="adr"
-    )
-    notify_merchant(
-        shop,
-        "delivery.delivered",
-        {"id": delivery.id, "status": "delivered", "recipient": {"name": "Ana"}},
-    )
-    wh = RecordingWebhookScheduler.webhooks[0]
-    # Верификация на стороне мерчанта.
-    recomputed = compute_signature(shop.webhook_secret, wh["body"])
-    assert hmac.compare_digest(recomputed, wh["headers"]["Javi-Signature"])

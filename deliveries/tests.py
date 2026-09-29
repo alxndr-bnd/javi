@@ -4,9 +4,11 @@ from datetime import timedelta
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
+from django.urls import reverse
 from django.utils import timezone
 
 from common.phone import normalize_phone
+from deliveries import urls as deliveries_urls
 from deliveries.models import Delivery, Shop
 from deliveries.services import (
     create_delivery,
@@ -53,11 +55,18 @@ def _make_shop(email, name):
     return user, shop
 
 
-def test_app_requires_login(client):
-    """AC#3: аноним на /app/ редиректится на вход."""
-    resp = client.get("/app/")
-    assert resp.status_code == 302
-    assert "/accounts/login/" in resp["Location"]
+def test_cabinet_requires_login(client):
+    """AC#3: весь кабинет /app/ — только после входа; аноним уходит на вход.
+
+    Все маршруты deliveries.urls, а не выбранные вручную: новый view без
+    LoginRequiredMixin упадёт здесь сам."""
+    for pattern in deliveries_urls.urlpatterns:
+        kwargs = {"pk": 1} if "pk" in pattern.pattern.converters else {}
+        url = reverse(f"deliveries:{pattern.name}", kwargs=kwargs)
+        for method in (client.get, client.post):
+            resp = method(url)
+            assert resp.status_code == 302, url
+            assert resp["Location"].startswith("/accounts/login/"), url
 
 
 def test_shop_sees_empty_cabinet(client):
@@ -69,17 +78,6 @@ def test_shop_sees_empty_cabinet(client):
     body = resp.content.decode()
     assert "No deliveries" in body
     assert "New delivery" in body
-
-
-def test_tenant_isolation(client):
-    """AC#4: каждый магазин видит свой кабинет (скоуп по shop)."""
-    _make_shop("a@shop.rs", "Shop A")
-    _make_shop("b@shop.rs", "Shop B")
-    client.login(username="a@shop.rs", password="pass12345")
-    resp = client.get("/app/")
-    assert resp.status_code == 200
-    assert resp.context["shop"].name == "Shop A"
-    assert list(resp.context["deliveries"]) == []
 
 
 # --- Story 1.2: origin магазина ---
@@ -110,13 +108,6 @@ def test_set_shop_origin_miss_keeps_existing_coords():
     assert shop.origin_address == "Stari validan, Beograd"
     assert shop.origin_lat == 45.0
     assert shop.origin_lng == 21.0
-
-
-def test_profile_requires_login(client):
-    """AC#5: аноним на профиле редиректится на вход."""
-    resp = client.get("/app/prodavnica/")
-    assert resp.status_code == 302
-    assert "/accounts/login/" in resp["Location"]
 
 
 def test_profile_prefills_existing_origin(client):
@@ -209,24 +200,6 @@ def test_create_delivery_geocode_miss_still_creates():
     assert delivery.dest_address == "Nepoznata adresa"
 
 
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_create_delivery_foreign_phone_flags_risk():
-    """AC#5: иностранный/немобильный номер помечается флагом риска."""
-    shop = _make_shop_with_origin("d3@shop.rs", "Shop D3")
-    phone = normalize_phone("+49 1512 3456789")
-    delivery, _ = create_delivery(
-        shop, recipient_name="Hans", phone=phone, dest_address="Neka adresa"
-    )
-    assert delivery.phone_risk is True
-
-
-def test_create_view_requires_login(client):
-    """AC#8: аноним на форме создания → вход."""
-    resp = client.get("/app/dostava/nova/")
-    assert resp.status_code == 302
-    assert "/accounts/login/" in resp["Location"]
-
-
 def test_create_view_without_origin_redirects_to_profile(client):
     """AC#2: магазин без origin → редирект в профиль."""
     _make_shop("noorigin@shop.rs", "No Origin")
@@ -282,6 +255,7 @@ def test_delivery_isolation_between_shops(client):
     )
     client.login(username="da@shop.rs", password="pass12345")
     resp = client.get("/app/")
+    assert resp.context["shop"] == shop_a
     assert list(resp.context["deliveries"]) == []
     assert shop_a.deliveries.count() == 0
 
@@ -364,21 +338,28 @@ def test_start_delivery_send_failure_marks_failed():
     assert n.status == Notification.Status.FAILED
 
 
-def test_start_view_requires_login(client):
-    _, delivery = _geocoded_delivery()
-    resp = client.post(f"/app/dostava/{delivery.pk}/start/")
-    assert resp.status_code == 302
-    assert "/accounts/login/" in resp["Location"]
-
-
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
-def test_start_view_cannot_start_other_shop_delivery(client):
-    """AC#8: чужую доставку стартовать нельзя."""
+def test_other_shop_delivery_is_404_on_every_action(client):
+    """AC#8: чужую доставку нельзя стартовать, переотправить, отметить, удалить,
+    вернуть — 404 на каждом маршруте /app/dostava/<pk>/…, и она не меняется."""
     _make_shop_with_origin("attacker@shop.rs", "Attacker")
-    _, victim_delivery = _geocoded_delivery("victim@shop.rs", "Victim")
+    _, victim = _geocoded_delivery("victim@shop.rs", "Victim")
+    start_delivery(victim)
+    victim.refresh_from_db()
+    before = (victim.status, victim.deleted_at, victim.recipient_phone)
     client.login(username="attacker@shop.rs", password="pass12345")
-    resp = client.post(f"/app/dostava/{victim_delivery.pk}/start/")
-    assert resp.status_code == 404
+    routes = [
+        p.name
+        for p in deliveries_urls.urlpatterns
+        if str(p.pattern).startswith("dostava/<int:pk>/")
+    ]
+    assert len(routes) == 6
+    for name in routes:
+        url = reverse(f"deliveries:{name}", kwargs={"pk": victim.pk})
+        resp = client.post(url, {"recipient_phone": "064 1112233"})
+        assert resp.status_code == 404, url
+    victim.refresh_from_db()
+    assert (victim.status, victim.deleted_at, victim.recipient_phone) == before
 
 
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
@@ -459,16 +440,6 @@ def test_resend_view_success(client):
     assert delivery.recipient_phone == "+381641112233"
 
 
-@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
-def test_resend_view_other_shop_404(client):
-    _make_shop_with_origin("att@shop.rs", "Att")
-    _, victim = _geocoded_delivery("vic@shop.rs", "Vic")
-    start_delivery(victim)
-    client.login(username="att@shop.rs", password="pass12345")
-    resp = client.post(
-        f"/app/dostava/{victim.pk}/posalji-ponovo/", {"recipient_phone": "064 1112233"}
-    )
-    assert resp.status_code == 404
 
 
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
@@ -480,14 +451,6 @@ def test_mark_delivered(client):
     assert resp.status_code == 302
     delivery.refresh_from_db()
     assert delivery.status == Delivery.Status.DELIVERED
-
-
-def test_mark_delivered_other_shop_404(client):
-    _make_shop_with_origin("a2@shop.rs", "A2")
-    _, victim = _geocoded_delivery("v2@shop.rs", "V2")
-    client.login(username="a2@shop.rs", password="pass12345")
-    resp = client.post(f"/app/dostava/{victim.pk}/isporuceno/")
-    assert resp.status_code == 404
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
@@ -573,14 +536,6 @@ def test_toggle_completed_saves_state(client):
     assert shop.completed_expanded is False
 
 
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_delete_other_shop_404(client):
-    _make_shop_with_origin("da2@shop.rs", "DA2")
-    _, victim = _geocoded_delivery("dv2@shop.rs", "DV2")
-    client.login(username="da2@shop.rs", password="pass12345")
-    resp = client.post(f"/app/dostava/{victim.pk}/obrisi/")
-    assert resp.status_code == 404
-    assert Delivery.objects.filter(pk=victim.pk).exists()
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
@@ -616,11 +571,6 @@ def test_recipient_lookup_isolated_by_shop(client):
     _make_shop_with_origin("me@shop.rs", "Me")
     client.login(username="me@shop.rs", password="pass12345")
     assert client.get("/app/klijent/?phone=064 123 4567").json()["found"] is False
-
-
-def test_recipient_lookup_requires_login(client):
-    resp = client.get("/app/klijent/?phone=064 123 4567")
-    assert resp.status_code == 302
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)

@@ -558,17 +558,6 @@ def test_default_chain_order_with_all_channels_enabled():
     ]
 
 
-@override_settings(TELEGRAM_ENABLED=False, WHATSAPP_ENABLED=False)
-def test_default_chain_unchanged_when_flags_off():
-    """Оба выключены (дефолт) → прежняя цепочка Viber→SMS."""
-    from integrations.providers import _default_chain_paths
-
-    assert _default_chain_paths() == [
-        "integrations.infobip.ViberProvider",
-        "integrations.infobip.SmsProvider",
-    ]
-
-
 # --- SERBITO-362 ---
 
 

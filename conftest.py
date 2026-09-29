@@ -16,3 +16,16 @@ def _static_root(tmp_path_factory):
     """
     with override_settings(STATIC_ROOT=tmp_path_factory.mktemp("staticfiles")):
         yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _fast_password_hasher():
+    """Быстрый хешер паролей в тестах (SERBITO-364).
+
+    PBKDF2 по умолчанию стоит ~0,1–0,3 с на каждый create_user/вход, а тесты создают
+    магазины сотнями: хеширование было больше половины времени всего гейта. Что проверяют
+    тесты — вход, блокировка, лимиты — от алгоритма хеша не зависит; в проде хешер
+    по умолчанию не меняется (settings.py его не трогает).
+    """
+    with override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"]):
+        yield
