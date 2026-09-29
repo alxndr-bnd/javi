@@ -119,26 +119,8 @@ def test_tracking_page_leaks_token_nowhere(client, token):
         assert url.startswith(f"/t/{token.token}/"), url
 
 
-# --- GA stays where it belongs ---
-
-
-def test_landing_has_ga(client):
-    resp = client.get("/")
-    assert resp.status_code == 200
-    _assert_ga(_body(resp))
-
-
-def test_privacy_page_has_ga(client):
-    resp = client.get("/privacy.html")
-    assert resp.status_code == 200
-    _assert_ga(_body(resp))
-
-
-def test_dashboard_has_ga(client, shop):
-    client.force_login(shop.owner)
-    resp = client.get("/app/")
-    assert resp.status_code == 200
-    _assert_ga(_body(resp))
+# --- GA stays where it belongs: landing, privacy and /app/ carry the tag
+# (config/test_consent.py::test_consent_default_precedes_gtag_config) ---
 
 
 # --- privacy page tells the truth ---

@@ -160,16 +160,6 @@ def test_unsubscribe_expired_token_is_gone(client):
 
 
 @override_settings(TRACKING_RATE_LIMIT=2)
-def test_rate_limit_429(client):
-    """AC#5: сверх лимита запросов с одного IP → 429."""
-    token = _token()
-    url = f"/t/{token.token}/"
-    assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 200
-    assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 200
-    assert client.get(url, REMOTE_ADDR="9.9.9.9").status_code == 429
-
-
-@override_settings(TRACKING_RATE_LIMIT=2)
 @pytest.mark.parametrize(
     ("method", "suffix"),
     [("get", ""), ("post", "oceni/"), ("post", "primljeno/"), ("get", "odjava/"),
