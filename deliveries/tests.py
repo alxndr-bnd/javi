@@ -339,13 +339,27 @@ def test_start_delivery_send_failure_marks_failed():
 
 
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
-def test_start_view_cannot_start_other_shop_delivery(client):
-    """AC#8: чужую доставку стартовать нельзя."""
+def test_other_shop_delivery_is_404_on_every_action(client):
+    """AC#8: чужую доставку нельзя стартовать, переотправить, отметить, удалить,
+    вернуть — 404 на каждом маршруте /app/dostava/<pk>/…, и она не меняется."""
     _make_shop_with_origin("attacker@shop.rs", "Attacker")
-    _, victim_delivery = _geocoded_delivery("victim@shop.rs", "Victim")
+    _, victim = _geocoded_delivery("victim@shop.rs", "Victim")
+    start_delivery(victim)
+    victim.refresh_from_db()
+    before = (victim.status, victim.deleted_at, victim.recipient_phone)
     client.login(username="attacker@shop.rs", password="pass12345")
-    resp = client.post(f"/app/dostava/{victim_delivery.pk}/start/")
-    assert resp.status_code == 404
+    routes = [
+        p.name
+        for p in deliveries_urls.urlpatterns
+        if str(p.pattern).startswith("dostava/<int:pk>/")
+    ]
+    assert len(routes) == 6
+    for name in routes:
+        url = reverse(f"deliveries:{name}", kwargs={"pk": victim.pk})
+        resp = client.post(url, {"recipient_phone": "064 1112233"})
+        assert resp.status_code == 404, url
+    victim.refresh_from_db()
+    assert (victim.status, victim.deleted_at, victim.recipient_phone) == before
 
 
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
@@ -426,16 +440,6 @@ def test_resend_view_success(client):
     assert delivery.recipient_phone == "+381641112233"
 
 
-@override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
-def test_resend_view_other_shop_404(client):
-    _make_shop_with_origin("att@shop.rs", "Att")
-    _, victim = _geocoded_delivery("vic@shop.rs", "Vic")
-    start_delivery(victim)
-    client.login(username="att@shop.rs", password="pass12345")
-    resp = client.post(
-        f"/app/dostava/{victim.pk}/posalji-ponovo/", {"recipient_phone": "064 1112233"}
-    )
-    assert resp.status_code == 404
 
 
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
@@ -447,14 +451,6 @@ def test_mark_delivered(client):
     assert resp.status_code == 302
     delivery.refresh_from_db()
     assert delivery.status == Delivery.Status.DELIVERED
-
-
-def test_mark_delivered_other_shop_404(client):
-    _make_shop_with_origin("a2@shop.rs", "A2")
-    _, victim = _geocoded_delivery("v2@shop.rs", "V2")
-    client.login(username="a2@shop.rs", password="pass12345")
-    resp = client.post(f"/app/dostava/{victim.pk}/isporuceno/")
-    assert resp.status_code == 404
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
@@ -540,14 +536,6 @@ def test_toggle_completed_saves_state(client):
     assert shop.completed_expanded is False
 
 
-@override_settings(MAPS_PROVIDER=FAKE_OK)
-def test_delete_other_shop_404(client):
-    _make_shop_with_origin("da2@shop.rs", "DA2")
-    _, victim = _geocoded_delivery("dv2@shop.rs", "DV2")
-    client.login(username="da2@shop.rs", password="pass12345")
-    resp = client.post(f"/app/dostava/{victim.pk}/obrisi/")
-    assert resp.status_code == 404
-    assert Delivery.objects.filter(pk=victim.pk).exists()
 
 
 @override_settings(MAPS_PROVIDER=FAKE_OK)
