@@ -130,6 +130,29 @@ WHITENOISE_INDEX_FILE = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Логи — JSON-строка на stdout с `severity` (SERBITO-336, common/logging.py): Cloud Logging
+# видит уровень записи, WARNING/ERROR фильтруются и алертятся. LOG_FORMAT=text — для локалки.
+LOG_LEVEL = env("LOG_LEVEL", default="INFO")
+LOG_FORMAT = env("LOG_FORMAT", default="json")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {"()": "common.logging.JsonFormatter"},
+        "text": {"format": "%(levelname)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "text" if LOG_FORMAT == "text" else "json",
+        },
+    },
+    "root": {"handlers": ["stdout"], "level": LOG_LEVEL},
+    # Без своих обработчиков (у Django по умолчанию — console при DEBUG): всё идёт в root.
+    "loggers": {"django": {"level": LOG_LEVEL, "propagate": True}},
+}
+
 # Аутентификация магазина
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "/app/"
