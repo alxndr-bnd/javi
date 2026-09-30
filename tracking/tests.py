@@ -1,4 +1,5 @@
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -6,6 +7,7 @@ from django.core.cache import cache
 from django.test import override_settings
 from django.utils import timezone
 
+from common.testing import parse_html
 from deliveries.models import Delivery, Shop, TrackingToken
 
 pytestmark = pytest.mark.django_db
@@ -223,3 +225,81 @@ def test_tracking_pages_stay_private(client, state, suffix, status):
         assert marker not in body.decode(), marker
     if state != "unknown" and suffix == "":
         assert META_NOINDEX in body.decode()
+
+
+# --- screen readers and keyboard (SERBITO-352): an h1 in <main>, a real list of steps whose
+# state is spoken, and rating stars that Tab through left to right in a labelled group ---
+
+APP_CSS = Path(__file__).resolve().parent.parent / "static" / "css" / "app.css"
+
+
+def _tree(resp):
+    return parse_html(resp.content.decode())
+
+
+def _single_h1_in_main(root):
+    h1s = root.find_all("h1")
+    assert len(h1s) == 1, [h.text() for h in h1s]
+    assert root.find("main") in h1s[0].ancestors()
+    return h1s[0].text()
+
+
+@pytest.mark.parametrize(
+    ("status", "lang", "title", "spoken"),
+    [
+        ("created", "en", "Your order has been received", ["in progress", "not yet", "not yet"]),
+        ("on_the_way", "en", "Your order is on its way", ["completed", "in progress", "not yet"]),
+        ("delivered", "en", "Your order has been delivered", ["completed"] * 3),
+        ("on_the_way", "sr", None, ["završeno", "u toku", "predstoji"]),
+    ],
+)
+def test_status_page_structure_for_screen_readers(client, status, lang, title, spoken):
+    token = _token(status)
+    root = _tree(client.get(f"/t/{token.token}/", HTTP_ACCEPT_LANGUAGE=lang))
+    h1 = _single_h1_in_main(root)
+    assert title is None or h1 == title
+    steps = root.find("ol", {"role": "list"})
+    assert "stepper" in steps.classes() and steps.attrs.get("aria-label")
+    items = steps.find_all("li")
+    order = ["created", "on_the_way", "delivered"]
+    assert [li.attrs.get("aria-current") for li in items] == [
+        "step" if s == status else None for s in order
+    ]
+    assert [li.find("span", {"class": "sr-only"}).text() for li in items] == [
+        f", {word}" for word in spoken
+    ]
+
+
+def test_rating_stars_tab_left_to_right_in_a_labelled_group(client):
+    token = _token(Delivery.Status.ON_THE_WAY)
+    root = _tree(client.get(f"/t/{token.token}/"))
+    group = root.find("form", {"role": "group"})
+    assert "stars" in group.classes()
+    label = root.find(attrs={"id": group.attrs["aria-labelledby"]})
+    assert label.tag == "h2" and label.text() == "How did the delivery go?"
+    hint = root.find(attrs={"id": group.attrs["aria-describedby"]})
+    assert hint.text().startswith("Tap the stars to rate")
+    stars = group.find_all("button")
+    assert [b.attrs["value"] for b in stars] == ["1", "2", "3", "4", "5"]
+    assert [b.attrs["aria-label"] for b in stars] == [f"Rating {n} of 5" for n in range(1, 6)]
+    # DOM order is the visual order: the row is not reversed in CSS
+    css = APP_CSS.read_text(encoding="utf-8")
+    rule = css[css.index(".stars{") :]
+    assert "row-reverse" not in rule[: rule.index("}")]
+
+
+@pytest.mark.parametrize(
+    ("method", "suffix", "expire", "title"),
+    [
+        ("get", "", True, "Link has expired."),
+        ("get", "odjava/", False, "Unsubscribe from notifications?"),
+        ("post", "odjava/", False, "You have been unsubscribed."),
+    ],
+)
+def test_other_tracking_pages_have_h1_in_main(client, method, suffix, expire, title):
+    token = _token()
+    if expire:
+        token.expires_at = timezone.now() - timedelta(hours=1)
+        token.save(update_fields=["expires_at"])
+    resp = getattr(client, method)(f"/t/{token.token}/{suffix}")
+    assert _single_h1_in_main(_tree(resp)) == title

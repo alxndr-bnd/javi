@@ -944,3 +944,15 @@ msgstr "Danas je sa vaše mreže otvoreno previše naloga. Pokušajte ponovo sut
 #, python-format
 msgid "You already have %(count)d active API keys. Revoke one to create a new key."
 msgstr "Već imate %(count)d aktivnih API ključeva. Opozovite jedan da biste napravili novi."
+
+#: tracking/templates/tracking/status.html
+msgid "completed"
+msgstr "završeno"
+
+#: tracking/templates/tracking/status.html
+msgid "in progress"
+msgstr "u toku"
+
+#: tracking/templates/tracking/status.html
+msgid "not yet"
+msgstr "predstoji"

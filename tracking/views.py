@@ -26,6 +26,7 @@ def _stepper(status: str) -> list[dict]:
     """Список шагов с состояниями done/active/future для серверного рендера.
 
     Финальный шаг (Isporučeno) в терминальном статусе — done (✓), а не active (●).
+    current — шаг текущего статуса (aria-current="step", SERBITO-352), в т.ч. финальный.
     """
     order = [s for _, s in _STEPS]
     current = order.index(status) if status in order else 0
@@ -38,7 +39,7 @@ def _stepper(status: str) -> list[dict]:
             state = "done" if is_terminal else "active"
         else:
             state = "future"
-        steps.append({"label": label, "state": state})
+        steps.append({"label": label, "state": state, "current": idx == current})
     return steps
 
 
