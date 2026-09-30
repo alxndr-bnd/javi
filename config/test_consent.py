@@ -158,6 +158,31 @@ def test_banner_behaviour_contract():
     assert 'var KEY = "javi_consent";' in CONSENT_JS and "365 * 864e5" in CONSENT_JS
 
 
+def _function(name):
+    body = CONSENT_JS[CONSENT_JS.index(f"function {name}(") :]
+    return body[: body.index("\n  }\n")]
+
+
+def test_banner_never_hides_the_focused_element():
+    """SERBITO-352 (WCAG 2.4.11): while the banner is up, the page reserves its height at the
+    bottom (scroll-padding for focus scrolling, padding so footer links can scroll clear), and a
+    control it still covers after focus moves is scrolled above it."""
+    reserve = _function("reserve")
+    assert 'var room = banner.hidden ? "" : banner.offsetHeight + 2 * GAP + "px";' in reserve
+    assert "root.scrollPaddingBottom = room;" in reserve and "root.paddingBottom = room;" in reserve
+    # re-measured whenever the banner appears, goes, or changes size (language, viewport)
+    assert "banner.hidden = false;\n    reserve();" in _function("show")
+    assert "banner.hidden = true;\n    reserve();" in _function("choose")
+    assert 'window.addEventListener("resize", reserve);' in CONSENT_JS
+    assert "render(); reserve();" in CONSENT_JS
+    # focus: after the browser's own scrolling, a covered control is lifted just above the banner
+    assert 'document.addEventListener("focusin"' in CONSENT_JS
+    assert "requestAnimationFrame(function () { unobscure(e.target); })" in CONSENT_JS
+    unobscure = _function("unobscure")
+    assert "banner.hidden" in unobscure and "banner.contains(el)" in unobscure
+    assert "if (r.bottom > limit) window.scrollBy(0," in unobscure
+
+
 def test_withdrawal_clears_parent_domain_cookies_only_once():
     """Host-only _ga* always; the .serbito.rs ones earlier versions left, on the first run only."""
     drop = CONSENT_JS[CONSENT_JS.index("function dropGaCookies") :]

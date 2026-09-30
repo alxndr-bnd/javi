@@ -16,12 +16,16 @@
  *   i18n); data-consent-lang="visitor" (privacy page) uses the landing's saved choice instead.
  * - Any [data-consent-open] element reopens the banner; its value, if any, forces the language.
  * - /t/ tracking pages do not load this file (SERBITO-306).
+ * - The banner never hides the focused element (SERBITO-352, WCAG 2.4.11): while it is up the page
+ *   gets bottom scroll-padding and padding of its height, and a control it still covers after
+ *   focus moves is scrolled above it. Accept/Decline styling is unchanged.
  */
 (function () {
   "use strict";
   var KEY = "javi_consent";
   var LEGACY = "javi_ga_parent_cleared"; // parent-domain _ga* cleanup done (see dropGaCookies)
   var YEAR = 365 * 864e5;
+  var GAP = 12; // the banner's offset from the viewport bottom; also kept clear above it
   var T = {
     sr: {
       label: "Saglasnost za kolačiće",
@@ -64,6 +68,24 @@
   var banner = null;
   var forced = null; // language forced by a [data-consent-open="xx"] trigger
   var returnTo = null; // element to refocus after a reopened banner closes
+
+  // Room for the banner at the bottom of the page while it is up: scroll-padding keeps focus
+  // scrolling above it, and padding lets the last controls (footer links) scroll clear of it.
+  function reserve() {
+    var root = document.documentElement.style;
+    var room = banner.hidden ? "" : banner.offsetHeight + 2 * GAP + "px";
+    root.scrollPaddingBottom = room;
+    root.paddingBottom = room;
+  }
+
+  // A focused control the banner still covers (browsers do not always honour scroll-padding
+  // when focus moves) is scrolled up just enough to show it; its top never leaves the viewport.
+  function unobscure(el) {
+    if (!banner || banner.hidden || !el || !el.getBoundingClientRect || banner.contains(el)) return;
+    var r = el.getBoundingClientRect();
+    var limit = banner.getBoundingClientRect().top - GAP;
+    if (r.bottom > limit) window.scrollBy(0, Math.min(r.bottom - limit, Math.max(r.top, 0)));
+  }
 
   function gtag() {
     window.dataLayer = window.dataLayer || [];
@@ -109,6 +131,7 @@
     gtag("consent", "update", { analytics_storage: value });
     if (value === "denied") dropGaCookies();
     banner.hidden = true;
+    reserve();
     forced = null;
     if (returnTo && document.contains(returnTo)) returnTo.focus();
     returnTo = null;
@@ -151,6 +174,7 @@
   function show(focus) {
     render();
     banner.hidden = false;
+    reserve();
     if (focus) banner.querySelector(".jc-decline").focus();
   }
 
@@ -165,9 +189,14 @@
       returnTo = el;
       show(true);
     });
+    // After the browser's own focus scrolling, so only what it left covered moves.
+    document.addEventListener("focusin", function (e) {
+      window.requestAnimationFrame(function () { unobscure(e.target); });
+    });
+    window.addEventListener("resize", reserve);
     // The landing switches language by changing <html lang>; the banner follows.
     if (window.MutationObserver) {
-      new MutationObserver(function () { if (!forced) render(); })
+      new MutationObserver(function () { if (!forced) { render(); reserve(); } })
         .observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
     }
   }
