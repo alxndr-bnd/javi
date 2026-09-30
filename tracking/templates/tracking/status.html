@@ -2,30 +2,33 @@
 {% load i18n %}
 {% block title %}{% trans "Delivery status" %} · Javi{% endblock %}
 {% block body %}
-<div class="track">
+<main class="track">
   {% if expired %}
     <div class="track-card track-card--plain">
-      <div class="muted">{% trans "Link has expired." %}</div>
+      <h1 class="track-expired muted">{% trans "Link has expired." %}</h1>
     </div>
   {% else %}
     <div class="track-card">
       <div class="track-shop">{{ shop_name }}</div>
       {% if status == "delivered" %}
-        <div class="track-status">{% trans "Your order has been delivered" %}</div>
+        <h1 class="track-status">{% trans "Your order has been delivered" %}</h1>
       {% elif status == "on_the_way" %}
-        <div class="track-status">{% trans "Your order is on its way" %}</div>
+        <h1 class="track-status">{% trans "Your order is on its way" %}</h1>
         {% if eta %}<div class="track-eta">{% blocktrans %}Arriving approximately by {{ eta }}{% endblocktrans %}</div>{% endif %}
       {% else %}
-        <div class="track-status">{% trans "Your order has been received" %}</div>
+        <h1 class="track-status">{% trans "Your order has been received" %}</h1>
       {% endif %}
       {% if dest_city %}<div class="track-city">{{ dest_city }}</div>{% endif %}
     </div>
 
-    <ol class="stepper" aria-label="{% trans 'Delivery status' %}">
+    {# role="list": Safari drops list semantics under list-style:none. The dot is decoration; #}
+    {# each step's state is spoken as text, the current one also via aria-current (SERBITO-352). #}
+    <ol class="stepper" role="list" aria-label="{% trans 'Delivery status' %}">
       {% for step in steps %}
-        <li class="step step--{{ step.state }}">
+        <li class="step step--{{ step.state }}"{% if step.current %} aria-current="step"{% endif %}>
           <span class="step-dot" aria-hidden="true">{% if step.state == "done" %}✓{% else %}●{% endif %}</span>
           <span class="step-label">{{ step.label }}</span>
+          <span class="sr-only">, {% if step.state == "done" %}{% trans "completed" %}{% elif step.state == "active" %}{% trans "in progress" %}{% else %}{% trans "not yet" %}{% endif %}</span>
         </li>
       {% endfor %}
     </ol>
@@ -41,11 +44,13 @@
       <div class="rate-done">{% blocktrans %}Thank you for your rating! Your rating: {{ rating }}★{% endblocktrans %}</div>
     {% elif can_rate %}
       <div class="rate-block">
-        <div class="rate-q">{% trans "How did the delivery go?" %}</div>
-        <div class="rate-hint">{% trans "Tap the stars to rate (1 = poor, 5 = excellent)." %}</div>
-        <form method="post" action="{% url 'tracking:rate' token %}" class="stars">
+        <h2 class="rate-q" id="rate-q">{% trans "How did the delivery go?" %}</h2>
+        <p class="rate-hint" id="rate-hint">{% trans "Tap the stars to rate (1 = poor, 5 = excellent)." %}</p>
+        {# Stars in DOM order 1→5, so Tab moves left to right like the eye (SERBITO-352). #}
+        <form method="post" action="{% url 'tracking:rate' token %}" class="stars"
+              role="group" aria-labelledby="rate-q" aria-describedby="rate-hint">
           {% csrf_token %}
-          {% for n in "54321" %}
+          {% for n in "12345" %}
             <button type="submit" name="value" value="{{ n }}"
                     class="star" aria-label="{% blocktrans %}Rating {{ n }} of 5{% endblocktrans %}">★</button>
           {% endfor %}
@@ -57,5 +62,5 @@
       <a href="{% url 'tracking:unsubscribe' token %}">{% trans "Unsubscribe from notifications" %}</a>
     </div>
   {% endif %}
-</div>
+</main>
 {% endblock %}

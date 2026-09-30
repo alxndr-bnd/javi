@@ -908,3 +908,15 @@ msgstr ""
 #, python-format
 msgid "You already have %(count)d active API keys. Revoke one to create a new key."
 msgstr ""
+
+#: tracking/templates/tracking/status.html
+msgid "completed"
+msgstr ""
+
+#: tracking/templates/tracking/status.html
+msgid "in progress"
+msgstr ""
+
+#: tracking/templates/tracking/status.html
+msgid "not yet"
+msgstr ""

@@ -2,14 +2,14 @@
 {% load i18n %}
 {% block title %}{% trans "Unsubscribe" %} · Javi{% endblock %}
 {% block body %}
-<div class="track">
+<main class="track">
   <div class="track-card track-card--plain">
-    <div class="track-status">{% trans "Unsubscribe from notifications?" %}</div>
+    <h1 class="track-status">{% trans "Unsubscribe from notifications?" %}</h1>
     <div class="muted" style="font-size:13px;margin-top:8px">{% trans "We will no longer send you rating messages." %}</div>
     <form method="post" action="{% url 'tracking:unsubscribe' token %}" class="confirm-block">
       {% csrf_token %}
       <button type="submit" class="btn btn-primary">{% trans "Unsubscribe" %}</button>
     </form>
   </div>
-</div>
+</main>
 {% endblock %}
