@@ -206,9 +206,9 @@ def test_withdrawal_clears_parent_domain_cookies_only_once():
 )
 def test_privacy_explains_consent(lang, heading):
     html = (LANDING / "privacy.html").read_text(encoding="utf-8")
-    section = re.search(rf'<section id="{lang}">(.*?)</section>', html, re.S).group(1)
-    assert f"<h3>{heading}</h3>" in section
-    consent = section[section.index(f"<h3>{heading}</h3>") :]
+    section = re.search(rf'<section id="{lang}" lang="{lang}">(.*?)</section>', html, re.S).group(1)
+    assert f"<h2>{heading}</h2>" in section
+    consent = section[section.index(f"<h2>{heading}</h2>") :]
     consent = consent[: consent.index("</p>")]
     assert "localStorage" in consent and "12" in consent  # where the choice lives, re-ask
     assert f'data-consent-open="{lang}"' in consent  # how to change it

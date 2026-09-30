@@ -99,7 +99,7 @@ def test_tracking_page_leaks_token_nowhere(client, token):
 
 def _section(lang):
     html = PRIVACY.read_text(encoding="utf-8")
-    match = re.search(rf'<section id="{lang}">(.*?)</section>', html, re.S)
+    match = re.search(rf'<section id="{lang}" lang="{lang}">(.*?)</section>', html, re.S)
     assert match, f"no #{lang} section in privacy.html"
     return match.group(1)
 

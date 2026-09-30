@@ -46,8 +46,7 @@
   nav.langs a{border:1px solid var(--line);border-radius:10px;padding:6px 12px;text-decoration:none;color:var(--muted);font-size:14px}
   section{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin:18px 0}
   h1{font-size:24px;margin:0 0 4px}
-  h2{font-size:19px;margin:28px 0 6px}
-  h3{font-size:15px;margin:18px 0 4px;color:var(--brand)}
+  h2{font-size:15px;margin:18px 0 4px;color:var(--brand)}
   p,li{color:#d7dcec;font-size:15px}
   .muted{color:var(--muted);font-size:13px}
   ul{padding-left:20px}
@@ -61,16 +60,20 @@
 <div class="wrap">
   <div class="brand"><a href="/">javi.</a></div>
   <nav class="langs">
-    <a href="#sr">Srpski</a><a href="#en">English</a><a href="#ru">Русский</a>
+    <a href="#sr">Srpski</a><a href="#en" lang="en" hreflang="en">English</a><a href="#ru" lang="ru" hreflang="ru">Русский</a>
   </nav>
 
+  <!-- SERBITO-352: each section carries its own lang (WCAG 3.1.2), so screen readers switch
+       voice; one h1 per language, its subsections h2 (no skipped levels). -->
+  <main>
+
   <!-- ===================== SRPSKI ===================== -->
-  <section id="sr">
+  <section id="sr" lang="sr">
     <h1>Politika privatnosti</h1>
     <p class="muted">Poslednje ažuriranje: 27. septembar 2026.</p>
     <p>Ova stranica objašnjava koje podatke <strong>Javi</strong> (javi.serbito.rs) prikuplja preko kontakt forme i analitike poseta i kako ih koristi. Javi je u fazi provere interesovanja — sajt je jednostavna stranica sa formom za kontakt.</p>
 
-    <h3>Koje podatke prikupljamo</h3>
+    <h2>Koje podatke prikupljamo</h2>
     <ul>
       <li>Podatke koje sami unesete u formu: naziv prodavnice, kontakt (email ili telefon/Viber), okvirni mesečni broj porudžbina i opcionu poruku.</li>
       <li>UTM oznake iz linka (utm_source/medium/campaign) — da bismo znali sa kog kanala ste došli.</li>
@@ -78,37 +81,37 @@
       <li>Anonimnu, zbirnu statistiku poseta početne stranice (Cloudflare Web Analytics) — <strong>bez kolačića</strong> i bez praćenja pojedinca.</li>
     </ul>
 
-    <h3>Zašto ih koristimo</h3>
+    <h2>Zašto ih koristimo</h2>
     <p>Podatke iz forme — isključivo da vam se javimo povodom Javi i da procenimo interesovanje. Statistiku poseta — da vidimo sa kojih kanala posetioci dolaze i koje stranice koriste. Ne prodajemo i ne delimo vaše podatke u marketinške svrhe.</p>
 
-    <h3>Kome ih prosleđujemo (obrađivači)</h3>
+    <h2>Kome ih prosleđujemo (obrađivači)</h2>
     <ul>
       <li><strong>Formspree</strong> — dostava poslate forme na naš email.</li>
       <li><strong>Google</strong> (Google Ireland Ltd. i Google LLC) — Google Analytics 4, statistika poseta. Podaci se mogu obrađivati i van Srbije, uključujući SAD.</li>
       <li><strong>Cloudflare Web Analytics</strong> — zbirna statistika poseta bez kolačića.</li>
     </ul>
 
-    <h3>Kolačići</h3>
+    <h2>Kolačići</h2>
     <p>Samo ako prihvatite analitiku, Google Analytics postavlja analitičke kolačiće <strong>_ga</strong> (razlikuje posetioce) i <strong>_ga_*</strong> (čuva stanje posete), koji traju do 2 godine. Možete ih blokirati ili obrisati u podešavanjima pregledača ili instalirati <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a>. Cloudflare Web Analytics ne koristi kolačiće. Nalog prodavnice koristi i neophodne kolačiće za prijavu, jezik i zaštitu formi. Izbor jezika na početnoj stranici čuvamo lokalno u vašem pregledaču (localStorage).</p>
 
-    <h3>Saglasnost za analitiku</h3>
+    <h2>Saglasnost za analitiku</h2>
     <p>Pri prvoj poseti mali baner vas pita da li dozvoljavate analitičke kolačiće. Dok ne kliknete <strong>Prihvati</strong>, Google Analytics radi u režimu saglasnosti: ne postavlja i ne čita kolačiće i šalje Google-u samo signale bez kolačića — otvorenu stranicu, vreme, tip pregledača i uređaja, približnu lokaciju izvedenu iz IP adrese i vaš izbor, bez identifikatora po kojem bi vas prepoznao pri sledećoj poseti. Google te signale može koristiti za zbirnu, modelovanu statistiku. <strong>Odbij</strong> zadržava to stanje. Vaš izbor i datum čuvamo u vašem pregledaču (localStorage) i ponovo pitamo posle 12 meseci. Izbor možete promeniti bilo kada preko <button type="button" class="cookie-btn" data-consent-open="sr">Podešavanja kolačića</button> na dnu stranice; povlačenje saglasnosti briše kolačiće _ga.</p>
 
-    <h3>Čuvanje i vaša prava</h3>
+    <h2>Čuvanje i vaša prava</h2>
     <p>Podatke čuvamo dok traje provera interesovanja. Imate pravo na pristup, ispravku i brisanje svojih podataka — pišite nam i obrisaćemo ih.</p>
 
-    <h3>Kontakt</h3>
+    <h2>Kontakt</h2>
     <p>Pitanja: <a href="mailto:alexander.bondarchuk@gmail.com">alexander.bondarchuk@gmail.com</a></p>
     <a class="back" href="/">← Nazad na početnu</a>
   </section>
 
   <!-- ===================== ENGLISH ===================== -->
-  <section id="en">
+  <section id="en" lang="en">
     <h1>Privacy Policy</h1>
     <p class="muted">Last updated: 27 September 2026.</p>
     <p>This page explains what data <strong>Javi</strong> (javi.serbito.rs) collects through its contact form and visit analytics, and how it is used. Javi is in a demand-validation phase — the site is a simple page with a contact form.</p>
 
-    <h3>What we collect</h3>
+    <h2>What we collect</h2>
     <ul>
       <li>What you enter in the form: shop name, contact (email or phone/Viber), approximate monthly order volume, and an optional message.</li>
       <li>UTM tags from the link (utm_source/medium/campaign) — to know which channel you came from.</li>
@@ -116,37 +119,37 @@
       <li>Anonymous, aggregate visit statistics for the home page (Cloudflare Web Analytics) — <strong>cookieless</strong>, no individual tracking.</li>
     </ul>
 
-    <h3>Why we use it</h3>
+    <h2>Why we use it</h2>
     <p>Form data — only to contact you about Javi and to gauge interest. Visit statistics — to see which channels visitors come from and which pages they use. We do not sell or share your data for marketing.</p>
 
-    <h3>Processors we share it with</h3>
+    <h2>Processors we share it with</h2>
     <ul>
       <li><strong>Formspree</strong> — delivers the submitted form to our email.</li>
       <li><strong>Google</strong> (Google Ireland Ltd. and Google LLC) — Google Analytics 4, visit statistics. Data may be processed outside Serbia, including in the USA.</li>
       <li><strong>Cloudflare Web Analytics</strong> — cookieless aggregate visit statistics.</li>
     </ul>
 
-    <h3>Cookies</h3>
+    <h2>Cookies</h2>
     <p>Only if you accept analytics, Google Analytics sets the analytics cookies <strong>_ga</strong> (tells visitors apart) and <strong>_ga_*</strong> (keeps the visit state), which last up to 2 years. You can block or delete them in your browser settings or install the <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a> add-on. Cloudflare Web Analytics uses no cookies. The shop account also uses essential cookies for login, language and form protection. Your language choice on the home page is stored locally in your browser (localStorage).</p>
 
-    <h3>Analytics consent</h3>
+    <h2>Analytics consent</h2>
     <p>On your first visit a small banner asks whether you allow analytics cookies. Until you click <strong>Accept</strong>, Google Analytics runs in consent mode: it sets and reads no cookies and sends Google only cookieless pings — the page opened, the time, browser and device type, approximate location derived from the IP address and your choice, with no identifier that recognises you on your next visit. Google may use these pings for aggregate, modelled statistics. <strong>Decline</strong> keeps it that way. We store your choice and its date in your browser (localStorage) and ask again after 12 months. You can change it at any time via <button type="button" class="cookie-btn" data-consent-open="en">Cookie settings</button> at the bottom of the page; withdrawing consent deletes the _ga cookies.</p>
 
-    <h3>Retention and your rights</h3>
+    <h2>Retention and your rights</h2>
     <p>We keep the data for the duration of the validation phase. You have the right to access, correct, and delete your data — email us and we will remove it.</p>
 
-    <h3>Contact</h3>
+    <h2>Contact</h2>
     <p>Questions: <a href="mailto:alexander.bondarchuk@gmail.com">alexander.bondarchuk@gmail.com</a></p>
     <a class="back" href="/">← Back to home</a>
   </section>
 
   <!-- ===================== РУССКИЙ ===================== -->
-  <section id="ru">
+  <section id="ru" lang="ru">
     <h1>Политика конфиденциальности</h1>
     <p class="muted">Последнее обновление: 27 сентября 2026 г.</p>
     <p>Эта страница объясняет, какие данные <strong>Javi</strong> (javi.serbito.rs) собирает через контактную форму и аналитику посещений и как их использует. Javi находится в фазе проверки спроса — сайт представляет собой простую страницу с формой.</p>
 
-    <h3>Какие данные мы собираем</h3>
+    <h2>Какие данные мы собираем</h2>
     <ul>
       <li>То, что вы вводите в форму: название магазина, контакт (email или телефон/Viber), примерный объём заказов в месяц и необязательное сообщение.</li>
       <li>UTM-метки из ссылки (utm_source/medium/campaign) — чтобы понимать, с какого канала вы пришли.</li>
@@ -154,29 +157,30 @@
       <li>Анонимную сводную статистику посещений главной страницы (Cloudflare Web Analytics) — <strong>без cookies</strong> и без отслеживания личности.</li>
     </ul>
 
-    <h3>Зачем мы их используем</h3>
+    <h2>Зачем мы их используем</h2>
     <p>Данные формы — только чтобы связаться с вами по поводу Javi и оценить интерес. Статистику посещений — чтобы понимать, с каких каналов приходят посетители и какими страницами пользуются. Мы не продаём и не передаём ваши данные в маркетинговых целях.</p>
 
-    <h3>Кому передаём (обработчики)</h3>
+    <h2>Кому передаём (обработчики)</h2>
     <ul>
       <li><strong>Formspree</strong> — доставка отправленной формы на нашу почту.</li>
       <li><strong>Google</strong> (Google Ireland Ltd. и Google LLC) — Google Analytics 4, статистика посещений. Данные могут обрабатываться за пределами Сербии, в том числе в США.</li>
       <li><strong>Cloudflare Web Analytics</strong> — сводная статистика посещений без cookies.</li>
     </ul>
 
-    <h3>Cookies</h3>
+    <h2>Cookies</h2>
     <p>Только если вы согласитесь на аналитику, Google Analytics устанавливает аналитические cookies <strong>_ga</strong> (различает посетителей) и <strong>_ga_*</strong> (хранит состояние визита) сроком до 2 лет. Их можно заблокировать или удалить в настройках браузера либо установить дополнение <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a>. Cloudflare Web Analytics cookies не использует. Кабинет магазина также использует необходимые cookies для входа, языка и защиты форм. Выбор языка на главной странице хранится локально в вашем браузере (localStorage).</p>
 
-    <h3>Согласие на аналитику</h3>
+    <h2>Согласие на аналитику</h2>
     <p>При первом визите небольшой баннер спрашивает, разрешаете ли вы аналитические cookies. Пока вы не нажмёте <strong>Принять</strong>, Google Analytics работает в режиме согласия: не ставит и не читает cookies и отправляет в Google только запросы без cookies — открытую страницу, время, тип браузера и устройства, примерное местоположение по IP-адресу и ваш выбор, без идентификатора, по которому вас можно узнать при следующем визите. Google может использовать эти запросы для сводной, смоделированной статистики. <strong>Отклонить</strong> оставляет всё как есть. Ваш выбор и его дату мы храним в вашем браузере (localStorage) и спрашиваем снова через 12 месяцев. Изменить решение можно в любой момент через <button type="button" class="cookie-btn" data-consent-open="ru">Настройки cookies</button> внизу страницы; отзыв согласия удаляет cookies _ga.</p>
 
-    <h3>Хранение и ваши права</h3>
+    <h2>Хранение и ваши права</h2>
     <p>Данные храним в течение фазы проверки спроса. Вы вправе запросить доступ, исправление и удаление своих данных — напишите нам, и мы их удалим.</p>
 
-    <h3>Контакт</h3>
+    <h2>Контакт</h2>
     <p>Вопросы: <a href="mailto:alexander.bondarchuk@gmail.com">alexander.bondarchuk@gmail.com</a></p>
     <a class="back" href="/">← На главную</a>
   </section>
+  </main>
 
   <p class="muted">© 2026 Javi · javi.serbito.rs ·
     <button type="button" class="cookie-btn" data-consent-open="sr" lang="sr">Podešavanja kolačića</button> ·
