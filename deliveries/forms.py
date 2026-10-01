@@ -14,7 +14,11 @@ class ShopOriginForm(forms.Form):
     Геокодинг адреса — в сервисе после валидации.
     """
 
-    name = forms.CharField(label=_("Store name"), max_length=SHOP_NAME_MAX_LEN)
+    name = forms.CharField(
+        label=_("Store name"),
+        max_length=SHOP_NAME_MAX_LEN,
+        widget=forms.TextInput(attrs={"autocomplete": "organization"}),
+    )
     address = forms.CharField(
         label=_("Store address"),
         max_length=300,
