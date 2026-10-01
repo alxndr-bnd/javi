@@ -12,26 +12,12 @@ from pathlib import Path
 
 import pytest
 
+from common.testing import contrast
+
 LANDING = Path(__file__).resolve().parent.parent / "landing" / "index.html"
 AA = 4.5
 HEX = re.compile(r"#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b")
 SIMPLE = re.compile(r"^([a-z][a-z0-9]*)?((?:[.#][\w-]+)*)$")
-
-
-def _hex6(colour):
-    return colour if len(colour) == 7 else "#" + "".join(c * 2 for c in colour[1:])
-
-
-def _luminance(hex_colour):
-    hex_colour = _hex6(hex_colour)
-    channels = [int(hex_colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
-    lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
-    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
-
-
-def contrast(fg, bg):
-    hi, lo = sorted((_luminance(fg), _luminance(bg)), reverse=True)
-    return (hi + 0.05) / (lo + 0.05)
 
 
 class _Landing(HTMLParser):
