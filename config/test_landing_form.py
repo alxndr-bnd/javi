@@ -1,0 +1,72 @@
+"""SERBITO-352: the landing lead form ("Ostavite kontakt") from the SERBITO-330 audit.
+
+- WCAG 1.3.5: fields asking for the visitor's own data name their purpose with an ``autocomplete``
+  token, so browsers can fill them. "Email or phone / Viber" is one free-text field; email comes
+  first in its label, so it takes ``email`` (a phone number is still accepted).
+- Every visible field has a <label for> pointing at it.
+- WCAG 1.4.11: field borders contrast at least 3:1 with the field's fill and the form card,
+  and the focus rule only fires on focus (it used to paint every <select> as focused).
+"""
+
+import re
+from pathlib import Path
+
+import pytest
+
+from common.testing import contrast, css_declarations, parse_html
+
+LANDING = Path(__file__).resolve().parent.parent / "landing" / "index.html"
+NON_TEXT = 3.0
+
+
+def _page():
+    return LANDING.read_text(encoding="utf-8")
+
+
+def _css():
+    return "".join(re.findall(r"<style>(.*?)</style>", _page(), flags=re.S))
+
+
+def _fields():
+    form = parse_html(_page()).find("form", {"id": "leadForm"})
+    return form, [
+        n
+        for n in form.iter()
+        if n.tag in {"input", "select", "textarea"} and n.attrs.get("type") != "hidden"
+    ]
+
+
+def test_fields_name_their_purpose_for_autofill():
+    _, fields = _fields()
+    assert {f.attrs["name"]: f.attrs.get("autocomplete") for f in fields} == {
+        "shop": "organization",
+        "contact": "email",
+        "volume": None,  # not personal data: no token applies
+        "message": None,
+    }
+
+
+def test_every_field_has_a_label():
+    form, fields = _fields()
+    labelled = {label.attrs.get("for") for label in form.find_all("label")}
+    assert [f.attrs["id"] for f in fields if f.attrs["id"] not in labelled] == []
+
+
+@pytest.mark.parametrize("selector", ["input", "select", "textarea"])
+def test_field_border_contrasts_with_field_and_card(selector):
+    css = _css()
+    field = css_declarations(css, selector)
+    [border] = re.findall(r"#[0-9a-fA-F]{3,6}\b", field["border"])
+    card = css_declarations(css, ".card-form")["background"]
+    for bg in (field["background"], card):
+        ratio = contrast(border, bg)
+        assert ratio >= NON_TEXT, f"{selector} border {border} on {bg} = {ratio:.2f}:1"
+
+
+def test_focus_style_applies_only_on_focus():
+    css = re.sub(r"/\*.*?\*/", "", _css(), flags=re.S)
+    for selectors, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        if "var(--brand)" in body and "border-color" in body:
+            parts = [s.strip() for s in selectors.split(",")]
+            fields = [p for p in parts if re.match(r"(input|select|textarea)\b", p)]
+            assert all(p.endswith(":focus") for p in fields), selectors

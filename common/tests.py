@@ -1,8 +1,11 @@
+import re
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
 from common.phone import InvalidPhone, normalize_phone
+from common.testing import contrast, css_declarations
 from common.timewindow import BELGRADE, clamp_to_window, rating_send_time
 
 
@@ -55,3 +58,19 @@ def test_foreign_number_is_risky():
 def test_invalid_phone_raises(raw):
     with pytest.raises(InvalidPhone):
         normalize_phone(raw)
+
+
+# --- WCAG 1.4.11 (SERBITO-352): app form-field borders (login, register, shop profile, new
+# delivery) contrast at least 3:1 with the field's white fill and the page background ---
+
+APP_CSS = Path(__file__).resolve().parent.parent / "static" / "css" / "app.css"
+
+
+def test_app_field_border_has_non_text_contrast():
+    css = APP_CSS.read_text(encoding="utf-8")
+    field = css_declarations(css, ".field input")
+    [border] = re.findall(r"#[0-9a-fA-F]{3,6}\b", field["border"])
+    root = css_declarations(css, ":root")
+    for bg in (field["background"], root["--surface"], root["--bg"]):
+        ratio = contrast(border, bg)
+        assert ratio >= 3.0, f"{border} on {bg} = {ratio:.2f}:1"

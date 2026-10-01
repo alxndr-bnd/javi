@@ -1,7 +1,9 @@
-"""A tiny HTML tree for template-structure tests (headings, landmarks, aria), stdlib only."""
+"""Stdlib-only helpers for template tests: a tiny HTML tree (headings, landmarks, aria), CSS rule
+lookup and WCAG contrast ratios."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 
@@ -81,3 +83,34 @@ def parse_html(html: str) -> Node:
 def heading_levels(root: Node) -> list[int]:
     """h1–h6 levels in document order."""
     return [int(n.tag[1]) for n in root.iter() if n.tag in {"h1", "h2", "h3", "h4", "h5", "h6"}]
+
+
+def _luminance(hex_colour: str) -> float:
+    if len(hex_colour) == 4:
+        hex_colour = "#" + "".join(c * 2 for c in hex_colour[1:])
+    channels = [int(hex_colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+
+def contrast(fg: str, bg: str) -> float:
+    """WCAG contrast ratio of two #rgb/#rrggbb colours."""
+    hi, lo = sorted((_luminance(fg), _luminance(bg)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def css_declarations(css: str, selector: str) -> dict[str, str]:
+    """Declarations of every rule whose selector list includes ``selector`` exactly, in source
+    order, with ``var(--x)`` resolved from the custom properties declared anywhere in ``css``."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    variables = {k: v.strip() for k, v in re.findall(r"(--[\w-]+)\s*:\s*([^;}]+)", css)}
+    found: dict[str, str] = {}
+    for selectors, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        if selector in (s.strip() for s in selectors.split(",")):
+            for decl in body.split(";"):
+                if ":" in decl:
+                    prop, value = decl.split(":", 1)
+                    found[prop.strip()] = re.sub(
+                        r"var\((--[\w-]+)\)", lambda m: variables[m.group(1)], value.strip()
+                    )
+    return found

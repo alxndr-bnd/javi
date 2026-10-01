@@ -1,6 +1,7 @@
 /* Javi — кабинет (светлая тема «Clean»). Токены из DESIGN.md. */
 :root{
   --bg:#f4f6fb; --surface:#fff; --ink:#161b29; --muted:#6b7385; --line:#e4e8f0;
+  --field-line:#80899c; /* form-field border: >= 3:1 on white and --bg (WCAG 1.4.11) */
   --brand:#4f7cff; --accent:#7a5cff;
   --on-the-way:#4f7cff; --delivered:#16a34a; --read:#0ea5e9; --failed:#dc2626; --rating:#f5a623;
   --radius-card:14px; --radius-btn:12px; --radius-pill:999px;
@@ -120,7 +121,7 @@ a{color:var(--brand)}
 .auth h1{font-size:22px;margin:0 0 18px}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
-.field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:var(--surface);color:var(--ink)}
+.field input{width:100%;padding:11px 12px;border:1px solid var(--field-line);border-radius:10px;font-size:16px;background:var(--surface);color:var(--ink)}
 .errorlist{color:var(--failed);font-size:13px;list-style:none;padding:0;margin:6px 0 0}
 .muted{color:var(--muted)}
 /* сообщения (Django messages) */
