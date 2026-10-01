@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -147,3 +149,12 @@ def test_verified_store_has_no_trial_note(client):
     client.force_login(user)
     body = client.get(PROFILE).content.decode()
     assert "to get verified" not in body
+
+
+def test_store_name_names_its_purpose_for_autofill(client):
+    """SERBITO-352 (WCAG 1.3.5): "Store name" autofills like the register form's store name."""
+    user, _shop = _user_shop()
+    client.force_login(user)
+    content = client.get(PROFILE).content.decode()
+    [field] = re.findall(r'<input[^>]*name="name"[^>]*>', content)
+    assert 'autocomplete="organization"' in field

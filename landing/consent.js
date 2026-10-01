@@ -18,7 +18,9 @@
  * - /t/ tracking pages do not load this file (SERBITO-306).
  * - The banner never hides the focused element (SERBITO-352, WCAG 2.4.11): while it is up the page
  *   gets bottom scroll-padding and padding of its height, and a control it still covers after
- *   focus moves is scrolled above it. Accept/Decline styling is unchanged.
+ *   focus moves is scrolled above it.
+ * - Accept and Decline carry equal weight (SERBITO-352): one .jc-btn rule styles both — same size,
+ *   fill and prominence; .jc-accept/.jc-decline are behaviour hooks only and are never styled.
  */
 (function () {
   "use strict";
@@ -58,11 +60,11 @@
     ".jc[hidden]{display:none}" +
     ".jc .jc-text{margin:0;flex:1 1 260px;color:inherit;font-size:14px}" +
     ".jc a{color:inherit;font-weight:600;text-decoration:underline}" +
-    ".jc-actions{display:flex;gap:8px;flex:0 0 auto}" +
-    ".jc button{font-family:inherit;font-size:14px;font-weight:700;min-height:36px;padding:7px 16px;" +
-    "border-radius:10px;cursor:pointer;width:auto}" +
-    ".jc .jc-accept{background:#3a5bd0;border:1px solid #3a5bd0;color:#fff}" +
-    ".jc .jc-decline{background:transparent;border:1px solid var(--muted,#6b7385);color:inherit}" +
+    // Two equal columns: both buttons take the wider label's width, in every language.
+    ".jc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:0 0 auto}" +
+    ".jc .jc-btn{font-family:inherit;font-size:14px;font-weight:700;min-height:36px;padding:7px 16px;" +
+    "border-radius:10px;cursor:pointer;width:auto;" +
+    "background:#3a5bd0;border:1px solid #3a5bd0;color:#fff}" +
     ".jc a:focus-visible,.jc button:focus-visible{outline:2px solid var(--brand,#4f7cff);outline-offset:2px}";
 
   var banner = null;
@@ -161,8 +163,8 @@
     banner.innerHTML =
       '<p class="jc-text"><span></span><a></a></p>' +
       '<div class="jc-actions">' +
-      '<button type="button" class="jc-decline"></button>' +
-      '<button type="button" class="jc-accept"></button></div>';
+      '<button type="button" class="jc-btn jc-decline"></button>' +
+      '<button type="button" class="jc-btn jc-accept"></button></div>';
     banner.querySelector(".jc-accept").addEventListener("click", function () { choose("granted"); });
     banner.querySelector(".jc-decline").addEventListener("click", function () { choose("denied"); });
     // First in the tab order, so keyboard and screen-reader users meet it early; fixed at the

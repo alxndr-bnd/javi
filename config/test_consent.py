@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 from django.contrib.auth import get_user_model
 
+from common.testing import contrast, css_declarations
 from deliveries.models import Shop
 
 pytestmark = pytest.mark.django_db
@@ -181,6 +182,25 @@ def test_banner_never_hides_the_focused_element():
     unobscure = _function("unobscure")
     assert "banner.hidden" in unobscure and "banner.contains(el)" in unobscure
     assert "if (r.bottom > limit) window.scrollBy(0," in unobscure
+
+
+def _banner_css():
+    block = CONSENT_JS[CONSENT_JS.index("var CSS =") :]
+    block = block[: block.index(";\n")]
+    return "".join(re.findall(r'"((?:[^"\\]|\\.)*)"', block))
+
+
+def test_accept_and_decline_carry_equal_weight():
+    """SERBITO-352 (owner-approved): Decline is as easy to see and hit as Accept — the same class,
+    one rule for both (no per-button styling), equal-width columns, readable text."""
+    for hook in ("jc-accept", "jc-decline"):
+        assert f'<button type="button" class="jc-btn {hook}"></button>' in CONSENT_JS
+    css = _banner_css()
+    selectors = re.findall(r"([^{}]+)\{", css)
+    assert [s for s in selectors if "jc-accept" in s or "jc-decline" in s] == []
+    assert css_declarations(css, ".jc-actions")["grid-template-columns"] == "1fr 1fr"
+    button = css_declarations(css, ".jc .jc-btn")
+    assert contrast(button["color"], button["background"]) >= 4.5
 
 
 def test_withdrawal_clears_parent_domain_cookies_only_once():
