@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Javi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 23:35+0200\n"
+"POT-Creation-Date: 2026-10-02 23:37+0200\n"
 "PO-Revision-Date: 2026-06-07 01:30+0200\n"
 "Last-Translator: Javi <noreply@javi.serbito.rs>\n"
 "Language-Team: Serbian (Latin)\n"
@@ -298,7 +298,7 @@ msgstr "Označi spremno"
 msgid "Transitions a 'pending' delivery to 'ready_for_pickup' (new → ready)."
 msgstr ""
 
-#: deliveries/api.py:602 deliveries/templates/deliveries/_delivery_card.html:58
+#: deliveries/api.py:602 deliveries/templates/deliveries/_delivery_card.html:61
 msgid "Mark delivered"
 msgstr "Označi isporučeno"
 
@@ -350,7 +350,7 @@ msgstr ""
 msgid "Missing or invalid API key."
 msgstr ""
 
-#: deliveries/forms.py:13 deliveries/views.py:354
+#: deliveries/forms.py:13 deliveries/views.py:421
 msgid "Invalid number. E.g. 064 123 4567"
 msgstr "Neispravan broj. Npr. 064 123 4567"
 
@@ -374,7 +374,7 @@ msgstr ""
 msgid "Remove the secret"
 msgstr "Ukloni tajnu"
 
-#: deliveries/forms.py:80 deliveries/forms.py:119
+#: deliveries/forms.py:80 deliveries/forms.py:176
 msgid "Phone"
 msgstr "Telefon"
 
@@ -398,15 +398,15 @@ msgstr "Ulica i broj, grad"
 msgid "Description (optional)"
 msgstr "Opis (opciono)"
 
-#: deliveries/forms.py:138
+#: deliveries/forms.py:124 deliveries/forms.py:195
 msgid "Arrival date"
 msgstr "Datum dolaska"
 
-#: deliveries/forms.py:143
+#: deliveries/forms.py:129 deliveries/forms.py:200
 msgid "Arrival time (HH:MM)"
 msgstr "Vreme dolaska (HH:MM)"
 
-#: deliveries/forms.py:159
+#: deliveries/forms.py:166 deliveries/forms.py:216
 msgid "This time has already passed. Enter a time in the future."
 msgstr "To vreme je već prošlo. Unesite vreme u budućnosti."
 
@@ -433,22 +433,22 @@ msgstr "U dostavi"
 msgid "Done"
 msgstr "Završeno"
 
-#: deliveries/services.py:116
+#: deliveries/services.py:204
 msgid "Store address is not geocoded — open “Store” and save the address."
 msgstr ""
 "Adresa prodavnice nije geokodirana — otvorite „Prodavnica“ i sačuvajte "
 "adresu."
 
-#: deliveries/services.py:118
+#: deliveries/services.py:206
 msgid ""
 "We could not recognize the delivery address — check the recipient address."
 msgstr "Nismo prepoznali adresu dostave — proverite adresu primaoca."
 
-#: deliveries/services.py:119
+#: deliveries/services.py:207
 msgid "The map can't compute a route right now — enter the time manually."
 msgstr "Mapa trenutno ne može da izračuna rutu — unesite vreme ručno."
 
-#: deliveries/services.py:183
+#: deliveries/services.py:271
 #, python-format
 msgid ""
 "Your order from \"%(shop)s\" is on its way. Arriving approximately by "
@@ -457,7 +457,7 @@ msgstr ""
 "Vaša porudžbina iz \"%(shop)s\" je u dostavi. Stiže okvirno do %(time)s. "
 "Pratite: %(link)s"
 
-#: deliveries/services.py:194
+#: deliveries/services.py:282
 #, python-format
 msgid "How did the delivery from \"%(shop)s\" go? Rate it: %(link)s"
 msgstr "Kako je prošla dostava iz \"%(shop)s\"? Ocenite: %(link)s"
@@ -480,34 +480,46 @@ msgid "Not delivered"
 msgstr "Nije dostavljeno"
 
 #: deliveries/templates/deliveries/_delivery_card.html:25
+msgid "Address not recognized."
+msgstr "Adresa nije prepoznata."
+
+#: deliveries/templates/deliveries/_delivery_card.html:25
+msgid "Check it"
+msgstr "Proveri"
+
+#: deliveries/templates/deliveries/_delivery_card.html:28
 msgid "recipient opted out of notifications"
 msgstr "primalac otkazao obaveštenja"
 
-#: deliveries/templates/deliveries/_delivery_card.html:31
+#: deliveries/templates/deliveries/_delivery_card.html:34
 msgid "Mark ready"
 msgstr "Označi spremno"
 
-#: deliveries/templates/deliveries/_delivery_card.html:38
+#: deliveries/templates/deliveries/_delivery_card.html:41
 msgid "Delivery has started"
 msgstr "Dostava je počela"
 
-#: deliveries/templates/deliveries/_delivery_card.html:44
+#: deliveries/templates/deliveries/_delivery_card.html:47
 msgid "Send the message again?"
 msgstr "Poslati poruku ponovo?"
 
-#: deliveries/templates/deliveries/_delivery_card.html:50
+#: deliveries/templates/deliveries/_delivery_card.html:53
 msgid "Resend"
 msgstr "Pošalji ponovo"
 
-#: deliveries/templates/deliveries/_delivery_card.html:56
+#: deliveries/templates/deliveries/_delivery_card.html:59
 msgid "Mark as delivered?"
 msgstr "Označiti kao isporučeno?"
 
-#: deliveries/templates/deliveries/_delivery_card.html:63
+#: deliveries/templates/deliveries/_delivery_card.html:67
+msgid "Edit"
+msgstr "Izmeni"
+
+#: deliveries/templates/deliveries/_delivery_card.html:70
 msgid "Delete this delivery?"
 msgstr "Obrisati ovu dostavu?"
 
-#: deliveries/templates/deliveries/_delivery_card.html:65
+#: deliveries/templates/deliveries/_delivery_card.html:72
 msgid "Delete delivery"
 msgstr "Obriši dostavu"
 
@@ -555,6 +567,7 @@ msgstr "Odjava"
 #: deliveries/templates/deliveries/api_docs.html:8
 #: deliveries/templates/deliveries/deleted_list.html:8
 #: deliveries/templates/deliveries/delivery_confirm_eta.html:8
+#: deliveries/templates/deliveries/delivery_edit.html:8
 #: deliveries/templates/deliveries/delivery_form.html:8
 #: deliveries/templates/deliveries/delivery_list.html:3
 #: deliveries/templates/deliveries/shop_profile.html:8
@@ -675,6 +688,21 @@ msgstr "Možete ispraviti vreme pre slanja."
 msgid "Confirm and notify the customer"
 msgstr "Potvrdi i obavesti kupca"
 
+#: deliveries/templates/deliveries/delivery_edit.html:3
+#: deliveries/templates/deliveries/delivery_edit.html:11
+msgid "Edit delivery"
+msgstr "Izmena dostave"
+
+#: deliveries/templates/deliveries/delivery_edit.html:15
+msgid ""
+"The customer has already been notified. Saving changes does not send a new "
+"message."
+msgstr "Kupac je već obavešten. Čuvanje izmena ne šalje novu poruku."
+
+#: deliveries/templates/deliveries/delivery_edit.html:31
+msgid "Save changes"
+msgstr "Sačuvaj izmene"
+
 #: deliveries/templates/deliveries/delivery_form.html:28
 #: deliveries/templates/deliveries/shop_profile.html:87
 msgid "Save"
@@ -696,7 +724,7 @@ msgstr "Nema dostava danas."
 msgid "Add your first delivery with the button below."
 msgstr "Dodajte prvu dostavu dugmetom ispod."
 
-#: deliveries/templates/deliveries/shop_profile.html:21 deliveries/views.py:171
+#: deliveries/templates/deliveries/shop_profile.html:21 deliveries/views.py:178
 msgid "Account is not linked to a store."
 msgstr "Nalog nije povezan sa prodavnicom."
 
@@ -800,11 +828,11 @@ msgstr ""
 msgid "Generate API key"
 msgstr "Generišite API ključ u svom profilu"
 
-#: deliveries/views.py:148
+#: deliveries/views.py:155
 msgid "Saved."
 msgstr "Sačuvano."
 
-#: deliveries/views.py:153
+#: deliveries/views.py:160
 msgid ""
 "Name saved, but we could not recognize the address. Please check and try "
 "again."
@@ -812,7 +840,7 @@ msgstr ""
 "Naziv je sačuvan, ali nismo prepoznali adresu. Proverite je i pokušajte "
 "ponovo."
 
-#: deliveries/views.py:178
+#: deliveries/views.py:185
 #, python-format
 msgid ""
 "You already have %(count)d active API keys. Revoke one to create a new key."
@@ -820,36 +848,52 @@ msgstr ""
 "Već imate %(count)d aktivnih API ključeva. Opozovite jedan da biste napravili"
 " novi."
 
-#: deliveries/views.py:199
+#: deliveries/views.py:206
 msgid "API key revoked."
 msgstr ""
 
-#: deliveries/views.py:230
+#: deliveries/views.py:237
 msgid "Delivery added."
 msgstr "Dostava je dodata."
 
-#: deliveries/views.py:232
+#: deliveries/views.py:239 deliveries/views.py:308
 msgid "The number is not a Serbian mobile — please check."
 msgstr "Broj nije srpski mobilni — proverite ga."
 
-#: deliveries/views.py:236
-msgid "We could not recognize the address — please check it later."
-msgstr "Nismo prepoznali adresu — proverite je kasnije."
+#: deliveries/views.py:243 deliveries/views.py:312
+msgid "We could not recognize the address — check it with “Edit” on the card."
+msgstr "Nismo prepoznali adresu — proverite je preko „Izmeni“ na kartici."
 
-#: deliveries/views.py:245
+#: deliveries/views.py:252
 msgid "First set your store address."
 msgstr "Prvo podesite adresu prodavnice."
 
-#: deliveries/views.py:303 deliveries/views.py:322
+#: deliveries/views.py:272
+msgid "A delivered order can't be edited."
+msgstr "Isporučena porudžbina ne može da se menja."
+
+#: deliveries/views.py:302
+msgid "Nothing changed."
+msgstr "Ništa nije promenjeno."
+
+#: deliveries/views.py:304
+msgid "Delivery updated."
+msgstr "Dostava je izmenjena."
+
+#: deliveries/views.py:306
+msgid "Messages already sent are not sent again."
+msgstr "Već poslate poruke se ne šalju ponovo."
+
+#: deliveries/views.py:370 deliveries/views.py:389
 msgid "Delivery is already in progress."
 msgstr "Dostava je već u toku."
 
-#: deliveries/views.py:307
+#: deliveries/views.py:374
 #, python-format
 msgid "Customer notified · arriving by %(time)s"
 msgstr "Kupac obavešten · stiže do %(time)s"
 
-#: deliveries/views.py:314
+#: deliveries/views.py:381
 msgid ""
 "Delivery started, but the message to the customer was not sent. Check the "
 "number and resend it from the card."
@@ -857,27 +901,27 @@ msgstr ""
 "Dostava je počela, ali poruka kupcu nije poslata. Proverite broj i pošaljite "
 "je ponovo sa kartice."
 
-#: deliveries/views.py:362
+#: deliveries/views.py:429
 msgid "Unable to resend."
 msgstr "Nije moguće ponovo poslati."
 
-#: deliveries/views.py:364
+#: deliveries/views.py:431
 msgid "Message resent."
 msgstr "Poruka je ponovo poslata."
 
-#: deliveries/views.py:366
+#: deliveries/views.py:433
 msgid "Message not sent — check the number."
 msgstr "Poruka nije poslata — proverite broj."
 
-#: deliveries/views.py:377
+#: deliveries/views.py:444
 msgid "Marked as delivered."
 msgstr "Označeno kao isporučeno."
 
-#: deliveries/views.py:409
+#: deliveries/views.py:476
 msgid "Delivery deleted."
 msgstr "Dostava je obrisana."
 
-#: deliveries/views.py:434
+#: deliveries/views.py:501
 msgid "Delivery restored."
 msgstr "Dostava je vraćena."
 

@@ -16,7 +16,13 @@ from common.timewindow import BELGRADE, format_eta, format_eta_label
 from notifications.models import Notification, OptOut
 from notifications.quotas import QuotaExceeded, shop_usage
 
-from .forms import DeliveryForm, ManualEtaForm, RecipientPhoneForm, ShopOriginForm
+from .forms import (
+    DeliveryEditForm,
+    DeliveryForm,
+    ManualEtaForm,
+    RecipientPhoneForm,
+    ShopOriginForm,
+)
 from .models import ApiKey, Delivery
 from .services import (
     compute_eta,
@@ -29,6 +35,7 @@ from .services import (
     set_shop_origin,
     soft_delete,
     start_delivery,
+    update_delivery,
 )
 
 
@@ -233,7 +240,7 @@ class DeliveryCreateView(LoginRequiredMixin, View):
             if not geocoded:
                 messages.warning(
                     request,
-                    _("We could not recognize the address — please check it later."),
+                    _("We could not recognize the address — check it with “Edit” on the card."),
                 )
             return redirect("deliveries:list")
         return render(request, self.template_name, {"form": form})
@@ -245,6 +252,66 @@ class DeliveryCreateView(LoginRequiredMixin, View):
             messages.info(request, _("First set your store address."))
             return redirect("deliveries:profile")
         return None
+
+
+class DeliveryEditView(LoginRequiredMixin, View):
+    """«Izmeni»: правка доставки, пока она не завершена (SERBITO-356).
+
+    Раньше неверный адрес или номер означал «удалить и завести заново». Сообщения не шлёт.
+    """
+
+    template_name = "deliveries/delivery_edit.html"
+
+    def _delivery(self, request, pk):
+        shop = getattr(request.user, "shop", None)
+        return get_object_or_404(Delivery, pk=pk, shop=shop, deleted_at__isnull=True)
+
+    def _closed(self, request, delivery):
+        if delivery.status != Delivery.Status.DELIVERED:
+            return None
+        messages.info(request, _("A delivered order can't be edited."))
+        return redirect("deliveries:list")
+
+    def get(self, request, pk):
+        delivery = self._delivery(request, pk)
+        closed = self._closed(request, delivery)
+        if closed is not None:
+            return closed
+        form = DeliveryEditForm(delivery=delivery)
+        return render(request, self.template_name, {"form": form, "delivery": delivery})
+
+    def post(self, request, pk):
+        delivery = self._delivery(request, pk)
+        closed = self._closed(request, delivery)
+        if closed is not None:
+            return closed
+        form = DeliveryEditForm(request.POST, delivery=delivery)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form, "delivery": delivery})
+        data = form.cleaned_data
+        result = update_delivery(
+            delivery,
+            recipient_name=data["recipient_name"],
+            phone=data["phone_result"],
+            dest_address=data["dest_address"],
+            description=data["description"],
+            language=data["recipient_language"],
+            eta_at=data["eta_at"],
+        )
+        if not result.changed:
+            messages.info(request, _("Nothing changed."))
+            return redirect("deliveries:list")
+        messages.success(request, _("Delivery updated."))
+        if delivery.status == Delivery.Status.ON_THE_WAY:
+            messages.info(request, _("Messages already sent are not sent again."))
+        if "recipient_phone" in result.changed and data["phone_result"].is_risky:
+            messages.warning(request, _("The number is not a Serbian mobile — please check."))
+        if not result.geocoded:
+            messages.warning(
+                request,
+                _("We could not recognize the address — check it with “Edit” on the card."),
+            )
+        return redirect("deliveries:list")
 
 
 class RecipientLookupView(LoginRequiredMixin, View):

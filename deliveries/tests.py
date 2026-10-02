@@ -360,7 +360,7 @@ def test_other_shop_delivery_is_404_on_every_action(client):
         for p in deliveries_urls.urlpatterns
         if str(p.pattern).startswith("dostava/<int:pk>/")
     ]
-    assert len(routes) == 6
+    assert len(routes) == 7  # + izmeni (SERBITO-356)
     for name in routes:
         url = reverse(f"deliveries:{name}", kwargs={"pk": victim.pk})
         resp = client.post(url, {"recipient_phone": "064 1112233"})

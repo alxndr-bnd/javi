@@ -81,6 +81,94 @@ def create_delivery(
     return delivery, geo is not None
 
 
+@dataclass
+class EditResult:
+    changed: list[str]  # какие поля поменялись (для лога и сообщения)
+    geocoded: bool = True  # новый адрес распознан (или адрес не менялся)
+
+
+def update_delivery(
+    delivery: Delivery,
+    *,
+    recipient_name: str,
+    phone: PhoneResult,
+    dest_address: str,
+    description: str,
+    language: str,
+    eta_at: datetime | None = None,
+) -> EditResult:
+    """Правка доставки до её завершения (SERBITO-356): имя, телефон, адрес, описание, язык,
+    а у доставки «в пути» — ещё и ETA.
+
+    Ничего не отправляет: уже ушедшие сообщения не повторяются, переотправка — как раньше,
+    кнопкой «Pošalji ponovo» со своими лимитами. Новый адрес геокодится заново (сбой — адрес
+    сохраняем без координат, как при создании). Новый ETA переносит запрос оценки.
+    В лог — событие `delivery.edited` со списком полей (без значений: это данные клиента).
+    """
+    if delivery.status == Delivery.Status.DELIVERED:
+        raise ValueError("a delivered delivery can't be edited")
+
+    changed: dict[str, object] = {}
+    if recipient_name != delivery.recipient_name:
+        changed["recipient_name"] = recipient_name
+    if phone.e164 != delivery.recipient_phone:
+        changed["recipient_phone"] = phone.e164
+        changed["phone_risk"] = phone.is_risky
+    if description != delivery.description:
+        changed["description"] = description
+    if language != delivery.recipient_language:
+        changed["recipient_language"] = language
+
+    geocoded = True
+    if dest_address.strip() != delivery.dest_address:
+        geo = get_maps_provider().geocode(dest_address)
+        geocoded = geo is not None
+        changed.update(
+            dest_address=geo.formatted_address if geo else dest_address.strip(),
+            dest_city=geo.city if geo else "",
+            dest_lat=geo.lat if geo else None,
+            dest_lng=geo.lng if geo else None,
+        )
+
+    reschedule = (
+        eta_at is not None
+        and delivery.status == Delivery.Status.ON_THE_WAY
+        and eta_at != delivery.eta_at
+    )
+    if reschedule:
+        changed.update(eta_at=eta_at, eta_source="manual")
+
+    if not changed:
+        return EditResult(changed=[])
+
+    for field, value in changed.items():
+        setattr(delivery, field, value)
+    delivery.save(update_fields=list(changed))
+
+    if reschedule:
+        # Запрос оценки — от нового ETA; колбэк по старому времени увидит, что рано (tasks).
+        try:
+            get_task_scheduler().schedule_rating_request(delivery.id, rating_send_time(eta_at))
+        except Exception:
+            logger.exception("failed to reschedule rating request for delivery %s", delivery.id)
+
+    fields = sorted(f for f in changed if f not in ("phone_risk", "dest_city", "dest_lat",
+                                                    "dest_lng", "eta_source"))
+    logger.info(
+        "Delivery %s edited: %s",
+        delivery.id,
+        ", ".join(fields),
+        extra={
+            "event": "delivery.edited",
+            "shop_id": delivery.shop_id,
+            "delivery_id": delivery.id,
+            "status": delivery.status,
+            "fields": fields,
+        },
+    )
+    return EditResult(changed=fields, geocoded=geocoded)
+
+
 def compute_eta(delivery: Delivery) -> datetime | None:
     """ETA = сейчас + время в пути (origin→получатель) + запас. None если маршрут недоступен."""
     from django.conf import settings

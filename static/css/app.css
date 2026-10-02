@@ -90,7 +90,11 @@ a{color:var(--brand)}
 .card-eta{font-size:13px;font-weight:700;color:var(--on-the-way)}
 .card-rating{font-size:13px;font-weight:700;color:var(--rating)}
 .card-optout{font-size:12px;color:var(--muted);margin-top:8px;font-style:italic}
-.card-delete{margin-top:10px;text-align:right}
+.card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.card-delete{margin:0 0 0 auto;text-align:right}
+.card-edit{font-size:13px;color:var(--brand);padding:4px}
+.card-warn{font-size:12px;color:var(--failed);margin-top:8px}
+.card-warn a{color:inherit;font-weight:700}
 .btn-link-danger{background:none;border:0;color:var(--failed);font-size:13px;cursor:pointer;padding:4px}
 .card-action{margin-top:10px}
 .eta-preview{margin:14px 0;text-align:center}

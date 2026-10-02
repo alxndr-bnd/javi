@@ -113,6 +113,63 @@ class DeliveryForm(forms.Form):
         return result.e164
 
 
+class DeliveryEditForm(DeliveryForm):
+    """Правка доставки до завершения (SERBITO-356). У доставки «в пути» — ещё и ETA.
+
+    ETA проверяется на «не в прошлом», только если его поменяли: опаздывающую доставку
+    (ETA уже прошло) можно править, не трогая время.
+    """
+
+    eta_date = forms.DateField(
+        label=_("Arrival date"),
+        required=False,
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+    )
+    eta_time = forms.TimeField(
+        label=_("Arrival time (HH:MM)"),
+        required=False,
+        input_formats=["%H:%M"],
+        widget=forms.TimeInput(format="%H:%M", attrs={"inputmode": "numeric"}),
+    )
+
+    def __init__(self, *args, delivery, **kwargs):
+        self.delivery = delivery
+        self.with_eta = delivery.status == "on_the_way" and delivery.eta_at is not None
+        initial = {
+            "recipient_phone": delivery.recipient_phone,
+            "recipient_name": delivery.recipient_name,
+            "recipient_language": delivery.recipient_language,
+            "dest_address": delivery.dest_address,
+            "description": delivery.description,
+        }
+        if self.with_eta:
+            local = delivery.eta_at.astimezone(BELGRADE)
+            initial.update(eta_date=local.date(), eta_time=local.time().replace(second=0))
+        super().__init__(*args, initial=initial, **kwargs)
+        self.fields["recipient_phone"].widget.attrs.pop("autofocus", None)
+        if not self.with_eta:
+            del self.fields["eta_date"]
+            del self.fields["eta_time"]
+
+    def clean(self):
+        cleaned = super().clean()
+        cleaned["eta_at"] = None
+        if not self.with_eta or cleaned.get("eta_time") is None:
+            return cleaned
+        day = cleaned.get("eta_date") or self.delivery.eta_at.astimezone(BELGRADE).date()
+        eta_at = datetime.combine(day, cleaned["eta_time"], tzinfo=BELGRADE)
+        current = self.delivery.eta_at.astimezone(BELGRADE).replace(second=0, microsecond=0)
+        if eta_at == current:
+            return cleaned  # время не трогали
+        if eta_at <= timezone.now():
+            self.add_error(
+                "eta_time", _("This time has already passed. Enter a time in the future.")
+            )
+            return cleaned
+        cleaned["eta_at"] = eta_at
+        return cleaned
+
+
 class RecipientPhoneForm(forms.Form):
     """Правка номера получателя при переотправке (FR-25)."""
 

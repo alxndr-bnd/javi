@@ -21,6 +21,9 @@
     {% endif %}
     {% if d.rating %}<span class="card-rating">{{ d.rating.value }}★</span>{% endif %}
   </div>
+  {% if d.dest_lat is None and d.status != "delivered" %}
+    <div class="card-warn">{% trans "Address not recognized." %} <a href="{% url 'deliveries:edit' d.pk %}">{% trans "Check it" %}</a></div>
+  {% endif %}
   {% if d.opted_out %}
     <div class="card-optout">{% trans "recipient opted out of notifications" %}</div>
   {% endif %}
@@ -59,9 +62,14 @@
     </form>
   {% endif %}
 
-  <form method="post" action="{% url 'deliveries:delete' d.pk %}" class="card-delete"
-        data-confirm="{% trans "Delete this delivery?" %}">
-    {% csrf_token %}
-    <button type="submit" class="btn-link-danger">{% trans "Delete delivery" %}</button>
-  </form>
+  <div class="card-foot">
+    {% if d.status != "delivered" %}
+      <a href="{% url 'deliveries:edit' d.pk %}" class="card-edit">{% trans "Edit" %}</a>
+    {% endif %}
+    <form method="post" action="{% url 'deliveries:delete' d.pk %}" class="card-delete"
+          data-confirm="{% trans "Delete this delivery?" %}">
+      {% csrf_token %}
+      <button type="submit" class="btn-link-danger">{% trans "Delete delivery" %}</button>
+    </form>
+  </div>
 </div>
