@@ -28,6 +28,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
+from common.i18n import DEFAULT_CUSTOMER_LANGUAGE, base_language, supported_language
 from common.phone import InvalidPhone, normalize_phone
 from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
 from common.timewindow import BELGRADE, format_eta
@@ -159,6 +160,10 @@ class DeliverySerializer(serializers.Serializer):
         allow_null=True, help_text=_("Public tracking page (set once delivery starts).")
     )
     recipient = RecipientSerializer()
+    language = serializers.ChoiceField(
+        choices=["sr", "en"],
+        help_text=_("Language of the customer's messages and tracking page."),
+    )
     description = serializers.CharField(allow_blank=True)
     dest_address = serializers.CharField()
     dest_city = serializers.CharField(allow_blank=True)
@@ -182,13 +187,26 @@ class DeliveryCreateSerializer(serializers.Serializer):
     description = serializers.CharField(
         required=False, allow_blank=True, default="", help_text=_("Optional order description.")
     )
+    language = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text=_(
+            "Language of the customer's messages and tracking page: `sr` (Serbian, Latin "
+            "script; the default) or `en`."
+        ),
+    )
 
 
 class StartSerializer(serializers.Serializer):
     eta = serializers.CharField(
         required=False,
         allow_blank=True,
-        help_text=_("Optional manual ETA in HH:MM (used when no route is available)."),
+        help_text=_(
+            "Optional manual ETA (used when no route is available): HH:MM today, or an "
+            "ISO 8601 datetime such as 2026-10-03T16:30 (Belgrade time if no offset). "
+            "Must be in the future."
+        ),
     )
 
 
@@ -220,6 +238,7 @@ def serialize_delivery(delivery: Delivery) -> dict:
         "status_internal": delivery.status,
         "tracking_url": _tracking_url(delivery),
         "recipient": {"name": delivery.recipient_name, "phone": delivery.recipient_phone},
+        "language": base_language(delivery.recipient_language),
         "description": delivery.description,
         "dest_address": delivery.dest_address,
         "dest_city": delivery.dest_city,
@@ -357,6 +376,7 @@ class DeliveriesCollectionView(_ShopScopedView):
                     "recipient_phone": "064 123 4567",
                     "address": "Knez Mihailova 6, Beograd",
                     "description": "2 pizzas",
+                    "language": "sr",
                 },
                 request_only=True,
             )
@@ -380,6 +400,16 @@ class DeliveriesCollectionView(_ShopScopedView):
         recipient_phone = v["recipient_phone"].strip()
         address = v["address"].strip()
         description = (v.get("description") or "").strip()
+        language_raw = (v.get("language") or "").strip()
+        language = (
+            supported_language(language_raw, default=None)
+            if language_raw
+            else DEFAULT_CUSTOMER_LANGUAGE
+        )
+        if language is None:
+            raise ApiError(
+                "invalid_language", _("language must be one of: sr, en."), 400
+            )
 
         missing = [
             f for f, val in (
@@ -416,6 +446,7 @@ class DeliveriesCollectionView(_ShopScopedView):
             phone=phone,
             dest_address=address,
             description=description,
+            language=language,
         )
         if delivery.source != Delivery.Source.API:
             delivery.source = Delivery.Source.API
@@ -477,7 +508,7 @@ class DeliveryStartView(_ShopScopedView):
         request=StartSerializer,
         responses={
             200: DeliverySerializer,
-            400: OpenApiResponse(description=_("Invalid eta format (expected HH:MM).")),
+            400: OpenApiResponse(description=_("Invalid or past eta.")),
             404: _DELIVERY_RESPONSES[404],
             422: OpenApiResponse(description=_("Route unavailable — pass eta (HH:MM).")),
             **_SEND_LIMIT_RESPONSES,
@@ -504,15 +535,33 @@ class DeliveryStartView(_ShopScopedView):
 
     @staticmethod
     def _parse_eta(eta_raw: str):
+        """`HH:MM` (today, Belgrade) or an ISO 8601 datetime; must be in the future.
+
+        A past ETA would sit on the customer's page as "arriving by …" (SERBITO-356); the
+        ISO form lets an integrator pass a time after midnight or tomorrow.
+        """
         eta_raw = (eta_raw or "").strip()
         if not eta_raw:
             return None
         try:
             parsed = datetime.strptime(eta_raw, "%H:%M").time()
         except ValueError:
-            raise ApiError("invalid_eta", _("eta must be in HH:MM format."), 400) from None
-        today = timezone.now().astimezone(BELGRADE).date()
-        return datetime.combine(today, parsed, tzinfo=BELGRADE)
+            parsed = None
+        if parsed is not None:
+            today = timezone.now().astimezone(BELGRADE).date()
+            eta_at = datetime.combine(today, parsed, tzinfo=BELGRADE)
+        else:
+            try:
+                eta_at = datetime.fromisoformat(eta_raw)
+            except ValueError:
+                raise ApiError(
+                    "invalid_eta", _("eta must be HH:MM or an ISO 8601 datetime."), 400
+                ) from None
+            if eta_at.tzinfo is None:
+                eta_at = eta_at.replace(tzinfo=BELGRADE)
+        if eta_at <= timezone.now():
+            raise ApiError("invalid_eta", _("eta must be in the future."), 400)
+        return eta_at
 
 
 class DeliveryDispatchView(DeliveryStartView):

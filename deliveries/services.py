@@ -7,13 +7,15 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from django.db import transaction
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.translation import gettext
 
+from common.i18n import DEFAULT_CUSTOMER_LANGUAGE
 from common.phone import PhoneResult
 from common.text import sanitize_shop_name
-from common.timewindow import format_eta, rating_send_time
+from common.timewindow import format_eta_label, rating_send_time
 from integrations.providers import (
     chain_channel_paths,
     get_maps_provider,
@@ -57,6 +59,7 @@ def create_delivery(
     phone: PhoneResult,
     dest_address: str,
     description: str = "",
+    language: str = DEFAULT_CUSTOMER_LANGUAGE,
 ) -> tuple[Delivery, bool]:
     """Создаёт доставку дня. Геокодит адрес; при неудаче создаёт без координат (FR-5/9).
 
@@ -73,8 +76,97 @@ def create_delivery(
         dest_lat=geo.lat if geo else None,
         dest_lng=geo.lng if geo else None,
         description=description,
+        recipient_language=language,
     )
     return delivery, geo is not None
+
+
+@dataclass
+class EditResult:
+    changed: list[str]  # какие поля поменялись (для лога и сообщения)
+    geocoded: bool = True  # новый адрес распознан (или адрес не менялся)
+
+
+def update_delivery(
+    delivery: Delivery,
+    *,
+    recipient_name: str,
+    phone: PhoneResult,
+    dest_address: str,
+    description: str,
+    language: str,
+    eta_at: datetime | None = None,
+) -> EditResult:
+    """Правка доставки до её завершения (SERBITO-356): имя, телефон, адрес, описание, язык,
+    а у доставки «в пути» — ещё и ETA.
+
+    Ничего не отправляет: уже ушедшие сообщения не повторяются, переотправка — как раньше,
+    кнопкой «Pošalji ponovo» со своими лимитами. Новый адрес геокодится заново (сбой — адрес
+    сохраняем без координат, как при создании). Новый ETA переносит запрос оценки.
+    В лог — событие `delivery.edited` со списком полей (без значений: это данные клиента).
+    """
+    if delivery.status == Delivery.Status.DELIVERED:
+        raise ValueError("a delivered delivery can't be edited")
+
+    changed: dict[str, object] = {}
+    if recipient_name != delivery.recipient_name:
+        changed["recipient_name"] = recipient_name
+    if phone.e164 != delivery.recipient_phone:
+        changed["recipient_phone"] = phone.e164
+        changed["phone_risk"] = phone.is_risky
+    if description != delivery.description:
+        changed["description"] = description
+    if language != delivery.recipient_language:
+        changed["recipient_language"] = language
+
+    geocoded = True
+    if dest_address.strip() != delivery.dest_address:
+        geo = get_maps_provider().geocode(dest_address)
+        geocoded = geo is not None
+        changed.update(
+            dest_address=geo.formatted_address if geo else dest_address.strip(),
+            dest_city=geo.city if geo else "",
+            dest_lat=geo.lat if geo else None,
+            dest_lng=geo.lng if geo else None,
+        )
+
+    reschedule = (
+        eta_at is not None
+        and delivery.status == Delivery.Status.ON_THE_WAY
+        and eta_at != delivery.eta_at
+    )
+    if reschedule:
+        changed.update(eta_at=eta_at, eta_source="manual")
+
+    if not changed:
+        return EditResult(changed=[])
+
+    for field, value in changed.items():
+        setattr(delivery, field, value)
+    delivery.save(update_fields=list(changed))
+
+    if reschedule:
+        # Запрос оценки — от нового ETA; колбэк по старому времени увидит, что рано (tasks).
+        try:
+            get_task_scheduler().schedule_rating_request(delivery.id, rating_send_time(eta_at))
+        except Exception:
+            logger.exception("failed to reschedule rating request for delivery %s", delivery.id)
+
+    fields = sorted(f for f in changed if f not in ("phone_risk", "dest_city", "dest_lat",
+                                                    "dest_lng", "eta_source"))
+    logger.info(
+        "Delivery %s edited: %s",
+        delivery.id,
+        ", ".join(fields),
+        extra={
+            "event": "delivery.edited",
+            "shop_id": delivery.shop_id,
+            "delivery_id": delivery.id,
+            "status": delivery.status,
+            "fields": fields,
+        },
+    )
+    return EditResult(changed=fields, geocoded=geocoded)
 
 
 def compute_eta(delivery: Delivery) -> datetime | None:
@@ -164,15 +256,33 @@ def _message_shop_name(shop: Shop) -> str:
     return sanitize_shop_name(shop.name) or "Javi"
 
 
+def customer_language(delivery: Delivery):
+    """Context: the recipient's language for text they get (SERBITO-356).
+
+    Every customer message is built inside it — not in the shop's UI language and not in
+    whatever a Cloud Tasks callback happens to run with (that was English).
+    """
+    return translation.override(delivery.recipient_language or DEFAULT_CUSTOMER_LANGUAGE)
+
+
 def _on_the_way_text(delivery: Delivery, token: str) -> str:
-    return gettext(
-        'Your order from "%(shop)s" is on its way. '
-        "Arriving approximately by %(time)s. Track: %(link)s"
-    ) % {
-        "shop": _message_shop_name(delivery.shop),
-        "time": format_eta(delivery.eta_at),
-        "link": _tracking_link(token),
-    }
+    with customer_language(delivery):
+        return gettext(
+            'Your order from "%(shop)s" is on its way. '
+            "Arriving approximately by %(time)s. Track: %(link)s"
+        ) % {
+            "shop": _message_shop_name(delivery.shop),
+            "time": format_eta_label(delivery.eta_at),
+            "link": _tracking_link(token),
+        }
+
+
+def _rating_request_text(delivery: Delivery, token: str) -> str:
+    with customer_language(delivery):
+        return gettext('How did the delivery from "%(shop)s" go? Rate it: %(link)s') % {
+            "shop": _message_shop_name(delivery.shop),
+            "link": _tracking_link(token),
+        }
 
 
 def _record_attempts(notification: Notification, result) -> None:
@@ -338,57 +448,80 @@ def escalate_delivery(delivery: Delivery) -> bool:
     return result.ok
 
 
+def _sync_start_fields(target: Delivery, source: Delivery) -> None:
+    """Вызывающий держит свой объект доставки — отдаём ему актуальное состояние старта."""
+    for field in ("status", "started_at", "eta_at", "eta_source"):
+        setattr(target, field, getattr(source, field))
+
+
+def _already_started(delivery: Delivery) -> bool:
+    return delivery.status == Delivery.Status.ON_THE_WAY or delivery.notifications.filter(
+        kind=Notification.Kind.ON_THE_WAY
+    ).exists()
+
+
 def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) -> StartResult:
     """«Доставка началась»: рассчитать ETA, уведомить получателя. Идемпотентно.
 
     Маршрут недоступен/нет координат и нет manual_eta → StartResult(needs_manual_eta=True),
     ничего не меняем (FR-9: поток не рвётся, магазин вводит ETA вручную).
+
+    Двойной сабмит «Potvrdi i obavesti» (SERBITO-356): два запроса проходили проверку
+    «уже стартовала?» одновременно — пока первый ждал маршрут, — и клиент получал 2 SMS.
+    Теперь проверка и перевод статуса идут под блокировкой строки доставки; второй запрос
+    ждёт её и видит, что доставка уже в пути. Сама отправка — после коммита, без блокировки.
     """
-    # Идемпотентность: повторный старт — no-op.
-    if delivery.status == Delivery.Status.ON_THE_WAY or delivery.notifications.filter(
-        kind=Notification.Kind.ON_THE_WAY
-    ).exists():
+    # Быстрый выход без блокировки: повторный старт — no-op.
+    if _already_started(delivery):
         return StartResult(already=True, eta_at=delivery.eta_at)
 
-    now = timezone.now()
+    from django.conf import settings
+
     if manual_eta is not None:
         eta_at, eta_source = manual_eta, "manual"
     else:
-        eta_at = compute_eta(delivery)
+        eta_at = compute_eta(delivery)  # сетевой вызов — вне транзакции
         if eta_at is None:
             return StartResult(needs_manual_eta=True)
         eta_source = "auto"
 
-    # Лимиты — ДО смены статуса и отправки: упёрлись → доставка остаётся «готова»,
-    # магазин видит причину (QuotaExceeded летит в view/API).
-    reserve_send(
-        delivery.shop,
-        delivery.recipient_phone,
-        kind=OutboundSend.Kind.ON_THE_WAY,
-        delivery=delivery,
-        risky=delivery.phone_risk,
-    )
+    with transaction.atomic():
+        locked = Delivery.objects.select_for_update().get(pk=delivery.pk)
+        if _already_started(locked):
+            _sync_start_fields(delivery, locked)
+            return StartResult(already=True, eta_at=locked.eta_at)
 
-    delivery.status = Delivery.Status.ON_THE_WAY
-    delivery.started_at = now
-    delivery.eta_at = eta_at
-    delivery.eta_source = eta_source
-    delivery.save(update_fields=["status", "started_at", "eta_at", "eta_source"])
+        # Лимиты — ДО смены статуса и отправки: упёрлись → доставка остаётся «готова»,
+        # магазин видит причину (QuotaExceeded летит в view/API), транзакция откатывается.
+        reserve_send(
+            locked.shop,
+            locked.recipient_phone,
+            kind=OutboundSend.Kind.ON_THE_WAY,
+            delivery=locked,
+            risky=locked.phone_risk,
+        )
 
-    from django.conf import settings
+        now = timezone.now()
+        locked.status = Delivery.Status.ON_THE_WAY
+        locked.started_at = now
+        locked.eta_at = eta_at
+        locked.eta_source = eta_source
+        locked.save(update_fields=["status", "started_at", "eta_at", "eta_source"])
 
-    token_obj, _ = TrackingToken.objects.get_or_create(
-        delivery=delivery,
-        defaults={"expires_at": now + timedelta(days=settings.TRACKING_TOKEN_TTL_DAYS)},
-    )
+        token_obj, _ = TrackingToken.objects.get_or_create(
+            delivery=locked,
+            defaults={"expires_at": now + timedelta(days=settings.TRACKING_TOKEN_TTL_DAYS)},
+        )
+        # Создан под блокировкой: параллельный запрос после неё увидит его и выйдет.
+        notification = Notification.objects.create(
+            delivery=locked,
+            kind=Notification.Kind.ON_THE_WAY,
+            status=Notification.Status.QUEUED,
+        )
 
-    notification = Notification.objects.create(
-        delivery=delivery,
-        kind=Notification.Kind.ON_THE_WAY,
-        status=Notification.Status.QUEUED,
-    )
+    _sync_start_fields(delivery, locked)
 
-    result = _send_and_record(notification, delivery, _on_the_way_text(delivery, token_obj.token))
+    result = _send_and_record(notification, locked, _on_the_way_text(locked, token_obj.token))
 
     # Планируем запрос оценки на ETA+30 (прижатый к окну 08:00–22:00) — AR-4/FR-16/21.
     # Сбой планировщика НЕ должен ломать старт (сообщение уже ушло) — деградируем мягко.
@@ -399,10 +532,10 @@ def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) ->
 
     # P4: если включена эскалатция и остались неиспробованные каналы — запланировать проверку
     # доставки. Сбой планировщика не ломает старт (сообщение уже ушло).
-    _schedule_escalation_if_pending(delivery, notification)
+    _schedule_escalation_if_pending(locked, notification)
 
     # Исходящий вебхук мерчанту (декуплено, безопасно — notify_merchant сам глушит сбои).
-    emit_delivery_event(delivery, "delivery.started")
+    emit_delivery_event(locked, "delivery.started")
     return StartResult(ok=True, sent=result.ok, eta_at=eta_at)
 
 
@@ -507,8 +640,6 @@ def send_rating_request(delivery: Delivery):
         kind=Notification.Kind.RATING_REQUEST,
         status=Notification.Status.QUEUED,
     )
-    text = gettext('How did the delivery from "%(shop)s" go? Rate it: %(link)s') % {
-        "shop": _message_shop_name(delivery.shop),
-        "link": _tracking_link(token_obj.token),
-    }
-    return _send_and_record(notification, delivery, text)
+    return _send_and_record(
+        notification, delivery, _rating_request_text(delivery, token_obj.token)
+    )

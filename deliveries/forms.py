@@ -1,8 +1,13 @@
+from datetime import datetime
+
 from django import forms
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from common.i18n import CUSTOMER_LANGUAGES, DEFAULT_CUSTOMER_LANGUAGE
 from common.phone import InvalidPhone, normalize_phone
 from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
+from common.timewindow import BELGRADE
 from common.validators import validate_https_url
 
 INVALID_PHONE_MSG = _("Invalid number. E.g. 064 123 4567")
@@ -29,6 +34,12 @@ class ShopOriginForm(forms.Form):
             }
         ),
     )
+    contact_phone = forms.CharField(
+        label=_("Phone for customers (optional)"),
+        max_length=32,
+        required=False,
+        widget=forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "tel"}),
+    )
     webhook_url = forms.URLField(
         label=_("Webhook URL"),
         required=False,
@@ -51,6 +62,16 @@ class ShopOriginForm(forms.Form):
         # Название уходит в Viber/SMS клиентам — без ссылок и номеров (SERBITO-345).
         return clean_shop_name(self.cleaned_data["name"])
 
+    def clean_contact_phone(self):
+        # Только на странице статуса (не в SMS), поэтому годится и городской номер.
+        raw = self.cleaned_data["contact_phone"].strip()
+        if not raw:
+            return ""
+        try:
+            return normalize_phone(raw).e164
+        except InvalidPhone as exc:
+            raise forms.ValidationError(INVALID_PHONE_MSG) from exc
+
 
 class DeliveryForm(forms.Form):
     """Создание доставки: телефон первым (автоподстановка клиента), имя, адрес (+ описание)."""
@@ -63,6 +84,13 @@ class DeliveryForm(forms.Form):
         ),
     )
     recipient_name = forms.CharField(label=_("Name"), max_length=200)
+    # Язык SMS/Viber и страницы статуса для этого клиента (SERBITO-356), по умолчанию сербский.
+    recipient_language = forms.ChoiceField(
+        label=_("Customer's language"),
+        choices=CUSTOMER_LANGUAGES,
+        initial=DEFAULT_CUSTOMER_LANGUAGE,
+        required=False,  # старые клиенты формы/скрипты без поля — сербский
+    )
     dest_address = forms.CharField(
         label=_("Address"),
         max_length=300,
@@ -72,6 +100,9 @@ class DeliveryForm(forms.Form):
     )
     description = forms.CharField(label=_("Description (optional)"), max_length=300, required=False)
 
+    def clean_recipient_language(self):
+        return self.cleaned_data.get("recipient_language") or DEFAULT_CUSTOMER_LANGUAGE
+
     def clean_recipient_phone(self):
         raw = self.cleaned_data["recipient_phone"]
         try:
@@ -80,6 +111,63 @@ class DeliveryForm(forms.Form):
             raise forms.ValidationError(INVALID_PHONE_MSG) from exc
         self.cleaned_data["phone_result"] = result
         return result.e164
+
+
+class DeliveryEditForm(DeliveryForm):
+    """Правка доставки до завершения (SERBITO-356). У доставки «в пути» — ещё и ETA.
+
+    ETA проверяется на «не в прошлом», только если его поменяли: опаздывающую доставку
+    (ETA уже прошло) можно править, не трогая время.
+    """
+
+    eta_date = forms.DateField(
+        label=_("Arrival date"),
+        required=False,
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+    )
+    eta_time = forms.TimeField(
+        label=_("Arrival time (HH:MM)"),
+        required=False,
+        input_formats=["%H:%M"],
+        widget=forms.TimeInput(format="%H:%M", attrs={"inputmode": "numeric"}),
+    )
+
+    def __init__(self, *args, delivery, **kwargs):
+        self.delivery = delivery
+        self.with_eta = delivery.status == "on_the_way" and delivery.eta_at is not None
+        initial = {
+            "recipient_phone": delivery.recipient_phone,
+            "recipient_name": delivery.recipient_name,
+            "recipient_language": delivery.recipient_language,
+            "dest_address": delivery.dest_address,
+            "description": delivery.description,
+        }
+        if self.with_eta:
+            local = delivery.eta_at.astimezone(BELGRADE)
+            initial.update(eta_date=local.date(), eta_time=local.time().replace(second=0))
+        super().__init__(*args, initial=initial, **kwargs)
+        self.fields["recipient_phone"].widget.attrs.pop("autofocus", None)
+        if not self.with_eta:
+            del self.fields["eta_date"]
+            del self.fields["eta_time"]
+
+    def clean(self):
+        cleaned = super().clean()
+        cleaned["eta_at"] = None
+        if not self.with_eta or cleaned.get("eta_time") is None:
+            return cleaned
+        day = cleaned.get("eta_date") or self.delivery.eta_at.astimezone(BELGRADE).date()
+        eta_at = datetime.combine(day, cleaned["eta_time"], tzinfo=BELGRADE)
+        current = self.delivery.eta_at.astimezone(BELGRADE).replace(second=0, microsecond=0)
+        if eta_at == current:
+            return cleaned  # время не трогали
+        if eta_at <= timezone.now():
+            self.add_error(
+                "eta_time", _("This time has already passed. Enter a time in the future.")
+            )
+            return cleaned
+        cleaned["eta_at"] = eta_at
+        return cleaned
 
 
 class RecipientPhoneForm(forms.Form):
@@ -97,8 +185,17 @@ class RecipientPhoneForm(forms.Form):
 
 
 class ManualEtaForm(forms.Form):
-    """Ручной ввод ETA при недоступности маршрута (FR-9)."""
+    """Время прибытия на экране подтверждения (FR-9): дата + время, только в будущем.
 
+    Дата (SERBITO-356): без неё ETA после полуночи или на завтра не задать, а прошедшее
+    время принималось и висело на странице клиента как «stiže do 14:00».
+    """
+
+    eta_date = forms.DateField(
+        label=_("Arrival date"),
+        required=False,  # старые формы без даты — сегодня
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+    )
     eta_time = forms.TimeField(
         label=_("Arrival time (HH:MM)"),
         input_formats=["%H:%M"],
@@ -106,3 +203,17 @@ class ManualEtaForm(forms.Form):
             format="%H:%M", attrs={"inputmode": "numeric", "placeholder": "16:00"}
         ),
     )
+
+    def clean(self):
+        cleaned = super().clean()
+        eta_time = cleaned.get("eta_time")
+        if eta_time is None:
+            return cleaned
+        day = cleaned.get("eta_date") or timezone.now().astimezone(BELGRADE).date()
+        eta_at = datetime.combine(day, eta_time, tzinfo=BELGRADE)
+        if eta_at <= timezone.now():
+            raise forms.ValidationError(
+                _("This time has already passed. Enter a time in the future."), code="past"
+            )
+        cleaned["eta_at"] = eta_at
+        return cleaned

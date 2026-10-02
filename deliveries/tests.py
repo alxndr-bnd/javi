@@ -21,6 +21,13 @@ from notifications.models import Notification
 
 pytestmark = pytest.mark.django_db
 
+
+def _tomorrow() -> str:
+    """Manual ETA date that is always in the future (SERBITO-356 rejects a past ETA)."""
+    from common.timewindow import BELGRADE
+
+    return str(timezone.now().astimezone(BELGRADE).date() + timedelta(days=1))
+
 FAKE_OK = "integrations.testing.FakeMapsProvider"
 FAKE_FAIL = "integrations.testing.FailingMapsProvider"
 ROUTES_OK = "integrations.testing.FakeRoutesProvider"
@@ -281,7 +288,7 @@ def test_start_delivery_computes_eta_and_sends():
     assert len(FakeMessagingProvider.sent) == 1
     to, text = FakeMessagingProvider.sent[0]
     assert to == "+381641234567"
-    assert "Arriving approximately by" in text and "/t/" in text
+    assert "Stiže okvirno do" in text and "/t/" in text  # default customer language: sr
 
 
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
@@ -353,7 +360,7 @@ def test_other_shop_delivery_is_404_on_every_action(client):
         for p in deliveries_urls.urlpatterns
         if str(p.pattern).startswith("dostava/<int:pk>/")
     ]
-    assert len(routes) == 6
+    assert len(routes) == 7  # + izmeni (SERBITO-356)
     for name in routes:
         url = reverse(f"deliveries:{name}", kwargs={"pk": victim.pk})
         resp = client.post(url, {"recipient_phone": "064 1112233"})
@@ -382,7 +389,11 @@ def test_start_view_confirm_moves_to_u_dostavi(client):
     FakeMessagingProvider.sent = []
     shop, delivery = _geocoded_delivery("ok@shop.rs", "OK Shop")
     client.login(username="ok@shop.rs", password="pass12345")
-    resp = client.post(f"/app/dostava/{delivery.pk}/start/", {"eta_time": "16:00"}, follow=True)
+    resp = client.post(
+        f"/app/dostava/{delivery.pk}/start/",
+        {"eta_time": "16:00", "eta_date": _tomorrow()},
+        follow=True,
+    )
     assert resp.status_code == 200
     assert resp.context["u_dostavi"][0].pk == delivery.pk
     assert resp.context["spremno"] == []
@@ -605,7 +616,7 @@ def test_ui_list_oldest_first(client):
     assert [d.recipient_name for d in novo] == ["Older", "Newer"]
 
 
-# --- Free-tier quota counter (global, shown to all signed-in accounts) ---
+# --- Free-tier quota counter (global; staff only since SERBITO-356) ---
 
 
 def test_quota_widget_hidden_for_anonymous(client):
@@ -615,13 +626,15 @@ def test_quota_widget_hidden_for_anonymous(client):
 
 
 def test_quota_widget_shown_in_cabinet(client):
-    """Залогиненный магазин видит блок остатка бесплатных квот в кабинете."""
+    """Staff видит блок остатка бесплатных квот платформы в кабинете."""
     from django.core.cache import cache
 
     from integrations.models import METRIC_VIBER, ProviderUsage
 
     cache.clear()  # 60-сек кэш сводки не должен отдавать чужой результат между тестами
-    _make_shop_with_origin("quota@shop.rs", "Quota Shop")
+    shop = _make_shop_with_origin("quota@shop.rs", "Quota Shop")
+    shop.owner.is_staff = True
+    shop.owner.save(update_fields=["is_staff"])
     ProviderUsage.record(METRIC_VIBER, 3)
     client.login(username="quota@shop.rs", password="pass12345")
     resp = client.get("/app/")

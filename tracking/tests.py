@@ -20,7 +20,7 @@ def _clear_cache():
     cache.clear()
 
 
-def _token(status=Delivery.Status.ON_THE_WAY, *, eta_minutes=20, city="Beograd"):
+def _token(status=Delivery.Status.ON_THE_WAY, *, eta_minutes=20, city="Beograd", language="en"):
     user = get_user_model().objects.create_user(email="t@shop.rs", password="pass12345")
     shop = Shop.objects.create(owner=user, name="Pizza Napoli")
     delivery = Delivery.objects.create(
@@ -29,6 +29,7 @@ def _token(status=Delivery.Status.ON_THE_WAY, *, eta_minutes=20, city="Beograd")
         recipient_phone="+381641234567",
         dest_address="Tajna adresa 5, Beograd",
         dest_city=city,
+        recipient_language=language,
         status=status,
         eta_at=timezone.now() + timedelta(minutes=eta_minutes) if eta_minutes else None,
     )
@@ -80,7 +81,7 @@ def test_expired_link_410(client):
 
 def test_rating_capture_and_thanks(client):
     """AC#4: тап звезды → Rating, страница показывает «Hvala!»; AC#5 — без дублей."""
-    token = _token(Delivery.Status.ON_THE_WAY)
+    token = _token(Delivery.Status.DELIVERED)
     url = f"/t/{token.token}/"
     # до оценки — видны звёзды
     assert "How did the delivery go" in client.get(url).content.decode()
@@ -102,7 +103,7 @@ def test_rating_capture_and_thanks(client):
 def test_rating_invalid_value_ignored(client):
     from deliveries.models import Rating
 
-    token = _token(Delivery.Status.ON_THE_WAY)
+    token = _token(Delivery.Status.DELIVERED)
     client.post(f"/t/{token.token}/oceni/", {"value": "9"})
     assert Rating.objects.count() == 0
 
@@ -111,14 +112,14 @@ def test_recipient_can_mark_received(client):
     """Получатель подтверждает получение → статус delivered, появляется блок оценки."""
     token = _token(Delivery.Status.ON_THE_WAY)
     url = f"/t/{token.token}/"
-    assert "I received the order" in client.get(url).content.decode()
+    assert "Confirm receipt of the order" in client.get(url).content.decode()
     resp = client.post(f"{url}primljeno/")
     assert resp.status_code == 302
     token.delivery.refresh_from_db()
     assert token.delivery.status == Delivery.Status.DELIVERED
     body = client.get(url).content.decode()
     assert "has been delivered" in body
-    assert "I received the order" not in body
+    assert "Confirm receipt of the order" not in body
     assert "How did the delivery go" in body  # оценку всё ещё можно поставить
 
 
@@ -254,8 +255,8 @@ def _single_h1_in_main(root):
     ],
 )
 def test_status_page_structure_for_screen_readers(client, status, lang, title, spoken):
-    token = _token(status)
-    root = _tree(client.get(f"/t/{token.token}/", HTTP_ACCEPT_LANGUAGE=lang))
+    token = _token(status, language="sr-latn" if lang == "sr" else lang)
+    root = _tree(client.get(f"/t/{token.token}/"))
     h1 = _single_h1_in_main(root)
     assert title is None or h1 == title
     steps = root.find("ol", {"role": "list"})
@@ -271,7 +272,7 @@ def test_status_page_structure_for_screen_readers(client, status, lang, title, s
 
 
 def test_rating_stars_tab_left_to_right_in_a_labelled_group(client):
-    token = _token(Delivery.Status.ON_THE_WAY)
+    token = _token(Delivery.Status.DELIVERED)
     root = _tree(client.get(f"/t/{token.token}/"))
     group = root.find("form", {"role": "group"})
     assert "stars" in group.classes()
@@ -291,7 +292,7 @@ def test_rating_stars_tab_left_to_right_in_a_labelled_group(client):
 @pytest.mark.parametrize(
     ("method", "suffix", "expire", "title"),
     [
-        ("get", "", True, "Link has expired."),
+        ("get", "", True, "This tracking link has expired."),
         ("get", "odjava/", False, "Unsubscribe from notifications?"),
         ("post", "odjava/", False, "You have been unsubscribed."),
     ],

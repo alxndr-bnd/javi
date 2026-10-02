@@ -11,7 +11,7 @@
   <div class="h">{% trans "New delivery" %}</div>
 
   <div class="card">
-    <form method="post" novalidate>
+    <form method="post" novalidate data-submit-once>
       {% csrf_token %}
       {% if form.non_field_errors %}
         <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
@@ -25,7 +25,9 @@
           {% endif %}
         </div>
       {% endfor %}
-      <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+      {# The courier is leaving now: save and go straight to the ETA confirmation (SERBITO-356). #}
+      <button type="submit" name="notify_now" value="1" class="btn btn-primary">{% trans "Save and notify the customer now" %}</button>
+      <button type="submit" class="btn btn-ghost" style="margin-top:8px">{% trans "Save for later" %}</button>
     </form>
   </div>
 </div>
@@ -35,6 +37,7 @@
   var phone = document.getElementById("id_recipient_phone");
   var name = document.getElementById("id_recipient_name");
   var addr = document.getElementById("id_dest_address");
+  var lang = document.getElementById("id_recipient_language");
   if (!phone || !name || !addr) return;
   var lookupUrl = "{% url 'deliveries:recipient_lookup' %}";
   function fill() {
@@ -46,6 +49,7 @@
         if (!d || !d.found) return;
         if (!name.value) name.value = d.name;
         if (!addr.value) addr.value = d.address;
+        if (lang && d.language) lang.value = d.language;
       })
       .catch(function () {});
   }

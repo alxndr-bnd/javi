@@ -6,7 +6,9 @@ __pycache__/
 
 # Virtualenv
 venv/
-.venv/
+# .venv is a symlink to .venv.nosync (iCloud skips *.nosync), see SERBITO-356
+.venv
+.venv.nosync/
 env/
 
 # Django

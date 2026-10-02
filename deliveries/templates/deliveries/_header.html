@@ -19,10 +19,24 @@
           <a href="{% url 'deliveries:profile' %}" role="menuitem">{% trans "Store" %}</a>
           <a href="{% url 'deliveries:deleted' %}" role="menuitem">{% trans "Deleted orders" %}</a>
           <a href="{% url 'deliveries:api_docs' %}" role="menuitem">{% trans "Integration API" %}</a>
+          {% if shop_quota %}
+            <div class="menu-sep"></div>
+            <div class="quota" role="group" aria-label="{% trans 'Customer messages' %}">
+              <div class="quota-title">{% trans "Customer messages" %}</div>
+              {% for q in shop_quota.rows %}
+                <div class="quota-row">
+                  <span class="quota-name quota-name--wide">{{ q.label }}</span>
+                  <span class="quota-bar"><span class="quota-fill" style="width:{{ q.pct }}%"></span></span>
+                  <span class="quota-num">{% blocktrans with used=q.used limit=q.limit %}{{ used }} of {{ limit }}{% endblocktrans %}</span>
+                </div>
+              {% endfor %}
+              {% if shop_quota.trial %}<a class="quota-more" href="{% url 'deliveries:profile' %}">{% trans "Trial limits — how to get verified" %}</a>{% endif %}
+            </div>
+          {% endif %}
           {% if free_quota %}
             <div class="menu-sep"></div>
             <div class="quota" role="group" aria-label="{% trans 'Free quota' %}">
-              <div class="quota-title">{% trans "Free quota left" %}</div>
+              <div class="quota-title">{% trans "Free quota left" %} · {% trans "platform" %}</div>
               {% for q in free_quota %}
                 <div class="quota-row">
                   <span class="quota-name">{{ q.label }}</span>

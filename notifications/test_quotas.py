@@ -38,6 +38,13 @@ from notifications.quotas import (
 
 pytestmark = pytest.mark.django_db
 
+
+def _tomorrow() -> str:
+    """Manual ETA date that is always in the future (SERBITO-356 rejects a past ETA)."""
+    from common.timewindow import BELGRADE
+
+    return str(timezone.now().astimezone(BELGRADE).date() + timedelta(days=1))
+
 MAPS_OK = "integrations.testing.FakeMapsProvider"
 ROUTES_OK = "integrations.testing.FakeRoutesProvider"
 MSG_OK = "integrations.testing.FakeMessagingProvider"
@@ -325,7 +332,9 @@ def test_start_view_shows_quota_error_in_serbian(client):
     client.force_login(shop.owner)
     client.cookies["django_language"] = "sr"
     resp = client.post(
-        f"/app/dostava/{delivery.pk}/start/", {"eta_time": "16:00"}, follow=True
+        f"/app/dostava/{delivery.pk}/start/",
+        {"eta_time": "16:00", "eta_date": _tomorrow()},
+        follow=True,
     )
     body = resp.content.decode()
     assert "Dostignut je dnevni limit poruka (0 dnevno)" in body
@@ -448,7 +457,7 @@ def test_message_uses_sanitized_quoted_shop_name():
     start_delivery(_delivery(shop))
     _to, text = FakeMessagingProvider.sent[0]
     assert "evil" not in text and "064 123" not in text
-    assert text.startswith('Your order from "Posta Srbije: carina na ili xxx')
+    assert text.startswith('Vaša porudžbina iz "Posta Srbije: carina na ili xxx')
     quoted = text.split('"')[1]
     assert len(quoted) <= SHOP_NAME_MAX_LEN
 
@@ -456,7 +465,7 @@ def test_message_uses_sanitized_quoted_shop_name():
 def test_message_falls_back_when_name_is_all_link():
     shop = _shop(name="https://evil.com")
     start_delivery(_delivery(shop))
-    assert FakeMessagingProvider.sent[0][1].startswith('Your order from "Javi" is on its way')
+    assert FakeMessagingProvider.sent[0][1].startswith('Vaša porudžbina iz "Javi" je u dostavi')
 
 
 def test_rating_text_in_serbian_is_quoted():
@@ -464,7 +473,7 @@ def test_rating_text_in_serbian_is_quoted():
     TrackingToken.objects.filter(delivery=delivery).update(
         expires_at=timezone.now() + timedelta(days=1)
     )
-    with translation.override("sr"):
+    with translation.override("sr-latn"):
         send_rating_request(delivery)
     assert 'Kako je prošla dostava iz "Pekara Mika"?' in FakeMessagingProvider.sent[-1][1]
 

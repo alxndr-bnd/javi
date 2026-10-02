@@ -1,5 +1,4 @@
 import hashlib
-from datetime import datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -13,11 +12,17 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from common.phone import InvalidPhone, normalize_phone
-from common.timewindow import BELGRADE, format_eta
+from common.timewindow import BELGRADE, format_eta, format_eta_label
 from notifications.models import Notification, OptOut
 from notifications.quotas import QuotaExceeded, shop_usage
 
-from .forms import DeliveryForm, ManualEtaForm, RecipientPhoneForm, ShopOriginForm
+from .forms import (
+    DeliveryEditForm,
+    DeliveryForm,
+    ManualEtaForm,
+    RecipientPhoneForm,
+    ShopOriginForm,
+)
 from .models import ApiKey, Delivery
 from .services import (
     compute_eta,
@@ -30,6 +35,7 @@ from .services import (
     set_shop_origin,
     soft_delete,
     start_delivery,
+    update_delivery,
 )
 
 
@@ -122,6 +128,7 @@ class ShopProfileView(LoginRequiredMixin, View):
             initial={
                 "name": shop.name,
                 "address": shop.origin_address,
+                "contact_phone": shop.contact_phone_display,
                 "webhook_url": shop.webhook_url,
                 # webhook_secret не отдаём обратно в форму (JAVI-10) — только «задан/не задан».
             }
@@ -136,13 +143,14 @@ class ShopProfileView(LoginRequiredMixin, View):
         if form.is_valid():
             # Название + настройки вебхука сохраняем всегда (независимо от геокода адреса).
             shop.name = form.cleaned_data["name"]
+            shop.contact_phone = form.cleaned_data["contact_phone"]
             shop.webhook_url = form.cleaned_data["webhook_url"]
             # Секрет — только запись: пустое поле оставляет сохранённый, галочка удаляет.
             if form.cleaned_data["clear_webhook_secret"]:
                 shop.webhook_secret = ""
             elif form.cleaned_data["webhook_secret"]:
                 shop.webhook_secret = form.cleaned_data["webhook_secret"]
-            shop.save(update_fields=["name", "webhook_url", "webhook_secret"])
+            shop.save(update_fields=["name", "contact_phone", "webhook_url", "webhook_secret"])
             if set_shop_origin(shop, form.cleaned_data["address"]):
                 messages.success(request, _("Saved."))
                 return redirect("deliveries:profile")  # PRG
@@ -218,12 +226,13 @@ class DeliveryCreateView(LoginRequiredMixin, View):
         form = DeliveryForm(request.POST)
         if form.is_valid():
             phone = form.cleaned_data["phone_result"]
-            _new, geocoded = create_delivery(
+            new, geocoded = create_delivery(
                 request.user.shop,
                 recipient_name=form.cleaned_data["recipient_name"],
                 phone=phone,
                 dest_address=form.cleaned_data["dest_address"],
                 description=form.cleaned_data["description"],
+                language=form.cleaned_data["recipient_language"],
             )
             messages.success(request, _("Delivery added."))
             if phone.is_risky:
@@ -231,8 +240,13 @@ class DeliveryCreateView(LoginRequiredMixin, View):
             if not geocoded:
                 messages.warning(
                     request,
-                    _("We could not recognize the address — please check it later."),
+                    _("We could not recognize the address — check it with “Edit” on the card."),
                 )
+            if request.POST.get("notify_now"):
+                # «Сохранить и уведомить» (SERBITO-356): сразу «готова» и экран подтверждения
+                # ETA — без «Označi spremno» и «Dostava je počela» на карточке.
+                mark_ready(new)
+                return confirm_eta_page(request, new)
             return redirect("deliveries:list")
         return render(request, self.template_name, {"form": form})
 
@@ -243,6 +257,66 @@ class DeliveryCreateView(LoginRequiredMixin, View):
             messages.info(request, _("First set your store address."))
             return redirect("deliveries:profile")
         return None
+
+
+class DeliveryEditView(LoginRequiredMixin, View):
+    """«Izmeni»: правка доставки, пока она не завершена (SERBITO-356).
+
+    Раньше неверный адрес или номер означал «удалить и завести заново». Сообщения не шлёт.
+    """
+
+    template_name = "deliveries/delivery_edit.html"
+
+    def _delivery(self, request, pk):
+        shop = getattr(request.user, "shop", None)
+        return get_object_or_404(Delivery, pk=pk, shop=shop, deleted_at__isnull=True)
+
+    def _closed(self, request, delivery):
+        if delivery.status != Delivery.Status.DELIVERED:
+            return None
+        messages.info(request, _("A delivered order can't be edited."))
+        return redirect("deliveries:list")
+
+    def get(self, request, pk):
+        delivery = self._delivery(request, pk)
+        closed = self._closed(request, delivery)
+        if closed is not None:
+            return closed
+        form = DeliveryEditForm(delivery=delivery)
+        return render(request, self.template_name, {"form": form, "delivery": delivery})
+
+    def post(self, request, pk):
+        delivery = self._delivery(request, pk)
+        closed = self._closed(request, delivery)
+        if closed is not None:
+            return closed
+        form = DeliveryEditForm(request.POST, delivery=delivery)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form, "delivery": delivery})
+        data = form.cleaned_data
+        result = update_delivery(
+            delivery,
+            recipient_name=data["recipient_name"],
+            phone=data["phone_result"],
+            dest_address=data["dest_address"],
+            description=data["description"],
+            language=data["recipient_language"],
+            eta_at=data["eta_at"],
+        )
+        if not result.changed:
+            messages.info(request, _("Nothing changed."))
+            return redirect("deliveries:list")
+        messages.success(request, _("Delivery updated."))
+        if delivery.status == Delivery.Status.ON_THE_WAY:
+            messages.info(request, _("Messages already sent are not sent again."))
+        if "recipient_phone" in result.changed and data["phone_result"].is_risky:
+            messages.warning(request, _("The number is not a Serbian mobile — please check."))
+        if not result.geocoded:
+            messages.warning(
+                request,
+                _("We could not recognize the address — check it with “Edit” on the card."),
+            )
+        return redirect("deliveries:list")
 
 
 class RecipientLookupView(LoginRequiredMixin, View):
@@ -265,8 +339,35 @@ class RecipientLookupView(LoginRequiredMixin, View):
         if last is None:
             return JsonResponse({"found": False})
         return JsonResponse(
-            {"found": True, "name": last.recipient_name, "address": last.dest_address}
+            {
+                "found": True,
+                "name": last.recipient_name,
+                "address": last.dest_address,
+                "language": last.recipient_language,
+            }
         )
+
+
+def confirm_eta_page(request, delivery):
+    """Экран «Potvrdi i obavesti»: рассчитанное ETA (now + путь + запас) или ручной ввод."""
+    eta = compute_eta(delivery)
+    computed = format_eta_label(eta) if eta else None
+    initial = (
+        {"eta_time": format_eta(eta), "eta_date": eta.astimezone(BELGRADE).date()}
+        if eta
+        else {"eta_date": timezone.now().astimezone(BELGRADE).date()}
+    )
+    reason = None if computed else eta_unavailable_reason(delivery)
+    return render(
+        request,
+        "deliveries/delivery_confirm_eta.html",
+        {
+            "form": ManualEtaForm(initial=initial),
+            "delivery": delivery,
+            "computed_eta": computed,
+            "eta_reason": reason,
+        },
+    )
 
 
 class DeliveryStartView(LoginRequiredMixin, View):
@@ -283,24 +384,31 @@ class DeliveryStartView(LoginRequiredMixin, View):
             form = ManualEtaForm(request.POST)
             if not form.is_valid():
                 return render(request, self.template_name, {"form": form, "delivery": delivery})
-            today = timezone.now().astimezone(BELGRADE).date()
-            manual_eta = datetime.combine(today, form.cleaned_data["eta_time"], tzinfo=BELGRADE)
+            manual_eta = form.cleaned_data["eta_at"]
             try:
                 result = start_delivery(delivery, manual_eta=manual_eta)
             except QuotaExceeded as exc:
                 # Лимит отправки: доставка не стартовала, клиент не уведомлён.
                 messages.error(request, exc.message)
                 return redirect("deliveries:list")
+            # Ровно одно сообщение об исходе (SERBITO-356): раньше при сбое отправки рядом
+            # стояли «Клиент уведомлён» и «Сообщение не отправлено».
             if result.already:
                 messages.info(request, _("Delivery is already in progress."))
-            elif result.ok:
+            elif result.ok and result.sent:
                 messages.success(
                     request,
                     _("Customer notified · arriving by %(time)s")
-                    % {"time": format_eta(result.eta_at)},
+                    % {"time": format_eta_label(result.eta_at)},
                 )
-                if not result.sent:
-                    messages.warning(request, _("Message not sent — try again later."))
+            elif result.ok:
+                messages.warning(
+                    request,
+                    _(
+                        "Delivery started, but the message to the customer was not sent. "
+                        "Check the number and resend it from the card."
+                    ),
+                )
             return redirect("deliveries:list")
 
         # Шаг 1: уже стартовала? — не дублируем.
@@ -308,21 +416,7 @@ class DeliveryStartView(LoginRequiredMixin, View):
             messages.info(request, _("Delivery is already in progress."))
             return redirect("deliveries:list")
 
-        # Шаг 1: считаем ETA (now + время в пути + запас) и показываем экран подтверждения.
-        eta = compute_eta(delivery)
-        computed = format_eta(eta) if eta else None
-        initial = {"eta_time": computed} if computed else {}
-        reason = None if computed else eta_unavailable_reason(delivery)
-        return render(
-            request,
-            self.template_name,
-            {
-                "form": ManualEtaForm(initial=initial),
-                "delivery": delivery,
-                "computed_eta": computed,
-                "eta_reason": reason,
-            },
-        )
+        return confirm_eta_page(request, delivery)
 
 
 class DeliveryResendView(LoginRequiredMixin, View):

@@ -44,6 +44,16 @@
           {% trans "Starting point for delivery time calculation." %}
         </div>
       </div>
+      <div class="field">
+        <label for="{{ form.contact_phone.id_for_label }}">{{ form.contact_phone.label }}</label>
+        {{ form.contact_phone }}
+        {% if form.contact_phone.errors %}
+          <ul class="errorlist">{% for e in form.contact_phone.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div class="muted" style="font-size:13px;margin-top:6px">
+          {% trans "Shown to customers on the tracking page, so they can reach you. Not sent in messages." %}
+        </div>
+      </div>
 
       <div class="field">
         <label for="{{ form.webhook_url.id_for_label }}">{{ form.webhook_url.label }}</label>

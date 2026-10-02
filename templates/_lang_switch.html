@@ -2,5 +2,5 @@
   {% csrf_token %}
   <input type="hidden" name="next" value="{{ request.path }}">
   <button type="submit" name="language" value="en" class="lang-link{% if cur == 'en' %} is-active{% endif %}">EN</button>
-  <button type="submit" name="language" value="sr" class="lang-link{% if cur == 'sr' %} is-active{% endif %}">SR</button>
+  <button type="submit" name="language" value="sr-latn" class="lang-link{% if cur == 'sr-latn' %} is-active{% endif %}">SR</button>
 </form>

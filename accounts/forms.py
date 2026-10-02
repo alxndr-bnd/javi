@@ -19,6 +19,16 @@ class RegisterForm(UserCreationForm):
         max_length=SHOP_NAME_MAX_LEN,
         widget=forms.TextInput(attrs={"autocomplete": "organization"}),
     )
+    # Адрес магазина — сразу при регистрации (SERBITO-356): без него первая доставка
+    # уводила в «Prodavnica». Необязателен: можно задать и позже.
+    store_address = forms.CharField(
+        label=_("Store address (optional)"),
+        max_length=300,
+        required=False,
+        widget=forms.TextInput(
+            attrs={"autocomplete": "street-address", "placeholder": "Knez Mihailova 6, Beograd"}
+        ),
+    )
 
     class Meta:
         model = User

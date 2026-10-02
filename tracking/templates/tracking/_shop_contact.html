@@ -1,0 +1,7 @@
+{% load i18n %}{% comment %}Shop contact for customers (SERBITO-356): the shop's own phone, if it set one.{% endcomment %}
+{% if shop_phone %}
+  <p class="track-contact">
+    {% blocktrans with shop=shop_name %}Questions about the order? Call {{ shop }}:{% endblocktrans %}
+    <a href="tel:{{ shop_phone }}">{{ shop_phone_display }}</a>
+  </p>
+{% endif %}

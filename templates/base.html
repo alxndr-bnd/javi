@@ -1,6 +1,6 @@
 {% load static i18n %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ html_lang }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -40,17 +40,23 @@
   </div>
   {% block body %}{% endblock %}
   {# «Вы уверены?» для форм с data-confirm: вместо inline onsubmit, который запрещает CSP. #}
+  {# data-submit-once: второй клик/Enter не шлёт форму повторно (SERBITO-356; сервер тоже защищён). #}
   <script nonce="{{ csp_nonce }}">
     document.addEventListener("submit", function (e) {
-      var msg = e.target.getAttribute && e.target.getAttribute("data-confirm");
-      if (msg && !window.confirm(msg)) e.preventDefault();
+      var form = e.target;
+      var msg = form.getAttribute && form.getAttribute("data-confirm");
+      if (msg && !window.confirm(msg)) { e.preventDefault(); return; }
+      if (form.hasAttribute && form.hasAttribute("data-submit-once")) {
+        if (form.getAttribute("data-submitted")) { e.preventDefault(); return; }
+        form.setAttribute("data-submitted", "1");
+      }
     });
   </script>
   {# Analytics consent (SERBITO-321): the footer button reopens the banner from /consent.js. #}
   {# Customer pages (/t/<token>/) override this block to empty, like analytics above. #}
   {% block consent %}
   <footer class="site-foot">
-    <a href="/privacy.html#{{ LANGUAGE_CODE }}">{% trans "Privacy policy" %}</a> ·
+    <a href="/privacy.html#{{ lang_base }}">{% trans "Privacy policy" %}</a> ·
     <button type="button" class="link-btn" data-consent-open>{% trans "Cookie settings" %}</button>
   </footer>
   <script nonce="{{ csp_nonce }}" src="/consent.js" defer></script>

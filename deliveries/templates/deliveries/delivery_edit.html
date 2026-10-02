@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Edit delivery" %} · Javi{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="topbar">
+    <a href="{% url 'deliveries:list' %}" class="logo">javi<span>.</span></a>
+    <a href="{% url 'deliveries:list' %}" class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:13px">← {% trans "Deliveries" %}</a>
+  </div>
+
+  <div class="h">{% trans "Edit delivery" %} <span class="muted">#{{ delivery.id }}</span></div>
+
+  <div class="card">
+    {% if delivery.status == "on_the_way" %}
+      <p class="muted" style="font-size:13px;margin:0 0 12px">{% trans "The customer has already been notified. Saving changes does not send a new message." %}</p>
+    {% endif %}
+    <form method="post" novalidate data-submit-once>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">{% trans "Save changes" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

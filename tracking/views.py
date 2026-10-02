@@ -3,15 +3,16 @@ from functools import wraps
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from django.views.decorators.http import require_POST
 
 from common import ratelimit
 from common.client_ip import client_ip
-from common.timewindow import format_eta
+from common.timewindow import format_eta_label
 from deliveries.models import Delivery, Rating, TrackingToken
+from deliveries.services import customer_language
 
 # Порядок шагов степпера и какой статус доставки на каком шаге.
 _STEPS = [
@@ -19,7 +20,8 @@ _STEPS = [
     (_l("In delivery"), Delivery.Status.ON_THE_WAY),
     (_l("Delivered"), Delivery.Status.DELIVERED),
 ]
-_RATEABLE = (Delivery.Status.ON_THE_WAY, Delivery.Status.DELIVERED)
+# Оценить можно только доставленный заказ (SERBITO-356): раньше звёзды были и «в пути».
+_RATEABLE = (Delivery.Status.DELIVERED,)
 
 
 def _stepper(status: str) -> list[dict]:
@@ -65,12 +67,46 @@ def rate_limited(view):
     return wrapper
 
 
+def _render(request, delivery, template, ctx, status=200):
+    """Customer page in the customer's language — the one their SMS was sent in (SERBITO-356)."""
+    with customer_language(delivery):
+        response = render(request, template, ctx, status=status)
+        response.headers["Content-Language"] = translation.get_language()
+    return response
+
+
+def _token_obj(token: str) -> TrackingToken:
+    """TrackingToken по токену (с доставкой и магазином) или 404 — дружелюбная страница."""
+    return get_object_or_404(TrackingToken.objects.select_related("delivery__shop"), token=token)
+
+
 def _active_token(token: str):
     """TrackingToken или None если истёк."""
-    token_obj = get_object_or_404(TrackingToken, token=token)
+    token_obj = _token_obj(token)
     if token_obj.expires_at and token_obj.expires_at < timezone.now():
         return None
     return token_obj
+
+
+def _shop_ctx(shop) -> dict:
+    """Чей это заказ и как связаться с магазином (SERBITO-356): имя и телефон, если задан."""
+    return {
+        "shop_name": shop.name,
+        "shop_phone": shop.contact_phone,
+        "shop_phone_display": shop.contact_phone_display,
+    }
+
+
+def _expired(request, token: str):
+    """410 «ссылка истекла» — с названием магазина и его контактом, на языке клиента."""
+    delivery = _token_obj(token).delivery
+    return _render(
+        request,
+        delivery,
+        "tracking/status.html",
+        {"expired": True, **_shop_ctx(delivery.shop)},
+        status=410,
+    )
 
 
 @rate_limited
@@ -78,21 +114,27 @@ def status(request, token):
     """Публичная брендовая страница статуса (без логина). Минимум данных (NFR-3)."""
     token_obj = _active_token(token)
     if token_obj is None:
-        return render(request, "tracking/status.html", {"expired": True}, status=410)
+        return _expired(request, token)
 
     delivery = token_obj.delivery
     rating = getattr(delivery, "rating", None)
     ctx = {
-        "shop_name": delivery.shop.name,
+        **_shop_ctx(delivery.shop),
         "status": delivery.status,
         "steps": _stepper(delivery.status),
         "dest_city": delivery.dest_city,
-        "eta": format_eta(delivery.eta_at) if delivery.eta_at else None,
+        "eta": format_eta_label(delivery.eta_at) if delivery.eta_at else None,
+        # ETA прошло, а доставка ещё в пути — «немного опаздывает», а не «stiže do 14:00».
+        "late": bool(
+            delivery.status == Delivery.Status.ON_THE_WAY
+            and delivery.eta_at
+            and delivery.eta_at < timezone.now()
+        ),
         "token": token,
         "rating": rating.value if rating else None,
         "can_rate": delivery.status in _RATEABLE and rating is None,
     }
-    return render(request, "tracking/status.html", ctx)
+    return _render(request, delivery, "tracking/status.html", ctx)
 
 
 @rate_limited
@@ -101,7 +143,7 @@ def mark_received(request, token):
     """Получатель подтверждает получение заказа → статус delivered (идемпотентно)."""
     token_obj = _active_token(token)
     if token_obj is None:
-        return render(request, "tracking/status.html", {"expired": True}, status=410)
+        return _expired(request, token)
     delivery = token_obj.delivery
     if delivery.status != Delivery.Status.DELIVERED:
         delivery.status = Delivery.Status.DELIVERED
@@ -123,11 +165,12 @@ def unsubscribe(request, token):
 
     token_obj = _active_token(token)
     if token_obj is None:
-        return render(request, "tracking/status.html", {"expired": True}, status=410)
+        return _expired(request, token)
+    delivery = token_obj.delivery
     if request.method != "POST":
-        return render(request, "tracking/unsubscribe_confirm.html", {"token": token})
-    opt_out(token_obj.delivery.recipient_phone)
-    return render(request, "tracking/unsubscribed.html", {})
+        return _render(request, delivery, "tracking/unsubscribe_confirm.html", {"token": token})
+    opt_out(delivery.recipient_phone)
+    return _render(request, delivery, "tracking/unsubscribed.html", {})
 
 
 @rate_limited
@@ -136,13 +179,13 @@ def rate(request, token):
     """Захват оценки 1–5 с публичной страницы (без логина, без дублей)."""
     token_obj = _active_token(token)
     if token_obj is None:
-        return render(request, "tracking/status.html", {"expired": True}, status=410)
+        return _expired(request, token)
     try:
         value = int(request.POST.get("value", ""))
     except (TypeError, ValueError):
         value = 0
-    if 1 <= value <= 5:
-        delivery = token_obj.delivery
+    delivery = token_obj.delivery
+    if 1 <= value <= 5 and delivery.status in _RATEABLE:
         _rating, created = Rating.objects.update_or_create(
             delivery=delivery, defaults={"value": value}
         )

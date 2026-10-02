@@ -2,11 +2,14 @@
 
 import json
 import re
+from datetime import timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
+from django.utils import timezone
 
+from common.timewindow import BELGRADE
 from deliveries.models import ApiIdempotencyKey, ApiKey, Delivery, Shop, hash_api_key
 from integrations.testing import FakeMessagingProvider
 
@@ -34,6 +37,12 @@ def _shop_and_key(email="api@shop.rs", name="API Shop"):
     shop = _make_shop_with_origin(email, name)
     _obj, full_key = ApiKey.generate(shop)
     return shop, full_key
+
+
+def _tomorrow_iso(hhmm: str) -> str:
+    """ISO datetime for tomorrow at hh:mm (Belgrade): a manual ETA that is always in the future."""
+    tomorrow = timezone.now().astimezone(BELGRADE).date() + timedelta(days=1)
+    return f"{tomorrow.isoformat()}T{hhmm}"
 
 
 def _auth(key):
@@ -251,7 +260,8 @@ def test_start_with_manual_eta(client):
     ).json()
     resp = client.post(
         f"/api/v1/deliveries/{created['id']}/start",
-        data=json.dumps({"eta": "16:30"}), content_type="application/json", **_auth(key),
+        data=json.dumps({"eta": _tomorrow_iso("16:30")}), content_type="application/json",
+        **_auth(key),
     )
     assert resp.status_code == 200
     assert resp.json()["status"] == "out_for_delivery"

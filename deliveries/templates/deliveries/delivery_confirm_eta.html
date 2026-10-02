@@ -18,14 +18,24 @@
         <div class="muted" style="font-size:13px">{% trans "Estimated arrival time" %}</div>
         <div class="eta-big">{% trans "by" %} {{ computed_eta }}</div>
       </div>
-    {% else %}
+    {% elif eta_reason %}
       <div class="msg msg-error" style="margin-top:12px">
         {{ eta_reason }}
       </div>
     {% endif %}
 
-    <form method="post" action="{% url 'deliveries:start' delivery.pk %}" novalidate>
+    <form method="post" action="{% url 'deliveries:start' delivery.pk %}" novalidate data-submit-once>
       {% csrf_token %}
+      {% if form.non_field_errors %}
+        <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+      <div class="field">
+        <label for="{{ form.eta_date.id_for_label }}">{{ form.eta_date.label }}</label>
+        {{ form.eta_date }}
+        {% if form.eta_date.errors %}
+          <ul class="errorlist">{% for e in form.eta_date.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
       <div class="field">
         <label for="{{ form.eta_time.id_for_label }}">{{ form.eta_time.label }}</label>
         {{ form.eta_time }}

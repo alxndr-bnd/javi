@@ -21,6 +21,12 @@
       {% for e in form.store_name.errors %}<div class="errorlist">{{ e }}</div>{% endfor %}
     </div>
     <div class="field">
+      <label for="{{ form.store_address.id_for_label }}">{{ form.store_address.label }}</label>
+      {{ form.store_address }}
+      {% for e in form.store_address.errors %}<div class="errorlist">{{ e }}</div>{% endfor %}
+      <div class="muted" style="font-size:13px;margin-top:6px">{% trans "Where your deliveries start: we use it to estimate arrival times." %}</div>
+    </div>
+    <div class="field">
       <label for="{{ form.password1.id_for_label }}">{% trans "Password" %}</label>
       {{ form.password1 }}
       {% for e in form.password1.errors %}<div class="errorlist">{{ e }}</div>{% endfor %}

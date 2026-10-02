@@ -88,6 +88,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.template.context_processors.csp",  # {{ csp_nonce }} для <script>
                 "django.template.context_processors.i18n",
+                "common.i18n.language",  # html_lang (sr-Latn), lang_base (sr)
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "deliveries.context_processors.free_quota",
@@ -130,7 +131,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # i18n / время
 LANGUAGE_CODE = "en"  # дефолт — английский
-LANGUAGES = [("en", "English"), ("sr", "Srpski")]
+# Сербский — латиницей: `sr-latn` (каталог locale/sr_Latn). С `sr` Django брал свой
+# кириллический каталог, и ошибки форм шли кириллицей посреди латиницы (SERBITO-356).
+# Старая кука `sr` и Accept-Language `sr`/`sr-RS` сводятся к `sr-latn` сами.
+LANGUAGES = [("en", "English"), ("sr-latn", "Srpski")]
 LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "Europe/Belgrade"
 USE_I18N = True
