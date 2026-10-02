@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Javi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 23:37+0200\n"
+"POT-Creation-Date: 2026-10-02 23:39+0200\n"
 "PO-Revision-Date: 2026-06-07 01:30+0200\n"
 "Last-Translator: Javi <noreply@javi.serbito.rs>\n"
 "Language-Team: Serbian (Latin)\n"
@@ -21,20 +21,28 @@ msgstr ""
 msgid "Store name"
 msgstr "Naziv prodavnice"
 
-#: accounts/forms.py:42
+#: accounts/forms.py:25
+msgid "Store address (optional)"
+msgstr "Adresa prodavnice (opciono)"
+
+#: accounts/forms.py:52
 msgid "An account with this email already exists."
 msgstr ""
 
-#: accounts/forms.py:51
+#: accounts/forms.py:61
 #, python-format
 msgid "Too many failed sign-in attempts. Try again in %(minutes)d minutes."
 msgstr ""
 "Previše neuspešnih pokušaja prijave. Pokušajte ponovo za %(minutes)d minuta."
 
-#: accounts/views.py:45
+#: accounts/views.py:47
 msgid "Too many new accounts from your network today. Try again tomorrow."
 msgstr ""
 "Danas je sa vaše mreže otvoreno previše naloga. Pokušajte ponovo sutra."
+
+#: accounts/views.py:74
+msgid "We could not recognize the store address. Check it in “Store”."
+msgstr "Nismo prepoznali adresu prodavnice. Proverite je u delu „Prodavnica“."
 
 #: common/text.py:85
 msgid ""
@@ -350,7 +358,7 @@ msgstr ""
 msgid "Missing or invalid API key."
 msgstr ""
 
-#: deliveries/forms.py:13 deliveries/views.py:421
+#: deliveries/forms.py:13 deliveries/views.py:430
 msgid "Invalid number. E.g. 064 123 4567"
 msgstr "Neispravan broj. Npr. 064 123 4567"
 
@@ -703,10 +711,13 @@ msgstr "Kupac je već obavešten. Čuvanje izmena ne šalje novu poruku."
 msgid "Save changes"
 msgstr "Sačuvaj izmene"
 
-#: deliveries/templates/deliveries/delivery_form.html:28
-#: deliveries/templates/deliveries/shop_profile.html:87
-msgid "Save"
-msgstr "Sačuvaj"
+#: deliveries/templates/deliveries/delivery_form.html:29
+msgid "Save and notify the customer now"
+msgstr "Sačuvaj i odmah obavesti kupca"
+
+#: deliveries/templates/deliveries/delivery_form.html:30
+msgid "Save for later"
+msgstr "Sačuvaj za kasnije"
 
 #: deliveries/templates/deliveries/delivery_list.html:23
 #, python-format
@@ -758,6 +769,10 @@ msgid ""
 msgstr ""
 "Tajna je sačuvana i više se ne prikazuje. Ostavite polje prazno da je "
 "zadržite."
+
+#: deliveries/templates/deliveries/shop_profile.html:87
+msgid "Save"
+msgstr "Sačuvaj"
 
 #: deliveries/templates/deliveries/shop_profile.html:92
 msgid "Customer messages"
@@ -856,44 +871,44 @@ msgstr ""
 msgid "Delivery added."
 msgstr "Dostava je dodata."
 
-#: deliveries/views.py:239 deliveries/views.py:308
+#: deliveries/views.py:239 deliveries/views.py:313
 msgid "The number is not a Serbian mobile — please check."
 msgstr "Broj nije srpski mobilni — proverite ga."
 
-#: deliveries/views.py:243 deliveries/views.py:312
+#: deliveries/views.py:243 deliveries/views.py:317
 msgid "We could not recognize the address — check it with “Edit” on the card."
 msgstr "Nismo prepoznali adresu — proverite je preko „Izmeni“ na kartici."
 
-#: deliveries/views.py:252
+#: deliveries/views.py:257
 msgid "First set your store address."
 msgstr "Prvo podesite adresu prodavnice."
 
-#: deliveries/views.py:272
+#: deliveries/views.py:277
 msgid "A delivered order can't be edited."
 msgstr "Isporučena porudžbina ne može da se menja."
 
-#: deliveries/views.py:302
+#: deliveries/views.py:307
 msgid "Nothing changed."
 msgstr "Ništa nije promenjeno."
 
-#: deliveries/views.py:304
+#: deliveries/views.py:309
 msgid "Delivery updated."
 msgstr "Dostava je izmenjena."
 
-#: deliveries/views.py:306
+#: deliveries/views.py:311
 msgid "Messages already sent are not sent again."
 msgstr "Već poslate poruke se ne šalju ponovo."
 
-#: deliveries/views.py:370 deliveries/views.py:389
+#: deliveries/views.py:397 deliveries/views.py:416
 msgid "Delivery is already in progress."
 msgstr "Dostava je već u toku."
 
-#: deliveries/views.py:374
+#: deliveries/views.py:401
 #, python-format
 msgid "Customer notified · arriving by %(time)s"
 msgstr "Kupac obavešten · stiže do %(time)s"
 
-#: deliveries/views.py:381
+#: deliveries/views.py:408
 msgid ""
 "Delivery started, but the message to the customer was not sent. Check the "
 "number and resend it from the card."
@@ -901,27 +916,27 @@ msgstr ""
 "Dostava je počela, ali poruka kupcu nije poslata. Proverite broj i pošaljite "
 "je ponovo sa kartice."
 
-#: deliveries/views.py:429
+#: deliveries/views.py:438
 msgid "Unable to resend."
 msgstr "Nije moguće ponovo poslati."
 
-#: deliveries/views.py:431
+#: deliveries/views.py:440
 msgid "Message resent."
 msgstr "Poruka je ponovo poslata."
 
-#: deliveries/views.py:433
+#: deliveries/views.py:442
 msgid "Message not sent — check the number."
 msgstr "Poruka nije poslata — proverite broj."
 
-#: deliveries/views.py:444
+#: deliveries/views.py:453
 msgid "Marked as delivered."
 msgstr "Označeno kao isporučeno."
 
-#: deliveries/views.py:476
+#: deliveries/views.py:485
 msgid "Delivery deleted."
 msgstr "Dostava je obrisana."
 
-#: deliveries/views.py:501
+#: deliveries/views.py:510
 msgid "Delivery restored."
 msgstr "Dostava je vraćena."
 
@@ -1019,7 +1034,7 @@ msgid "Home page"
 msgstr "Početna stranica"
 
 #: templates/accounts/login.html:3 templates/accounts/login.html:7
-#: templates/accounts/login.html:21 templates/accounts/register.html:37
+#: templates/accounts/login.html:21 templates/accounts/register.html:43
 msgid "Sign in"
 msgstr "Prijava"
 
@@ -1027,7 +1042,7 @@ msgstr "Prijava"
 msgid "Email"
 msgstr "Email"
 
-#: templates/accounts/login.html:18 templates/accounts/register.html:24
+#: templates/accounts/login.html:18 templates/accounts/register.html:30
 msgid "Password"
 msgstr "Lozinka"
 
@@ -1036,15 +1051,19 @@ msgid "No account yet?"
 msgstr ""
 
 #: templates/accounts/login.html:25 templates/accounts/register.html:3
-#: templates/accounts/register.html:7 templates/accounts/register.html:33
+#: templates/accounts/register.html:7 templates/accounts/register.html:39
 msgid "Create an account"
 msgstr ""
 
-#: templates/accounts/register.html:29
+#: templates/accounts/register.html:27
+msgid "Where your deliveries start: we use it to estimate arrival times."
+msgstr "Odavde kreću vaše dostave: po njoj procenjujemo vreme dolaska."
+
+#: templates/accounts/register.html:35
 msgid "Confirm password"
 msgstr ""
 
-#: templates/accounts/register.html:36
+#: templates/accounts/register.html:42
 msgid "Already have an account?"
 msgstr ""
 

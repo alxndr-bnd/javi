@@ -226,7 +226,7 @@ class DeliveryCreateView(LoginRequiredMixin, View):
         form = DeliveryForm(request.POST)
         if form.is_valid():
             phone = form.cleaned_data["phone_result"]
-            _new, geocoded = create_delivery(
+            new, geocoded = create_delivery(
                 request.user.shop,
                 recipient_name=form.cleaned_data["recipient_name"],
                 phone=phone,
@@ -242,6 +242,11 @@ class DeliveryCreateView(LoginRequiredMixin, View):
                     request,
                     _("We could not recognize the address — check it with “Edit” on the card."),
                 )
+            if request.POST.get("notify_now"):
+                # «Сохранить и уведомить» (SERBITO-356): сразу «готова» и экран подтверждения
+                # ETA — без «Označi spremno» и «Dostava je počela» на карточке.
+                mark_ready(new)
+                return confirm_eta_page(request, new)
             return redirect("deliveries:list")
         return render(request, self.template_name, {"form": form})
 
@@ -343,6 +348,28 @@ class RecipientLookupView(LoginRequiredMixin, View):
         )
 
 
+def confirm_eta_page(request, delivery):
+    """Экран «Potvrdi i obavesti»: рассчитанное ETA (now + путь + запас) или ручной ввод."""
+    eta = compute_eta(delivery)
+    computed = format_eta_label(eta) if eta else None
+    initial = (
+        {"eta_time": format_eta(eta), "eta_date": eta.astimezone(BELGRADE).date()}
+        if eta
+        else {"eta_date": timezone.now().astimezone(BELGRADE).date()}
+    )
+    reason = None if computed else eta_unavailable_reason(delivery)
+    return render(
+        request,
+        "deliveries/delivery_confirm_eta.html",
+        {
+            "form": ManualEtaForm(initial=initial),
+            "delivery": delivery,
+            "computed_eta": computed,
+            "eta_reason": reason,
+        },
+    )
+
+
 class DeliveryStartView(LoginRequiredMixin, View):
     """«Dostava je počela»: 1) показать рассчитанное время → 2) подтверждение шлёт уведомление."""
 
@@ -389,25 +416,7 @@ class DeliveryStartView(LoginRequiredMixin, View):
             messages.info(request, _("Delivery is already in progress."))
             return redirect("deliveries:list")
 
-        # Шаг 1: считаем ETA (now + время в пути + запас) и показываем экран подтверждения.
-        eta = compute_eta(delivery)
-        computed = format_eta_label(eta) if eta else None
-        initial = (
-            {"eta_time": format_eta(eta), "eta_date": eta.astimezone(BELGRADE).date()}
-            if eta
-            else {"eta_date": timezone.now().astimezone(BELGRADE).date()}
-        )
-        reason = None if computed else eta_unavailable_reason(delivery)
-        return render(
-            request,
-            self.template_name,
-            {
-                "form": ManualEtaForm(initial=initial),
-                "delivery": delivery,
-                "computed_eta": computed,
-                "eta_reason": reason,
-            },
-        )
+        return confirm_eta_page(request, delivery)
 
 
 class DeliveryResendView(LoginRequiredMixin, View):

@@ -25,7 +25,9 @@
           {% endif %}
         </div>
       {% endfor %}
-      <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+      {# The courier is leaving now: save and go straight to the ETA confirmation (SERBITO-356). #}
+      <button type="submit" name="notify_now" value="1" class="btn btn-primary">{% trans "Save and notify the customer now" %}</button>
+      <button type="submit" class="btn btn-ghost" style="margin-top:8px">{% trans "Save for later" %}</button>
     </form>
   </div>
 </div>

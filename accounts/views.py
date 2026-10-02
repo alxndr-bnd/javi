@@ -1,6 +1,7 @@
 import logging
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import login
 from django.db import transaction
 from django.shortcuts import redirect
@@ -10,6 +11,7 @@ from django.views.generic import CreateView
 from common import ratelimit
 from common.client_ip import client_ip
 from deliveries.models import Shop
+from deliveries.services import set_shop_origin
 
 from .forms import RegisterForm
 
@@ -65,4 +67,10 @@ class RegisterView(CreateView):
             extra={"event": "shop.signup", "shop_id": shop.pk, "shop_name": shop.name},
         )
         login(self.request, user)
+        address = form.cleaned_data.get("store_address", "").strip()
+        if address and not set_shop_origin(shop, address):
+            messages.warning(
+                self.request,
+                _("We could not recognize the store address. Check it in “Store”."),
+            )
         return redirect(settings.LOGIN_REDIRECT_URL)
