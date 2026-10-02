@@ -58,6 +58,6 @@ def test_received_button_asks_first_and_is_gender_neutral(client):
     body = client.get(f"/t/{token.token}/").content.decode()
     root = parse_html(body)
     form = root.find("form", {"action": f"/t/{token.token}/primljeno/"})
-    assert form.attrs["data-confirm"].startswith("Potvrđujete da je porudžbina primljena?")
+    assert form.attrs["data-confirm"].startswith("Potvrđujete da ste primili porudžbinu?")
     assert form.find("button").text() == "Potvrdi prijem porudžbine"
     assert "Primio sam" not in body
