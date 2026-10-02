@@ -464,7 +464,7 @@ def test_rating_text_in_serbian_is_quoted():
     TrackingToken.objects.filter(delivery=delivery).update(
         expires_at=timezone.now() + timedelta(days=1)
     )
-    with translation.override("sr"):
+    with translation.override("sr-latn"):
         send_rating_request(delivery)
     assert 'Kako je prošla dostava iz "Pekara Mika"?' in FakeMessagingProvider.sent[-1][1]
 

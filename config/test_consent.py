@@ -135,15 +135,15 @@ def test_landing_footer_has_cookie_settings(client, shop):
 
 
 @pytest.mark.parametrize(
-    "lang, settings, privacy",
+    "lang, html_lang, settings, privacy",
     [
-        ("en", "Cookie settings", "Privacy policy"),
-        ("sr", "Podešavanja kolačića", "Politika privatnosti"),
+        ("en", "en", "Cookie settings", "Privacy policy"),
+        ("sr", "sr-Latn", "Podešavanja kolačića", "Politika privatnosti"),
     ],
 )
-def test_app_footer_in_app_language(client, shop, lang, settings, privacy):
+def test_app_footer_in_app_language(client, shop, lang, html_lang, settings, privacy):
     body = _page(client, shop, "app", lang)
-    assert f'<html lang="{lang}">' in body
+    assert f'<html lang="{html_lang}">' in body
     footer = body[body.index('<footer class="site-foot">') : body.index("</footer>")]
     assert f"data-consent-open>{settings}</button>" in footer
     assert f'<a href="/privacy.html#{lang}">{privacy}</a>' in footer
