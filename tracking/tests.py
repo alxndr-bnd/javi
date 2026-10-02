@@ -20,7 +20,7 @@ def _clear_cache():
     cache.clear()
 
 
-def _token(status=Delivery.Status.ON_THE_WAY, *, eta_minutes=20, city="Beograd"):
+def _token(status=Delivery.Status.ON_THE_WAY, *, eta_minutes=20, city="Beograd", language="en"):
     user = get_user_model().objects.create_user(email="t@shop.rs", password="pass12345")
     shop = Shop.objects.create(owner=user, name="Pizza Napoli")
     delivery = Delivery.objects.create(
@@ -29,6 +29,7 @@ def _token(status=Delivery.Status.ON_THE_WAY, *, eta_minutes=20, city="Beograd")
         recipient_phone="+381641234567",
         dest_address="Tajna adresa 5, Beograd",
         dest_city=city,
+        recipient_language=language,
         status=status,
         eta_at=timezone.now() + timedelta(minutes=eta_minutes) if eta_minutes else None,
     )
@@ -254,8 +255,8 @@ def _single_h1_in_main(root):
     ],
 )
 def test_status_page_structure_for_screen_readers(client, status, lang, title, spoken):
-    token = _token(status)
-    root = _tree(client.get(f"/t/{token.token}/", HTTP_ACCEPT_LANGUAGE=lang))
+    token = _token(status, language="sr-latn" if lang == "sr" else lang)
+    root = _tree(client.get(f"/t/{token.token}/"))
     h1 = _single_h1_in_main(root)
     assert title is None or h1 == title
     steps = root.find("ol", {"role": "list"})

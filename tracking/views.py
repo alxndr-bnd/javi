@@ -3,7 +3,7 @@ from functools import wraps
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from django.views.decorators.http import require_POST
@@ -12,6 +12,7 @@ from common import ratelimit
 from common.client_ip import client_ip
 from common.timewindow import format_eta
 from deliveries.models import Delivery, Rating, TrackingToken
+from deliveries.services import customer_language
 
 # Порядок шагов степпера и какой статус доставки на каком шаге.
 _STEPS = [
@@ -65,6 +66,14 @@ def rate_limited(view):
     return wrapper
 
 
+def _render(request, delivery, template, ctx, status=200):
+    """Customer page in the customer's language — the one their SMS was sent in (SERBITO-356)."""
+    with customer_language(delivery):
+        response = render(request, template, ctx, status=status)
+        response.headers["Content-Language"] = translation.get_language()
+    return response
+
+
 def _active_token(token: str):
     """TrackingToken или None если истёк."""
     token_obj = get_object_or_404(TrackingToken, token=token)
@@ -92,7 +101,7 @@ def status(request, token):
         "rating": rating.value if rating else None,
         "can_rate": delivery.status in _RATEABLE and rating is None,
     }
-    return render(request, "tracking/status.html", ctx)
+    return _render(request, delivery, "tracking/status.html", ctx)
 
 
 @rate_limited
@@ -124,10 +133,11 @@ def unsubscribe(request, token):
     token_obj = _active_token(token)
     if token_obj is None:
         return render(request, "tracking/status.html", {"expired": True}, status=410)
+    delivery = token_obj.delivery
     if request.method != "POST":
-        return render(request, "tracking/unsubscribe_confirm.html", {"token": token})
-    opt_out(token_obj.delivery.recipient_phone)
-    return render(request, "tracking/unsubscribed.html", {})
+        return _render(request, delivery, "tracking/unsubscribe_confirm.html", {"token": token})
+    opt_out(delivery.recipient_phone)
+    return _render(request, delivery, "tracking/unsubscribed.html", {})
 
 
 @rate_limited

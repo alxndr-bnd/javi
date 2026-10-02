@@ -224,6 +224,7 @@ class DeliveryCreateView(LoginRequiredMixin, View):
                 phone=phone,
                 dest_address=form.cleaned_data["dest_address"],
                 description=form.cleaned_data["description"],
+                language=form.cleaned_data["recipient_language"],
             )
             messages.success(request, _("Delivery added."))
             if phone.is_risky:
@@ -265,7 +266,12 @@ class RecipientLookupView(LoginRequiredMixin, View):
         if last is None:
             return JsonResponse({"found": False})
         return JsonResponse(
-            {"found": True, "name": last.recipient_name, "address": last.dest_address}
+            {
+                "found": True,
+                "name": last.recipient_name,
+                "address": last.dest_address,
+                "language": last.recipient_language,
+            }
         )
 
 

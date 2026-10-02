@@ -448,7 +448,7 @@ def test_message_uses_sanitized_quoted_shop_name():
     start_delivery(_delivery(shop))
     _to, text = FakeMessagingProvider.sent[0]
     assert "evil" not in text and "064 123" not in text
-    assert text.startswith('Your order from "Posta Srbije: carina na ili xxx')
+    assert text.startswith('Vaša porudžbina iz "Posta Srbije: carina na ili xxx')
     quoted = text.split('"')[1]
     assert len(quoted) <= SHOP_NAME_MAX_LEN
 
@@ -456,7 +456,7 @@ def test_message_uses_sanitized_quoted_shop_name():
 def test_message_falls_back_when_name_is_all_link():
     shop = _shop(name="https://evil.com")
     start_delivery(_delivery(shop))
-    assert FakeMessagingProvider.sent[0][1].startswith('Your order from "Javi" is on its way')
+    assert FakeMessagingProvider.sent[0][1].startswith('Vaša porudžbina iz "Javi" je u dostavi')
 
 
 def test_rating_text_in_serbian_is_quoted():

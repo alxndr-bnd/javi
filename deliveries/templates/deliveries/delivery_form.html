@@ -35,6 +35,7 @@
   var phone = document.getElementById("id_recipient_phone");
   var name = document.getElementById("id_recipient_name");
   var addr = document.getElementById("id_dest_address");
+  var lang = document.getElementById("id_recipient_language");
   if (!phone || !name || !addr) return;
   var lookupUrl = "{% url 'deliveries:recipient_lookup' %}";
   function fill() {
@@ -46,6 +47,7 @@
         if (!d || !d.found) return;
         if (!name.value) name.value = d.name;
         if (!addr.value) addr.value = d.address;
+        if (lang && d.language) lang.value = d.language;
       })
       .catch(function () {});
   }

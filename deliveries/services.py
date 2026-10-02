@@ -8,9 +8,10 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.translation import gettext
 
+from common.i18n import DEFAULT_CUSTOMER_LANGUAGE
 from common.phone import PhoneResult
 from common.text import sanitize_shop_name
 from common.timewindow import format_eta, rating_send_time
@@ -57,6 +58,7 @@ def create_delivery(
     phone: PhoneResult,
     dest_address: str,
     description: str = "",
+    language: str = DEFAULT_CUSTOMER_LANGUAGE,
 ) -> tuple[Delivery, bool]:
     """Создаёт доставку дня. Геокодит адрес; при неудаче создаёт без координат (FR-5/9).
 
@@ -73,6 +75,7 @@ def create_delivery(
         dest_lat=geo.lat if geo else None,
         dest_lng=geo.lng if geo else None,
         description=description,
+        recipient_language=language,
     )
     return delivery, geo is not None
 
@@ -164,15 +167,33 @@ def _message_shop_name(shop: Shop) -> str:
     return sanitize_shop_name(shop.name) or "Javi"
 
 
+def customer_language(delivery: Delivery):
+    """Context: the recipient's language for text they get (SERBITO-356).
+
+    Every customer message is built inside it — not in the shop's UI language and not in
+    whatever a Cloud Tasks callback happens to run with (that was English).
+    """
+    return translation.override(delivery.recipient_language or DEFAULT_CUSTOMER_LANGUAGE)
+
+
 def _on_the_way_text(delivery: Delivery, token: str) -> str:
-    return gettext(
-        'Your order from "%(shop)s" is on its way. '
-        "Arriving approximately by %(time)s. Track: %(link)s"
-    ) % {
-        "shop": _message_shop_name(delivery.shop),
-        "time": format_eta(delivery.eta_at),
-        "link": _tracking_link(token),
-    }
+    with customer_language(delivery):
+        return gettext(
+            'Your order from "%(shop)s" is on its way. '
+            "Arriving approximately by %(time)s. Track: %(link)s"
+        ) % {
+            "shop": _message_shop_name(delivery.shop),
+            "time": format_eta(delivery.eta_at),
+            "link": _tracking_link(token),
+        }
+
+
+def _rating_request_text(delivery: Delivery, token: str) -> str:
+    with customer_language(delivery):
+        return gettext('How did the delivery from "%(shop)s" go? Rate it: %(link)s') % {
+            "shop": _message_shop_name(delivery.shop),
+            "link": _tracking_link(token),
+        }
 
 
 def _record_attempts(notification: Notification, result) -> None:
@@ -507,8 +528,6 @@ def send_rating_request(delivery: Delivery):
         kind=Notification.Kind.RATING_REQUEST,
         status=Notification.Status.QUEUED,
     )
-    text = gettext('How did the delivery from "%(shop)s" go? Rate it: %(link)s') % {
-        "shop": _message_shop_name(delivery.shop),
-        "link": _tracking_link(token_obj.token),
-    }
-    return _send_and_record(notification, delivery, text)
+    return _send_and_record(
+        notification, delivery, _rating_request_text(delivery, token_obj.token)
+    )

@@ -31,7 +31,9 @@ def base_language(code: str | None) -> str:
     return (code or ENGLISH).split("-")[0]
 
 
-def supported_language(code: str | None, default: str = DEFAULT_CUSTOMER_LANGUAGE) -> str:
+def supported_language(
+    code: str | None, default: str | None = DEFAULT_CUSTOMER_LANGUAGE
+) -> str | None:
     """A supported Django code for `code` (`sr`, `sr-RS`, `sr-Latn` → `sr-latn`), or default."""
     if not code:
         return default

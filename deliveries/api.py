@@ -28,6 +28,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
+from common.i18n import DEFAULT_CUSTOMER_LANGUAGE, base_language, supported_language
 from common.phone import InvalidPhone, normalize_phone
 from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
 from common.timewindow import BELGRADE, format_eta
@@ -159,6 +160,10 @@ class DeliverySerializer(serializers.Serializer):
         allow_null=True, help_text=_("Public tracking page (set once delivery starts).")
     )
     recipient = RecipientSerializer()
+    language = serializers.ChoiceField(
+        choices=["sr", "en"],
+        help_text=_("Language of the customer's messages and tracking page."),
+    )
     description = serializers.CharField(allow_blank=True)
     dest_address = serializers.CharField()
     dest_city = serializers.CharField(allow_blank=True)
@@ -181,6 +186,15 @@ class DeliveryCreateSerializer(serializers.Serializer):
     address = serializers.CharField(help_text=_("Delivery address (geocoded server-side)."))
     description = serializers.CharField(
         required=False, allow_blank=True, default="", help_text=_("Optional order description.")
+    )
+    language = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text=_(
+            "Language of the customer's messages and tracking page: `sr` (Serbian, Latin "
+            "script; the default) or `en`."
+        ),
     )
 
 
@@ -220,6 +234,7 @@ def serialize_delivery(delivery: Delivery) -> dict:
         "status_internal": delivery.status,
         "tracking_url": _tracking_url(delivery),
         "recipient": {"name": delivery.recipient_name, "phone": delivery.recipient_phone},
+        "language": base_language(delivery.recipient_language),
         "description": delivery.description,
         "dest_address": delivery.dest_address,
         "dest_city": delivery.dest_city,
@@ -357,6 +372,7 @@ class DeliveriesCollectionView(_ShopScopedView):
                     "recipient_phone": "064 123 4567",
                     "address": "Knez Mihailova 6, Beograd",
                     "description": "2 pizzas",
+                    "language": "sr",
                 },
                 request_only=True,
             )
@@ -380,6 +396,16 @@ class DeliveriesCollectionView(_ShopScopedView):
         recipient_phone = v["recipient_phone"].strip()
         address = v["address"].strip()
         description = (v.get("description") or "").strip()
+        language_raw = (v.get("language") or "").strip()
+        language = (
+            supported_language(language_raw, default=None)
+            if language_raw
+            else DEFAULT_CUSTOMER_LANGUAGE
+        )
+        if language is None:
+            raise ApiError(
+                "invalid_language", _("language must be one of: sr, en."), 400
+            )
 
         missing = [
             f for f, val in (
@@ -416,6 +442,7 @@ class DeliveriesCollectionView(_ShopScopedView):
             phone=phone,
             dest_address=address,
             description=description,
+            language=language,
         )
         if delivery.source != Delivery.Source.API:
             delivery.source = Delivery.Source.API

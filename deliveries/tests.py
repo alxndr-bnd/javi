@@ -281,7 +281,7 @@ def test_start_delivery_computes_eta_and_sends():
     assert len(FakeMessagingProvider.sent) == 1
     to, text = FakeMessagingProvider.sent[0]
     assert to == "+381641234567"
-    assert "Arriving approximately by" in text and "/t/" in text
+    assert "Stiže okvirno do" in text and "/t/" in text  # default customer language: sr
 
 
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)

@@ -1,6 +1,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from common.i18n import CUSTOMER_LANGUAGES, DEFAULT_CUSTOMER_LANGUAGE
 from common.phone import InvalidPhone, normalize_phone
 from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
 from common.validators import validate_https_url
@@ -63,6 +64,13 @@ class DeliveryForm(forms.Form):
         ),
     )
     recipient_name = forms.CharField(label=_("Name"), max_length=200)
+    # Язык SMS/Viber и страницы статуса для этого клиента (SERBITO-356), по умолчанию сербский.
+    recipient_language = forms.ChoiceField(
+        label=_("Customer's language"),
+        choices=CUSTOMER_LANGUAGES,
+        initial=DEFAULT_CUSTOMER_LANGUAGE,
+        required=False,  # старые клиенты формы/скрипты без поля — сербский
+    )
     dest_address = forms.CharField(
         label=_("Address"),
         max_length=300,
@@ -71,6 +79,9 @@ class DeliveryForm(forms.Form):
         ),
     )
     description = forms.CharField(label=_("Description (optional)"), max_length=300, required=False)
+
+    def clean_recipient_language(self):
+        return self.cleaned_data.get("recipient_language") or DEFAULT_CUSTOMER_LANGUAGE
 
     def clean_recipient_phone(self):
         raw = self.cleaned_data["recipient_phone"]

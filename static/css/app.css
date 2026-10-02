@@ -121,7 +121,7 @@ a{color:var(--brand)}
 .auth h1{font-size:22px;margin:0 0 18px}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
-.field input{width:100%;padding:11px 12px;border:1px solid var(--field-line);border-radius:10px;font-size:16px;background:var(--surface);color:var(--ink)}
+.field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--field-line);border-radius:10px;font-size:16px;background:var(--surface);color:var(--ink)}
 .errorlist{color:var(--failed);font-size:13px;list-style:none;padding:0;margin:6px 0 0}
 .muted{color:var(--muted)}
 /* сообщения (Django messages) */

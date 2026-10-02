@@ -7,6 +7,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from common.i18n import CUSTOMER_LANGUAGES, DEFAULT_CUSTOMER_LANGUAGE
+
 API_KEY_PREFIX = "javi_live_"
 API_KEY_PREFIX_LEN = 8  # сколько символов токена храним в `prefix` для идентификации в UI/логах
 
@@ -91,6 +93,13 @@ class Delivery(models.Model):
     dest_lat = models.FloatField("широта", null=True, blank=True)
     dest_lng = models.FloatField("долгота", null=True, blank=True)
     description = models.CharField("описание", max_length=300, blank=True)
+    # Язык сообщений и страницы /t/ для получателя (SERBITO-356): не язык кабинета магазина.
+    recipient_language = models.CharField(
+        "язык получателя",
+        max_length=10,
+        choices=CUSTOMER_LANGUAGES,
+        default=DEFAULT_CUSTOMER_LANGUAGE,
+    )
     source = models.CharField(max_length=10, choices=Source.choices, default=Source.MANUAL)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.NEW)
     # ETA/старт (Story 2.1): рассчитывается при «Dostava je počela».
