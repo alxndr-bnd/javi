@@ -44,6 +44,9 @@ jobs:
 
       - name: Install dependencies (locked, incl. dev)
         run: uv sync --frozen
+      # config/test_consent_focus.py drives full Chromium headless (real window focus events).
+      - name: Chromium for Playwright
+        run: uv run --frozen playwright install --with-deps chromium
 
       # Tests use the sqlite fallback, exactly as locally: no DATABASE_URL, no .env.
       - name: ruff check

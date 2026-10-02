@@ -18,7 +18,8 @@
  * - /t/ tracking pages do not load this file (SERBITO-306).
  * - The banner never hides the focused element (SERBITO-352, WCAG 2.4.11): while it is up the page
  *   gets bottom scroll-padding and padding of its height, and a control it still covers after
- *   focus moves is scrolled above it.
+ *   focus moves is scrolled above it. The focusin a window refocus repeats on the same element
+ *   is not a move and scrolls nothing (SERBITO-374); nor does a fixed control.
  * - Accept and Decline carry equal weight (SERBITO-352): one .jc-btn rule styles both — same size,
  *   fill and prominence; .jc-accept/.jc-decline are behaviour hooks only and are never styled.
  */
@@ -70,6 +71,7 @@
   var banner = null;
   var forced = null; // language forced by a [data-consent-open="xx"] trigger
   var returnTo = null; // element to refocus after a reopened banner closes
+  var away = null; // the focused element when the window lost focus
 
   // Room for the banner at the bottom of the page while it is up: scroll-padding keeps focus
   // scrolling above it, and padding lets the last controls (footer links) scroll clear of it.
@@ -80,10 +82,18 @@
     root.paddingBottom = room;
   }
 
+  function fixed(el) {
+    for (; el && el.nodeType === 1; el = el.parentElement) {
+      if (window.getComputedStyle(el).position === "fixed") return true;
+    }
+    return false;
+  }
+
   // A focused control the banner still covers (browsers do not always honour scroll-padding
   // when focus moves) is scrolled up just enough to show it; its top never leaves the viewport.
   function unobscure(el) {
     if (!banner || banner.hidden || !el || !el.getBoundingClientRect || banner.contains(el)) return;
+    if (fixed(el)) return; // scrolling cannot move it out from under the banner
     var r = el.getBoundingClientRect();
     var limit = banner.getBoundingClientRect().top - GAP;
     if (r.bottom > limit) window.scrollBy(0, Math.min(r.bottom - limit, Math.max(r.top, 0)));
@@ -191,8 +201,16 @@
       returnTo = el;
       show(true);
     });
+    // When the window gets focus back (another app or tab), the browser fires focusin again on
+    // the element that had it: not a focus move, so nothing scrolls (SERBITO-374).
+    window.addEventListener("blur", function (e) {
+      if (e.target === window) away = document.activeElement;
+    });
     // After the browser's own focus scrolling, so only what it left covered moves.
     document.addEventListener("focusin", function (e) {
+      var back = e.target === away;
+      away = null;
+      if (back) return;
       window.requestAnimationFrame(function () { unobscure(e.target); });
     });
     window.addEventListener("resize", reserve);

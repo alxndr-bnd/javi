@@ -74,6 +74,7 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
 
 ```bash
 uv sync                  # .venv with runtime + dev dependencies from uv.lock
+uv run playwright install chromium  # once: the browser for config/test_consent_focus.py
 uv run pytest            # the gate, as in CI
 uv run ruff check .
 uv run python manage.py check
