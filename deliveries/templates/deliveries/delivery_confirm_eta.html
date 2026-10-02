@@ -24,7 +24,7 @@
       </div>
     {% endif %}
 
-    <form method="post" action="{% url 'deliveries:start' delivery.pk %}" novalidate>
+    <form method="post" action="{% url 'deliveries:start' delivery.pk %}" novalidate data-submit-once>
       {% csrf_token %}
       {% if form.non_field_errors %}
         <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>

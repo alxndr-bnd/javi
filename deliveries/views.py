@@ -297,16 +297,24 @@ class DeliveryStartView(LoginRequiredMixin, View):
                 # Лимит отправки: доставка не стартовала, клиент не уведомлён.
                 messages.error(request, exc.message)
                 return redirect("deliveries:list")
+            # Ровно одно сообщение об исходе (SERBITO-356): раньше при сбое отправки рядом
+            # стояли «Клиент уведомлён» и «Сообщение не отправлено».
             if result.already:
                 messages.info(request, _("Delivery is already in progress."))
-            elif result.ok:
+            elif result.ok and result.sent:
                 messages.success(
                     request,
                     _("Customer notified · arriving by %(time)s")
                     % {"time": format_eta_label(result.eta_at)},
                 )
-                if not result.sent:
-                    messages.warning(request, _("Message not sent — try again later."))
+            elif result.ok:
+                messages.warning(
+                    request,
+                    _(
+                        "Delivery started, but the message to the customer was not sent. "
+                        "Check the number and resend it from the card."
+                    ),
+                )
             return redirect("deliveries:list")
 
         # Шаг 1: уже стартовала? — не дублируем.

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Javi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 23:32+0200\n"
+"POT-Creation-Date: 2026-10-02 23:35+0200\n"
 "PO-Revision-Date: 2026-06-07 01:30+0200\n"
 "Last-Translator: Javi <noreply@javi.serbito.rs>\n"
 "Language-Team: Serbian (Latin)\n"
@@ -350,7 +350,7 @@ msgstr ""
 msgid "Missing or invalid API key."
 msgstr ""
 
-#: deliveries/forms.py:13 deliveries/views.py:346
+#: deliveries/forms.py:13 deliveries/views.py:354
 msgid "Invalid number. E.g. 064 123 4567"
 msgstr "Neispravan broj. Npr. 064 123 4567"
 
@@ -433,22 +433,22 @@ msgstr "U dostavi"
 msgid "Done"
 msgstr "Završeno"
 
-#: deliveries/services.py:115
+#: deliveries/services.py:116
 msgid "Store address is not geocoded — open “Store” and save the address."
 msgstr ""
 "Adresa prodavnice nije geokodirana — otvorite „Prodavnica“ i sačuvajte "
 "adresu."
 
-#: deliveries/services.py:117
+#: deliveries/services.py:118
 msgid ""
 "We could not recognize the delivery address — check the recipient address."
 msgstr "Nismo prepoznali adresu dostave — proverite adresu primaoca."
 
-#: deliveries/services.py:118
+#: deliveries/services.py:119
 msgid "The map can't compute a route right now — enter the time manually."
 msgstr "Mapa trenutno ne može da izračuna rutu — unesite vreme ručno."
 
-#: deliveries/services.py:182
+#: deliveries/services.py:183
 #, python-format
 msgid ""
 "Your order from \"%(shop)s\" is on its way. Arriving approximately by "
@@ -457,7 +457,7 @@ msgstr ""
 "Vaša porudžbina iz \"%(shop)s\" je u dostavi. Stiže okvirno do %(time)s. "
 "Pratite: %(link)s"
 
-#: deliveries/services.py:193
+#: deliveries/services.py:194
 #, python-format
 msgid "How did the delivery from \"%(shop)s\" go? Rate it: %(link)s"
 msgstr "Kako je prošla dostava iz \"%(shop)s\"? Ocenite: %(link)s"
@@ -840,40 +840,44 @@ msgstr "Nismo prepoznali adresu — proverite je kasnije."
 msgid "First set your store address."
 msgstr "Prvo podesite adresu prodavnice."
 
-#: deliveries/views.py:301 deliveries/views.py:314
+#: deliveries/views.py:303 deliveries/views.py:322
 msgid "Delivery is already in progress."
 msgstr "Dostava je već u toku."
 
-#: deliveries/views.py:305
+#: deliveries/views.py:307
 #, python-format
 msgid "Customer notified · arriving by %(time)s"
 msgstr "Kupac obavešten · stiže do %(time)s"
 
-#: deliveries/views.py:309
-msgid "Message not sent — try again later."
-msgstr "Poruka nije poslata — pokušajte kasnije."
+#: deliveries/views.py:314
+msgid ""
+"Delivery started, but the message to the customer was not sent. Check the "
+"number and resend it from the card."
+msgstr ""
+"Dostava je počela, ali poruka kupcu nije poslata. Proverite broj i pošaljite "
+"je ponovo sa kartice."
 
-#: deliveries/views.py:354
+#: deliveries/views.py:362
 msgid "Unable to resend."
 msgstr "Nije moguće ponovo poslati."
 
-#: deliveries/views.py:356
+#: deliveries/views.py:364
 msgid "Message resent."
 msgstr "Poruka je ponovo poslata."
 
-#: deliveries/views.py:358
+#: deliveries/views.py:366
 msgid "Message not sent — check the number."
 msgstr "Poruka nije poslata — proverite broj."
 
-#: deliveries/views.py:369
+#: deliveries/views.py:377
 msgid "Marked as delivered."
 msgstr "Označeno kao isporučeno."
 
-#: deliveries/views.py:401
+#: deliveries/views.py:409
 msgid "Delivery deleted."
 msgstr "Dostava je obrisana."
 
-#: deliveries/views.py:426
+#: deliveries/views.py:434
 msgid "Delivery restored."
 msgstr "Dostava je vraćena."
 
@@ -1005,11 +1009,11 @@ msgid ""
 "in development — bugs and outages are possible, do not rely on stability"
 msgstr "u razvoju — moguće su greške i prekidi, ne oslanjajte se na stabilnost"
 
-#: templates/base.html:53
+#: templates/base.html:59
 msgid "Privacy policy"
 msgstr "Politika privatnosti"
 
-#: templates/base.html:54
+#: templates/base.html:60
 msgid "Cookie settings"
 msgstr "Podešavanja kolačića"
 

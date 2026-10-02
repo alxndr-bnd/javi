@@ -7,6 +7,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.translation import gettext
@@ -359,57 +360,80 @@ def escalate_delivery(delivery: Delivery) -> bool:
     return result.ok
 
 
+def _sync_start_fields(target: Delivery, source: Delivery) -> None:
+    """Вызывающий держит свой объект доставки — отдаём ему актуальное состояние старта."""
+    for field in ("status", "started_at", "eta_at", "eta_source"):
+        setattr(target, field, getattr(source, field))
+
+
+def _already_started(delivery: Delivery) -> bool:
+    return delivery.status == Delivery.Status.ON_THE_WAY or delivery.notifications.filter(
+        kind=Notification.Kind.ON_THE_WAY
+    ).exists()
+
+
 def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) -> StartResult:
     """«Доставка началась»: рассчитать ETA, уведомить получателя. Идемпотентно.
 
     Маршрут недоступен/нет координат и нет manual_eta → StartResult(needs_manual_eta=True),
     ничего не меняем (FR-9: поток не рвётся, магазин вводит ETA вручную).
+
+    Двойной сабмит «Potvrdi i obavesti» (SERBITO-356): два запроса проходили проверку
+    «уже стартовала?» одновременно — пока первый ждал маршрут, — и клиент получал 2 SMS.
+    Теперь проверка и перевод статуса идут под блокировкой строки доставки; второй запрос
+    ждёт её и видит, что доставка уже в пути. Сама отправка — после коммита, без блокировки.
     """
-    # Идемпотентность: повторный старт — no-op.
-    if delivery.status == Delivery.Status.ON_THE_WAY or delivery.notifications.filter(
-        kind=Notification.Kind.ON_THE_WAY
-    ).exists():
+    # Быстрый выход без блокировки: повторный старт — no-op.
+    if _already_started(delivery):
         return StartResult(already=True, eta_at=delivery.eta_at)
 
-    now = timezone.now()
+    from django.conf import settings
+
     if manual_eta is not None:
         eta_at, eta_source = manual_eta, "manual"
     else:
-        eta_at = compute_eta(delivery)
+        eta_at = compute_eta(delivery)  # сетевой вызов — вне транзакции
         if eta_at is None:
             return StartResult(needs_manual_eta=True)
         eta_source = "auto"
 
-    # Лимиты — ДО смены статуса и отправки: упёрлись → доставка остаётся «готова»,
-    # магазин видит причину (QuotaExceeded летит в view/API).
-    reserve_send(
-        delivery.shop,
-        delivery.recipient_phone,
-        kind=OutboundSend.Kind.ON_THE_WAY,
-        delivery=delivery,
-        risky=delivery.phone_risk,
-    )
+    with transaction.atomic():
+        locked = Delivery.objects.select_for_update().get(pk=delivery.pk)
+        if _already_started(locked):
+            _sync_start_fields(delivery, locked)
+            return StartResult(already=True, eta_at=locked.eta_at)
 
-    delivery.status = Delivery.Status.ON_THE_WAY
-    delivery.started_at = now
-    delivery.eta_at = eta_at
-    delivery.eta_source = eta_source
-    delivery.save(update_fields=["status", "started_at", "eta_at", "eta_source"])
+        # Лимиты — ДО смены статуса и отправки: упёрлись → доставка остаётся «готова»,
+        # магазин видит причину (QuotaExceeded летит в view/API), транзакция откатывается.
+        reserve_send(
+            locked.shop,
+            locked.recipient_phone,
+            kind=OutboundSend.Kind.ON_THE_WAY,
+            delivery=locked,
+            risky=locked.phone_risk,
+        )
 
-    from django.conf import settings
+        now = timezone.now()
+        locked.status = Delivery.Status.ON_THE_WAY
+        locked.started_at = now
+        locked.eta_at = eta_at
+        locked.eta_source = eta_source
+        locked.save(update_fields=["status", "started_at", "eta_at", "eta_source"])
 
-    token_obj, _ = TrackingToken.objects.get_or_create(
-        delivery=delivery,
-        defaults={"expires_at": now + timedelta(days=settings.TRACKING_TOKEN_TTL_DAYS)},
-    )
+        token_obj, _ = TrackingToken.objects.get_or_create(
+            delivery=locked,
+            defaults={"expires_at": now + timedelta(days=settings.TRACKING_TOKEN_TTL_DAYS)},
+        )
+        # Создан под блокировкой: параллельный запрос после неё увидит его и выйдет.
+        notification = Notification.objects.create(
+            delivery=locked,
+            kind=Notification.Kind.ON_THE_WAY,
+            status=Notification.Status.QUEUED,
+        )
 
-    notification = Notification.objects.create(
-        delivery=delivery,
-        kind=Notification.Kind.ON_THE_WAY,
-        status=Notification.Status.QUEUED,
-    )
+    _sync_start_fields(delivery, locked)
 
-    result = _send_and_record(notification, delivery, _on_the_way_text(delivery, token_obj.token))
+    result = _send_and_record(notification, locked, _on_the_way_text(locked, token_obj.token))
 
     # Планируем запрос оценки на ETA+30 (прижатый к окну 08:00–22:00) — AR-4/FR-16/21.
     # Сбой планировщика НЕ должен ломать старт (сообщение уже ушло) — деградируем мягко.
@@ -420,10 +444,10 @@ def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) ->
 
     # P4: если включена эскалатция и остались неиспробованные каналы — запланировать проверку
     # доставки. Сбой планировщика не ломает старт (сообщение уже ушло).
-    _schedule_escalation_if_pending(delivery, notification)
+    _schedule_escalation_if_pending(locked, notification)
 
     # Исходящий вебхук мерчанту (декуплено, безопасно — notify_merchant сам глушит сбои).
-    emit_delivery_event(delivery, "delivery.started")
+    emit_delivery_event(locked, "delivery.started")
     return StartResult(ok=True, sent=result.ok, eta_at=eta_at)
 
 

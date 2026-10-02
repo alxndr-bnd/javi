@@ -40,10 +40,16 @@
   </div>
   {% block body %}{% endblock %}
   {# «Вы уверены?» для форм с data-confirm: вместо inline onsubmit, который запрещает CSP. #}
+  {# data-submit-once: второй клик/Enter не шлёт форму повторно (SERBITO-356; сервер тоже защищён). #}
   <script nonce="{{ csp_nonce }}">
     document.addEventListener("submit", function (e) {
-      var msg = e.target.getAttribute && e.target.getAttribute("data-confirm");
-      if (msg && !window.confirm(msg)) e.preventDefault();
+      var form = e.target;
+      var msg = form.getAttribute && form.getAttribute("data-confirm");
+      if (msg && !window.confirm(msg)) { e.preventDefault(); return; }
+      if (form.hasAttribute && form.hasAttribute("data-submit-once")) {
+        if (form.getAttribute("data-submitted")) { e.preventDefault(); return; }
+        form.setAttribute("data-submitted", "1");
+      }
     });
   </script>
   {# Analytics consent (SERBITO-321): the footer button reopens the banner from /consent.js. #}

@@ -41,7 +41,7 @@
 
   {% if d.on_the_way_notif.status == "failed" %}
     <form method="post" action="{% url 'deliveries:resend' d.pk %}" class="card-action"
-          data-confirm="{% trans "Send the message again?" %}">
+          data-confirm="{% trans "Send the message again?" %}" data-submit-once>
       {% csrf_token %}
       <div class="field" style="margin-bottom:8px">
         <input type="text" name="recipient_phone" inputmode="tel"
