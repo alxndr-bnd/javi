@@ -48,6 +48,8 @@ body{
 .quota-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:7px}
 .quota-row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px}
 .quota-name{flex:0 0 42px;color:var(--ink)}
+.quota-name--wide{flex-basis:72px}
+.quota-more{display:block;font-size:12px;margin-top:6px;color:var(--brand)}
 .quota-bar{flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
 .quota-fill{display:block;height:100%;background:var(--brand);border-radius:3px}
 .quota-fill[style*="100%"]{background:#e5484d}

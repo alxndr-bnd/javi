@@ -616,7 +616,7 @@ def test_ui_list_oldest_first(client):
     assert [d.recipient_name for d in novo] == ["Older", "Newer"]
 
 
-# --- Free-tier quota counter (global, shown to all signed-in accounts) ---
+# --- Free-tier quota counter (global; staff only since SERBITO-356) ---
 
 
 def test_quota_widget_hidden_for_anonymous(client):
@@ -626,13 +626,15 @@ def test_quota_widget_hidden_for_anonymous(client):
 
 
 def test_quota_widget_shown_in_cabinet(client):
-    """Залогиненный магазин видит блок остатка бесплатных квот в кабинете."""
+    """Staff видит блок остатка бесплатных квот платформы в кабинете."""
     from django.core.cache import cache
 
     from integrations.models import METRIC_VIBER, ProviderUsage
 
     cache.clear()  # 60-сек кэш сводки не должен отдавать чужой результат между тестами
-    _make_shop_with_origin("quota@shop.rs", "Quota Shop")
+    shop = _make_shop_with_origin("quota@shop.rs", "Quota Shop")
+    shop.owner.is_staff = True
+    shop.owner.save(update_fields=["is_staff"])
     ProviderUsage.record(METRIC_VIBER, 3)
     client.login(username="quota@shop.rs", password="pass12345")
     resp = client.get("/app/")

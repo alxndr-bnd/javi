@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Javi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 23:39+0200\n"
+"POT-Creation-Date: 2026-10-02 23:40+0200\n"
 "PO-Revision-Date: 2026-06-07 01:30+0200\n"
 "Last-Translator: Javi <noreply@javi.serbito.rs>\n"
 "Language-Team: Serbian (Latin)\n"
@@ -358,6 +358,14 @@ msgstr ""
 msgid "Missing or invalid API key."
 msgstr ""
 
+#: deliveries/context_processors.py:33
+msgid "Today"
+msgstr "Danas"
+
+#: deliveries/context_processors.py:34
+msgid "This month"
+msgstr "Ovaj mesec"
+
 #: deliveries/forms.py:13 deliveries/views.py:430
 msgid "Invalid number. E.g. 064 123 4567"
 msgstr "Neispravan broj. Npr. 064 123 4567"
@@ -561,14 +569,33 @@ msgid "Integration API"
 msgstr "API za integraciju"
 
 #: deliveries/templates/deliveries/_header.html:25
+#: deliveries/templates/deliveries/_header.html:26
+#: deliveries/templates/deliveries/shop_profile.html:92
+msgid "Customer messages"
+msgstr "Poruke kupcima"
+
+#: deliveries/templates/deliveries/_header.html:31
+#, python-format
+msgid "%(used)s of %(limit)s"
+msgstr "%(used)s od %(limit)s"
+
+#: deliveries/templates/deliveries/_header.html:34
+msgid "Trial limits — how to get verified"
+msgstr "Probni limiti — kako do verifikacije"
+
+#: deliveries/templates/deliveries/_header.html:39
 msgid "Free quota"
 msgstr "Besplatna kvota"
 
-#: deliveries/templates/deliveries/_header.html:26
+#: deliveries/templates/deliveries/_header.html:40
 msgid "Free quota left"
 msgstr "Preostala besplatna kvota"
 
-#: deliveries/templates/deliveries/_header.html:45
+#: deliveries/templates/deliveries/_header.html:40
+msgid "platform"
+msgstr "platforma"
+
+#: deliveries/templates/deliveries/_header.html:59
 msgid "Sign out"
 msgstr "Odjava"
 
@@ -773,10 +800,6 @@ msgstr ""
 #: deliveries/templates/deliveries/shop_profile.html:87
 msgid "Save"
 msgstr "Sačuvaj"
-
-#: deliveries/templates/deliveries/shop_profile.html:92
-msgid "Customer messages"
-msgstr "Poruke kupcima"
 
 #: deliveries/templates/deliveries/shop_profile.html:95
 #, python-format
