@@ -1,0 +1,22 @@
+{% extends "tracking/base.html" %}
+{% load i18n %}
+{% comment %}
+Friendly 404 (SERBITO-356), rendered by common.views.not_found in the visitor's language.
+It extends the customer base: no analytics, because the URL may hold part of a tracking token.
+{% endcomment %}
+{% block title %}{% if tracking %}{% trans "Delivery not found" %}{% else %}{% trans "Page not found" %}{% endif %} · Javi{% endblock %}
+{% block body %}
+<main class="track">
+  <div class="track-card track-card--plain">
+    {% if tracking %}
+      <h1 class="track-status">{% trans "We can't find this delivery." %}</h1>
+      <p class="track-help muted">{% trans "The link may be incomplete. Open it again from the message you received, or copy the whole link." %}</p>
+      <p class="track-help muted">{% trans "Still not working? Contact the shop you ordered from." %}</p>
+    {% else %}
+      <h1 class="track-status">{% trans "Page not found." %}</h1>
+      <p class="track-help muted">{% trans "Check the address, or go to the home page." %}</p>
+      <p class="track-help"><a href="/">{% trans "Home page" %}</a></p>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

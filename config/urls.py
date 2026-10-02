@@ -42,6 +42,9 @@ urlpatterns = [
     path("tasks/", include("tasks.urls")),  # колбэки Cloud Tasks (по секрету)
 ]
 
+# Своя 404 (SERBITO-356): на языке посетителя (по умолчанию сербский), без аналитики.
+handler404 = "common.views.not_found"
+
 # Админка — по неочевидному пути из env (SERBITO-362, JAVI-2); без ADMIN_PATH в проде её нет.
 if settings.ADMIN_PATH:
     urlpatterns.append(path(settings.ADMIN_PATH, admin.site.urls))

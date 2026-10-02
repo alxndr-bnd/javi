@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 
+import phonenumbers
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -37,6 +38,9 @@ class Shop(models.Model):
     origin_address = models.CharField("адрес магазина", max_length=300, blank=True)
     origin_lat = models.FloatField("широта", null=True, blank=True)
     origin_lng = models.FloatField("долгота", null=True, blank=True)
+    # Телефон магазина для клиентов (E.164): виден на странице статуса /t/, в т.ч. на
+    # истёкшей ссылке (SERBITO-356). В SMS не уходит. Пусто — не показываем.
+    contact_phone = models.CharField("телефон для клиентов", max_length=20, blank=True)
 
     # UI-предпочтения кабинета.
     completed_expanded = models.BooleanField("секция «завершённые» развёрнута", default=False)
@@ -68,6 +72,17 @@ class Shop(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def contact_phone_display(self) -> str:
+        """`+381 11 1234567` for people; the stored E.164 stays for tel: links."""
+        if not self.contact_phone:
+            return ""
+        try:
+            number = phonenumbers.parse(self.contact_phone, None)
+        except phonenumbers.NumberParseException:
+            return self.contact_phone
+        return phonenumbers.format_number(number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
 
 
 class Delivery(models.Model):

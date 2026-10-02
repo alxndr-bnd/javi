@@ -30,6 +30,12 @@ class ShopOriginForm(forms.Form):
             }
         ),
     )
+    contact_phone = forms.CharField(
+        label=_("Phone for customers (optional)"),
+        max_length=32,
+        required=False,
+        widget=forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "tel"}),
+    )
     webhook_url = forms.URLField(
         label=_("Webhook URL"),
         required=False,
@@ -51,6 +57,16 @@ class ShopOriginForm(forms.Form):
     def clean_name(self):
         # Название уходит в Viber/SMS клиентам — без ссылок и номеров (SERBITO-345).
         return clean_shop_name(self.cleaned_data["name"])
+
+    def clean_contact_phone(self):
+        # Только на странице статуса (не в SMS), поэтому годится и городской номер.
+        raw = self.cleaned_data["contact_phone"].strip()
+        if not raw:
+            return ""
+        try:
+            return normalize_phone(raw).e164
+        except InvalidPhone as exc:
+            raise forms.ValidationError(INVALID_PHONE_MSG) from exc
 
 
 class DeliveryForm(forms.Form):

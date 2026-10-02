@@ -122,6 +122,7 @@ class ShopProfileView(LoginRequiredMixin, View):
             initial={
                 "name": shop.name,
                 "address": shop.origin_address,
+                "contact_phone": shop.contact_phone_display,
                 "webhook_url": shop.webhook_url,
                 # webhook_secret не отдаём обратно в форму (JAVI-10) — только «задан/не задан».
             }
@@ -136,13 +137,14 @@ class ShopProfileView(LoginRequiredMixin, View):
         if form.is_valid():
             # Название + настройки вебхука сохраняем всегда (независимо от геокода адреса).
             shop.name = form.cleaned_data["name"]
+            shop.contact_phone = form.cleaned_data["contact_phone"]
             shop.webhook_url = form.cleaned_data["webhook_url"]
             # Секрет — только запись: пустое поле оставляет сохранённый, галочка удаляет.
             if form.cleaned_data["clear_webhook_secret"]:
                 shop.webhook_secret = ""
             elif form.cleaned_data["webhook_secret"]:
                 shop.webhook_secret = form.cleaned_data["webhook_secret"]
-            shop.save(update_fields=["name", "webhook_url", "webhook_secret"])
+            shop.save(update_fields=["name", "contact_phone", "webhook_url", "webhook_secret"])
             if set_shop_origin(shop, form.cleaned_data["address"]):
                 messages.success(request, _("Saved."))
                 return redirect("deliveries:profile")  # PRG

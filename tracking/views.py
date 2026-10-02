@@ -74,12 +74,38 @@ def _render(request, delivery, template, ctx, status=200):
     return response
 
 
+def _token_obj(token: str) -> TrackingToken:
+    """TrackingToken по токену (с доставкой и магазином) или 404 — дружелюбная страница."""
+    return get_object_or_404(TrackingToken.objects.select_related("delivery__shop"), token=token)
+
+
 def _active_token(token: str):
     """TrackingToken или None если истёк."""
-    token_obj = get_object_or_404(TrackingToken, token=token)
+    token_obj = _token_obj(token)
     if token_obj.expires_at and token_obj.expires_at < timezone.now():
         return None
     return token_obj
+
+
+def _shop_ctx(shop) -> dict:
+    """Чей это заказ и как связаться с магазином (SERBITO-356): имя и телефон, если задан."""
+    return {
+        "shop_name": shop.name,
+        "shop_phone": shop.contact_phone,
+        "shop_phone_display": shop.contact_phone_display,
+    }
+
+
+def _expired(request, token: str):
+    """410 «ссылка истекла» — с названием магазина и его контактом, на языке клиента."""
+    delivery = _token_obj(token).delivery
+    return _render(
+        request,
+        delivery,
+        "tracking/status.html",
+        {"expired": True, **_shop_ctx(delivery.shop)},
+        status=410,
+    )
 
 
 @rate_limited
@@ -87,12 +113,12 @@ def status(request, token):
     """Публичная брендовая страница статуса (без логина). Минимум данных (NFR-3)."""
     token_obj = _active_token(token)
     if token_obj is None:
-        return render(request, "tracking/status.html", {"expired": True}, status=410)
+        return _expired(request, token)
 
     delivery = token_obj.delivery
     rating = getattr(delivery, "rating", None)
     ctx = {
-        "shop_name": delivery.shop.name,
+        **_shop_ctx(delivery.shop),
         "status": delivery.status,
         "steps": _stepper(delivery.status),
         "dest_city": delivery.dest_city,
@@ -110,7 +136,7 @@ def mark_received(request, token):
     """Получатель подтверждает получение заказа → статус delivered (идемпотентно)."""
     token_obj = _active_token(token)
     if token_obj is None:
-        return render(request, "tracking/status.html", {"expired": True}, status=410)
+        return _expired(request, token)
     delivery = token_obj.delivery
     if delivery.status != Delivery.Status.DELIVERED:
         delivery.status = Delivery.Status.DELIVERED
@@ -132,7 +158,7 @@ def unsubscribe(request, token):
 
     token_obj = _active_token(token)
     if token_obj is None:
-        return render(request, "tracking/status.html", {"expired": True}, status=410)
+        return _expired(request, token)
     delivery = token_obj.delivery
     if request.method != "POST":
         return _render(request, delivery, "tracking/unsubscribe_confirm.html", {"token": token})
@@ -146,7 +172,7 @@ def rate(request, token):
     """Захват оценки 1–5 с публичной страницы (без логина, без дублей)."""
     token_obj = _active_token(token)
     if token_obj is None:
-        return render(request, "tracking/status.html", {"expired": True}, status=410)
+        return _expired(request, token)
     try:
         value = int(request.POST.get("value", ""))
     except (TypeError, ValueError):

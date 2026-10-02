@@ -136,6 +136,9 @@ a{color:var(--brand)}
 /* h1 of the page (SERBITO-352); same look as the former div */
 .track-status{font-size:16px;font-weight:400;margin:14px 0 0}
 .track-expired{font-size:16px;font-weight:400;margin:0}
+.track-help{font-size:14px;margin:10px 0 0}
+.track-contact{text-align:center;margin:18px 0 0;font-size:14px}
+.track-contact a{color:var(--brand);font-weight:700;white-space:nowrap}
 .track-eta{font-size:30px;font-weight:800;margin-top:6px}
 .track-city{font-size:14px;opacity:.9;margin-top:8px}
 /* status_stepper — 3 сегмента, текущий брендовый, текст под точкой (a11y, не только цвет) */

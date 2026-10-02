@@ -5,8 +5,11 @@
 <main class="track">
   {% if expired %}
     <div class="track-card track-card--plain">
-      <h1 class="track-expired muted">{% trans "Link has expired." %}</h1>
+      {% if shop_name %}<div class="track-shop">{{ shop_name }}</div>{% endif %}
+      <h1 class="track-status">{% trans "This tracking link has expired." %}</h1>
+      <p class="track-help muted">{% trans "Links work for a few days after the delivery. For questions about your order, contact the shop." %}</p>
     </div>
+    {% include "tracking/_shop_contact.html" %}
   {% else %}
     <div class="track-card">
       <div class="track-shop">{{ shop_name }}</div>
@@ -57,6 +60,8 @@
         </form>
       </div>
     {% endif %}
+
+    {% include "tracking/_shop_contact.html" %}
 
     <div class="track-unsub">
       <a href="{% url 'tracking:unsubscribe' token %}">{% trans "Unsubscribe from notifications" %}</a>

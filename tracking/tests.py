@@ -292,7 +292,7 @@ def test_rating_stars_tab_left_to_right_in_a_labelled_group(client):
 @pytest.mark.parametrize(
     ("method", "suffix", "expire", "title"),
     [
-        ("get", "", True, "Link has expired."),
+        ("get", "", True, "This tracking link has expired."),
         ("get", "odjava/", False, "Unsubscribe from notifications?"),
         ("post", "odjava/", False, "You have been unsubscribed."),
     ],
