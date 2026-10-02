@@ -21,6 +21,13 @@ from notifications.models import Notification
 
 pytestmark = pytest.mark.django_db
 
+
+def _tomorrow() -> str:
+    """Manual ETA date that is always in the future (SERBITO-356 rejects a past ETA)."""
+    from common.timewindow import BELGRADE
+
+    return str(timezone.now().astimezone(BELGRADE).date() + timedelta(days=1))
+
 FAKE_OK = "integrations.testing.FakeMapsProvider"
 FAKE_FAIL = "integrations.testing.FailingMapsProvider"
 ROUTES_OK = "integrations.testing.FakeRoutesProvider"
@@ -382,7 +389,11 @@ def test_start_view_confirm_moves_to_u_dostavi(client):
     FakeMessagingProvider.sent = []
     shop, delivery = _geocoded_delivery("ok@shop.rs", "OK Shop")
     client.login(username="ok@shop.rs", password="pass12345")
-    resp = client.post(f"/app/dostava/{delivery.pk}/start/", {"eta_time": "16:00"}, follow=True)
+    resp = client.post(
+        f"/app/dostava/{delivery.pk}/start/",
+        {"eta_time": "16:00", "eta_date": _tomorrow()},
+        follow=True,
+    )
     assert resp.status_code == 200
     assert resp.context["u_dostavi"][0].pk == delivery.pk
     assert resp.context["spremno"] == []

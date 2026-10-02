@@ -16,6 +16,20 @@ def format_eta(dt: datetime) -> str:
     return dt.astimezone(BELGRADE).strftime("%H:%M")
 
 
+def format_eta_label(dt: datetime, now: datetime | None = None) -> str:
+    """ETA для людей (SERBITO-356): «14:00» сегодня, иначе с датой — «03.10. 14:00».
+
+    Одно время без даты врёт, когда ETA не сегодня (после полуночи, завтра) или уже прошло.
+    """
+    from django.utils import timezone
+
+    local = dt.astimezone(BELGRADE)
+    today = (now or timezone.now()).astimezone(BELGRADE).date()
+    if local.date() == today:
+        return local.strftime("%H:%M")
+    return local.strftime("%d.%m. %H:%M")
+
+
 def clamp_to_window(dt: datetime) -> datetime:
     """Сдвигает время в окно 08:00–22:00 (Europe/Belgrade); возвращает aware-datetime.
 

@@ -14,7 +14,7 @@ from django.utils.translation import gettext
 from common.i18n import DEFAULT_CUSTOMER_LANGUAGE
 from common.phone import PhoneResult
 from common.text import sanitize_shop_name
-from common.timewindow import format_eta, rating_send_time
+from common.timewindow import format_eta_label, rating_send_time
 from integrations.providers import (
     chain_channel_paths,
     get_maps_provider,
@@ -183,7 +183,7 @@ def _on_the_way_text(delivery: Delivery, token: str) -> str:
             "Arriving approximately by %(time)s. Track: %(link)s"
         ) % {
             "shop": _message_shop_name(delivery.shop),
-            "time": format_eta(delivery.eta_at),
+            "time": format_eta_label(delivery.eta_at),
             "link": _tracking_link(token),
         }
 

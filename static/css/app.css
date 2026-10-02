@@ -140,6 +140,7 @@ a{color:var(--brand)}
 .track-contact{text-align:center;margin:18px 0 0;font-size:14px}
 .track-contact a{color:var(--brand);font-weight:700;white-space:nowrap}
 .track-eta{font-size:30px;font-weight:800;margin-top:6px}
+.track-late{font-size:18px;font-weight:700;margin-top:8px}
 .track-city{font-size:14px;opacity:.9;margin-top:8px}
 /* status_stepper — 3 сегмента, текущий брендовый, текст под точкой (a11y, не только цвет) */
 .stepper{display:flex;justify-content:space-between;list-style:none;padding:22px 6px 0;margin:0}

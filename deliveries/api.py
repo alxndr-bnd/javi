@@ -202,7 +202,11 @@ class StartSerializer(serializers.Serializer):
     eta = serializers.CharField(
         required=False,
         allow_blank=True,
-        help_text=_("Optional manual ETA in HH:MM (used when no route is available)."),
+        help_text=_(
+            "Optional manual ETA (used when no route is available): HH:MM today, or an "
+            "ISO 8601 datetime such as 2026-10-03T16:30 (Belgrade time if no offset). "
+            "Must be in the future."
+        ),
     )
 
 
@@ -504,7 +508,7 @@ class DeliveryStartView(_ShopScopedView):
         request=StartSerializer,
         responses={
             200: DeliverySerializer,
-            400: OpenApiResponse(description=_("Invalid eta format (expected HH:MM).")),
+            400: OpenApiResponse(description=_("Invalid or past eta.")),
             404: _DELIVERY_RESPONSES[404],
             422: OpenApiResponse(description=_("Route unavailable — pass eta (HH:MM).")),
             **_SEND_LIMIT_RESPONSES,
@@ -531,15 +535,33 @@ class DeliveryStartView(_ShopScopedView):
 
     @staticmethod
     def _parse_eta(eta_raw: str):
+        """`HH:MM` (today, Belgrade) or an ISO 8601 datetime; must be in the future.
+
+        A past ETA would sit on the customer's page as "arriving by …" (SERBITO-356); the
+        ISO form lets an integrator pass a time after midnight or tomorrow.
+        """
         eta_raw = (eta_raw or "").strip()
         if not eta_raw:
             return None
         try:
             parsed = datetime.strptime(eta_raw, "%H:%M").time()
         except ValueError:
-            raise ApiError("invalid_eta", _("eta must be in HH:MM format."), 400) from None
-        today = timezone.now().astimezone(BELGRADE).date()
-        return datetime.combine(today, parsed, tzinfo=BELGRADE)
+            parsed = None
+        if parsed is not None:
+            today = timezone.now().astimezone(BELGRADE).date()
+            eta_at = datetime.combine(today, parsed, tzinfo=BELGRADE)
+        else:
+            try:
+                eta_at = datetime.fromisoformat(eta_raw)
+            except ValueError:
+                raise ApiError(
+                    "invalid_eta", _("eta must be HH:MM or an ISO 8601 datetime."), 400
+                ) from None
+            if eta_at.tzinfo is None:
+                eta_at = eta_at.replace(tzinfo=BELGRADE)
+        if eta_at <= timezone.now():
+            raise ApiError("invalid_eta", _("eta must be in the future."), 400)
+        return eta_at
 
 
 class DeliveryDispatchView(DeliveryStartView):

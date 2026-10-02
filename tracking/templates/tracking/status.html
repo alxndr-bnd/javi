@@ -17,7 +17,9 @@
         <h1 class="track-status">{% trans "Your order has been delivered" %}</h1>
       {% elif status == "on_the_way" %}
         <h1 class="track-status">{% trans "Your order is on its way" %}</h1>
-        {% if eta %}<div class="track-eta">{% blocktrans %}Arriving approximately by {{ eta }}{% endblocktrans %}</div>{% endif %}
+        {% if late %}
+          <div class="track-late">{% trans "Running a little late — the courier is still on the way." %}</div>
+        {% elif eta %}<div class="track-eta">{% blocktrans %}Arriving approximately by {{ eta }}{% endblocktrans %}</div>{% endif %}
       {% else %}
         <h1 class="track-status">{% trans "Your order has been received" %}</h1>
       {% endif %}

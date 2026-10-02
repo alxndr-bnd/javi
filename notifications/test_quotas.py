@@ -38,6 +38,13 @@ from notifications.quotas import (
 
 pytestmark = pytest.mark.django_db
 
+
+def _tomorrow() -> str:
+    """Manual ETA date that is always in the future (SERBITO-356 rejects a past ETA)."""
+    from common.timewindow import BELGRADE
+
+    return str(timezone.now().astimezone(BELGRADE).date() + timedelta(days=1))
+
 MAPS_OK = "integrations.testing.FakeMapsProvider"
 ROUTES_OK = "integrations.testing.FakeRoutesProvider"
 MSG_OK = "integrations.testing.FakeMessagingProvider"
@@ -325,7 +332,9 @@ def test_start_view_shows_quota_error_in_serbian(client):
     client.force_login(shop.owner)
     client.cookies["django_language"] = "sr"
     resp = client.post(
-        f"/app/dostava/{delivery.pk}/start/", {"eta_time": "16:00"}, follow=True
+        f"/app/dostava/{delivery.pk}/start/",
+        {"eta_time": "16:00", "eta_date": _tomorrow()},
+        follow=True,
     )
     body = resp.content.decode()
     assert "Dostignut je dnevni limit poruka (0 dnevno)" in body

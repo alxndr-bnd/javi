@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Javi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 23:28+0200\n"
+"POT-Creation-Date: 2026-10-02 23:32+0200\n"
 "PO-Revision-Date: 2026-06-07 01:30+0200\n"
 "Last-Translator: Javi <noreply@javi.serbito.rs>\n"
 "Language-Team: Serbian (Latin)\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: accounts/forms.py:18 deliveries/forms.py:19
+#: accounts/forms.py:18 deliveries/forms.py:23
 #: templates/accounts/register.html:19
 msgid "Store name"
 msgstr "Naziv prodavnice"
@@ -126,25 +126,31 @@ msgstr ""
 "Jezik poruka kupcu i stranice za praćenje: `sr` (srpski, latinica; "
 "podrazumevano) ili `en`."
 
-#: deliveries/api.py:205
-msgid "Optional manual ETA in HH:MM (used when no route is available)."
+#: deliveries/api.py:206
+msgid ""
+"Optional manual ETA (used when no route is available): HH:MM today, or an ISO"
+" 8601 datetime such as 2026-10-03T16:30 (Belgrade time if no offset). Must be"
+" in the future."
 msgstr ""
+"Opciono ručno vreme dolaska (kada ruta nije dostupna): HH:MM za danas ili ISO"
+" 8601 datum i vreme, npr. 2026-10-03T16:30 (beogradsko vreme ako nema "
+"pomaka). Mora biti u budućnosti."
 
-#: deliveries/api.py:213
+#: deliveries/api.py:217
 msgid "Optional new recipient phone to correct and resend."
 msgstr ""
 
-#: deliveries/api.py:263
+#: deliveries/api.py:267
 #, fuzzy
 #| msgid "Delivery restored."
 msgid "Delivery not found."
 msgstr "Dostava je vraćena."
 
-#: deliveries/api.py:269
+#: deliveries/api.py:273
 msgid "Delivery not found (or belongs to another shop)."
 msgstr ""
 
-#: deliveries/api.py:277
+#: deliveries/api.py:281
 #, fuzzy
 #| msgid ""
 #| "New stores can send messages only to Serbian mobile numbers until the store "
@@ -156,183 +162,187 @@ msgstr ""
 "Nove prodavnice mogu da šalju poruke samo na srpske mobilne brojeve dok "
 "prodavnica ne bude verifikovana."
 
-#: deliveries/api.py:283
+#: deliveries/api.py:287
 msgid ""
 "Sending limit reached: daily_limit, monthly_limit, recipient_daily_limit or "
 "resend_limit."
 msgstr ""
 
-#: deliveries/api.py:287
+#: deliveries/api.py:291
 msgid "global_limit: sending is paused for today."
 msgstr ""
 
-#: deliveries/api.py:299
+#: deliveries/api.py:303
 #, fuzzy
 #| msgid "Deliveries"
 msgid "List deliveries"
 msgstr "Dostave"
 
-#: deliveries/api.py:304
+#: deliveries/api.py:308
 msgid ""
 "Filter by industry-standard status: pending, ready_for_pickup, "
 "out_for_delivery, delivered."
 msgstr ""
 
-#: deliveries/api.py:313
+#: deliveries/api.py:317
 msgid ""
 "Sort order. Default `created_at` (oldest first); use `-created_at` for newest"
 " first."
 msgstr ""
 
-#: deliveries/api.py:322
+#: deliveries/api.py:326
 msgid ""
 "Set `true` to list soft-deleted deliveries (restore them via /restore). "
 "Default lists only active ones."
 msgstr ""
 
-#: deliveries/api.py:347 deliveries/templates/deliveries/api_docs.html:32
+#: deliveries/api.py:351 deliveries/templates/deliveries/api_docs.html:32
 #, fuzzy
 #| msgid "Delete delivery"
 msgid "Create a delivery"
 msgstr "Obriši dostavu"
 
-#: deliveries/api.py:349
+#: deliveries/api.py:353
 msgid ""
 "Creates a delivery (the address is geocoded server-side). Pass an "
 "`Idempotency-Key` header to safely retry — the same key returns the same "
 "delivery instead of creating a duplicate."
 msgstr ""
 
-#: deliveries/api.py:358
+#: deliveries/api.py:362
 msgid "Unique key to make creation idempotent (per shop)."
 msgstr ""
 
-#: deliveries/api.py:364
+#: deliveries/api.py:368
 msgid "Invalid phone or malformed JSON."
 msgstr ""
 
-#: deliveries/api.py:365
+#: deliveries/api.py:369
 msgid "Missing required fields."
 msgstr ""
 
-#: deliveries/api.py:389 deliveries/api.py:420
+#: deliveries/api.py:393 deliveries/api.py:424
 #, python-format
 msgid "Missing required fields: %(fields)s."
 msgstr ""
 
-#: deliveries/api.py:407
+#: deliveries/api.py:411
 msgid "language must be one of: sr, en."
 msgstr "language mora biti jedno od: sr, en."
 
-#: deliveries/api.py:427 deliveries/api.py:642
+#: deliveries/api.py:431 deliveries/api.py:664
 msgid "Invalid recipient phone number."
 msgstr ""
 
-#: deliveries/api.py:475
+#: deliveries/api.py:479
 #, fuzzy
 #| msgid "New delivery"
 msgid "Get a delivery"
 msgstr "Nova dostava"
 
-#: deliveries/api.py:484
+#: deliveries/api.py:488
 #, fuzzy
 #| msgid "Delete delivery"
 msgid "Delete a delivery (soft)"
 msgstr "Obriši dostavu"
 
-#: deliveries/api.py:485
+#: deliveries/api.py:489
 msgid "Soft-deletes the delivery; it can be restored via /restore."
 msgstr ""
 
-#: deliveries/api.py:499
+#: deliveries/api.py:503
 msgid "Start delivery (dispatch)"
 msgstr ""
 
-#: deliveries/api.py:501
+#: deliveries/api.py:505
 msgid ""
 "Marks the delivery 'out for delivery': computes ETA, notifies the customer "
 "with a tracking link. If no route is available, pass `eta` (HH:MM)."
 msgstr ""
 
-#: deliveries/api.py:507
-msgid "Invalid eta format (expected HH:MM)."
-msgstr ""
+#: deliveries/api.py:511
+msgid "Invalid or past eta."
+msgstr "Neispravan ili već prošao eta."
 
-#: deliveries/api.py:509
+#: deliveries/api.py:513
 msgid "Route unavailable — pass eta (HH:MM)."
 msgstr ""
 
-#: deliveries/api.py:526
+#: deliveries/api.py:530
 msgid "Route is unavailable — pass eta (HH:MM) to start the delivery."
 msgstr ""
 
-#: deliveries/api.py:540
-msgid "eta must be in HH:MM format."
-msgstr ""
+#: deliveries/api.py:558
+msgid "eta must be HH:MM or an ISO 8601 datetime."
+msgstr "eta mora biti u formatu HH:MM ili ISO 8601 datum i vreme."
 
-#: deliveries/api.py:550
+#: deliveries/api.py:563
+msgid "eta must be in the future."
+msgstr "eta mora biti u budućnosti."
+
+#: deliveries/api.py:572
 msgid "Dispatch (alias of start)"
 msgstr ""
 
-#: deliveries/api.py:551
+#: deliveries/api.py:573
 msgid "Identical to POST /start; provided for naming parity with the UI."
 msgstr ""
 
-#: deliveries/api.py:564
+#: deliveries/api.py:586
 #, fuzzy
 #| msgid "Mark ready"
 msgid "Mark ready for pickup"
 msgstr "Označi spremno"
 
-#: deliveries/api.py:565
+#: deliveries/api.py:587
 msgid "Transitions a 'pending' delivery to 'ready_for_pickup' (new → ready)."
 msgstr ""
 
-#: deliveries/api.py:580 deliveries/templates/deliveries/_delivery_card.html:58
+#: deliveries/api.py:602 deliveries/templates/deliveries/_delivery_card.html:58
 msgid "Mark delivered"
 msgstr "Označi isporučeno"
 
-#: deliveries/api.py:581
+#: deliveries/api.py:603
 msgid "Marks the delivery as delivered (optional manual confirmation)."
 msgstr ""
 
-#: deliveries/api.py:596
+#: deliveries/api.py:618
 #, fuzzy
 #| msgid "Delete delivery"
 msgid "Restore a soft-deleted delivery"
 msgstr "Obriši dostavu"
 
-#: deliveries/api.py:611
+#: deliveries/api.py:633
 #, fuzzy
 #| msgid "recipient opted out of notifications"
 msgid "Resend the 'on the way' notification"
 msgstr "primalac otkazao obaveštenja"
 
-#: deliveries/api.py:613
+#: deliveries/api.py:635
 msgid ""
 "Re-sends the 'on the way' notification (optionally to a corrected phone). "
 "Only valid after the delivery has started."
 msgstr ""
 
-#: deliveries/api.py:626 deliveries/api.py:652
+#: deliveries/api.py:648 deliveries/api.py:674
 #, fuzzy
 #| msgid "Delivery is already in progress."
 msgid "Delivery has not started — nothing to resend."
 msgstr "Dostava je već u toku."
 
-#: deliveries/api.py:679
+#: deliveries/api.py:701
 msgid "Store name (shown to customers; no links or phone numbers)."
 msgstr ""
 
-#: deliveries/api.py:683
+#: deliveries/api.py:705
 msgid "Store address; geocoded server-side into the ETA origin."
 msgstr ""
 
-#: deliveries/api.py:688
+#: deliveries/api.py:710
 msgid "Merchant https URL that receives signed event webhooks."
 msgstr ""
 
-#: deliveries/api.py:692
+#: deliveries/api.py:714
 msgid "Secret for the Javi-Signature HMAC of webhook bodies (write-only)."
 msgstr ""
 
@@ -340,77 +350,85 @@ msgstr ""
 msgid "Missing or invalid API key."
 msgstr ""
 
-#: deliveries/forms.py:9 deliveries/views.py:344
+#: deliveries/forms.py:13 deliveries/views.py:346
 msgid "Invalid number. E.g. 064 123 4567"
 msgstr "Neispravan broj. Npr. 064 123 4567"
 
-#: deliveries/forms.py:24
+#: deliveries/forms.py:28
 msgid "Store address"
 msgstr "Adresa prodavnice"
 
-#: deliveries/forms.py:34
+#: deliveries/forms.py:38
 msgid "Phone for customers (optional)"
 msgstr "Telefon za kupce (opciono)"
 
-#: deliveries/forms.py:40
+#: deliveries/forms.py:44
 msgid "Webhook URL"
 msgstr ""
 
-#: deliveries/forms.py:49
+#: deliveries/forms.py:53
 msgid "Webhook secret"
 msgstr ""
 
-#: deliveries/forms.py:55
+#: deliveries/forms.py:59
 msgid "Remove the secret"
 msgstr "Ukloni tajnu"
 
-#: deliveries/forms.py:76 deliveries/forms.py:115
+#: deliveries/forms.py:80 deliveries/forms.py:119
 msgid "Phone"
 msgstr "Telefon"
 
-#: deliveries/forms.py:82
+#: deliveries/forms.py:86
 msgid "Name"
 msgstr "Ime"
 
-#: deliveries/forms.py:85
+#: deliveries/forms.py:89
 msgid "Customer's language"
 msgstr "Jezik kupca"
 
-#: deliveries/forms.py:91
+#: deliveries/forms.py:95
 msgid "Address"
 msgstr "Adresa"
 
-#: deliveries/forms.py:94
+#: deliveries/forms.py:98
 msgid "Street and number, city"
 msgstr "Ulica i broj, grad"
 
-#: deliveries/forms.py:97
+#: deliveries/forms.py:101
 msgid "Description (optional)"
 msgstr "Opis (opciono)"
 
-#: deliveries/forms.py:130
+#: deliveries/forms.py:138
+msgid "Arrival date"
+msgstr "Datum dolaska"
+
+#: deliveries/forms.py:143
 msgid "Arrival time (HH:MM)"
 msgstr "Vreme dolaska (HH:MM)"
 
-#: deliveries/models.py:93
+#: deliveries/forms.py:159
+msgid "This time has already passed. Enter a time in the future."
+msgstr "To vreme je već prošlo. Unesite vreme u budućnosti."
+
+#: deliveries/models.py:92
 #: deliveries/templates/deliveries/delivery_board.html:10
 #: deliveries/templates/deliveries/delivery_list.html:10
 msgid "New"
 msgstr "Novo"
 
-#: deliveries/models.py:94
+#: deliveries/models.py:93
 #: deliveries/templates/deliveries/delivery_board.html:14
 #: deliveries/templates/deliveries/delivery_list.html:14
 msgid "Ready"
 msgstr "Spremno"
 
-#: deliveries/models.py:95
+#: deliveries/models.py:94
 #: deliveries/templates/deliveries/delivery_board.html:18
 #: deliveries/templates/deliveries/delivery_list.html:18
 msgid "In delivery"
 msgstr "U dostavi"
 
-#: deliveries/models.py:96
+#: deliveries/models.py:95
 #: deliveries/templates/deliveries/delivery_board.html:22
 msgid "Done"
 msgstr "Završeno"
@@ -649,11 +667,11 @@ msgstr "Potvrdite dostavu"
 msgid "Estimated arrival time"
 msgstr "Procenjeno vreme dolaska"
 
-#: deliveries/templates/deliveries/delivery_confirm_eta.html:35
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:45
 msgid "You can adjust the time before sending."
 msgstr "Možete ispraviti vreme pre slanja."
 
-#: deliveries/templates/deliveries/delivery_confirm_eta.html:37
+#: deliveries/templates/deliveries/delivery_confirm_eta.html:47
 msgid "Confirm and notify the customer"
 msgstr "Potvrdi i obavesti kupca"
 
@@ -678,7 +696,7 @@ msgstr "Nema dostava danas."
 msgid "Add your first delivery with the button below."
 msgstr "Dodajte prvu dostavu dugmetom ispod."
 
-#: deliveries/templates/deliveries/shop_profile.html:21 deliveries/views.py:172
+#: deliveries/templates/deliveries/shop_profile.html:21 deliveries/views.py:171
 msgid "Account is not linked to a store."
 msgstr "Nalog nije povezan sa prodavnicom."
 
@@ -782,11 +800,11 @@ msgstr ""
 msgid "Generate API key"
 msgstr "Generišite API ključ u svom profilu"
 
-#: deliveries/views.py:149
+#: deliveries/views.py:148
 msgid "Saved."
 msgstr "Sačuvano."
 
-#: deliveries/views.py:154
+#: deliveries/views.py:153
 msgid ""
 "Name saved, but we could not recognize the address. Please check and try "
 "again."
@@ -794,7 +812,7 @@ msgstr ""
 "Naziv je sačuvan, ali nismo prepoznali adresu. Proverite je i pokušajte "
 "ponovo."
 
-#: deliveries/views.py:179
+#: deliveries/views.py:178
 #, python-format
 msgid ""
 "You already have %(count)d active API keys. Revoke one to create a new key."
@@ -802,60 +820,60 @@ msgstr ""
 "Već imate %(count)d aktivnih API ključeva. Opozovite jedan da biste napravili"
 " novi."
 
-#: deliveries/views.py:200
+#: deliveries/views.py:199
 msgid "API key revoked."
 msgstr ""
 
-#: deliveries/views.py:231
+#: deliveries/views.py:230
 msgid "Delivery added."
 msgstr "Dostava je dodata."
 
-#: deliveries/views.py:233
+#: deliveries/views.py:232
 msgid "The number is not a Serbian mobile — please check."
 msgstr "Broj nije srpski mobilni — proverite ga."
 
-#: deliveries/views.py:237
+#: deliveries/views.py:236
 msgid "We could not recognize the address — please check it later."
 msgstr "Nismo prepoznali adresu — proverite je kasnije."
 
-#: deliveries/views.py:246
+#: deliveries/views.py:245
 msgid "First set your store address."
 msgstr "Prvo podesite adresu prodavnice."
 
-#: deliveries/views.py:303 deliveries/views.py:316
+#: deliveries/views.py:301 deliveries/views.py:314
 msgid "Delivery is already in progress."
 msgstr "Dostava je već u toku."
 
-#: deliveries/views.py:307
+#: deliveries/views.py:305
 #, python-format
 msgid "Customer notified · arriving by %(time)s"
 msgstr "Kupac obavešten · stiže do %(time)s"
 
-#: deliveries/views.py:311
+#: deliveries/views.py:309
 msgid "Message not sent — try again later."
 msgstr "Poruka nije poslata — pokušajte kasnije."
 
-#: deliveries/views.py:352
+#: deliveries/views.py:354
 msgid "Unable to resend."
 msgstr "Nije moguće ponovo poslati."
 
-#: deliveries/views.py:354
+#: deliveries/views.py:356
 msgid "Message resent."
 msgstr "Poruka je ponovo poslata."
 
-#: deliveries/views.py:356
+#: deliveries/views.py:358
 msgid "Message not sent — check the number."
 msgstr "Poruka nije poslata — proverite broj."
 
-#: deliveries/views.py:367
+#: deliveries/views.py:369
 msgid "Marked as delivered."
 msgstr "Označeno kao isporučeno."
 
-#: deliveries/views.py:399
+#: deliveries/views.py:401
 msgid "Delivery deleted."
 msgstr "Dostava je obrisana."
 
-#: deliveries/views.py:424
+#: deliveries/views.py:426
 msgid "Delivery restored."
 msgstr "Dostava je vraćena."
 
@@ -1001,7 +1019,7 @@ msgid "Questions about the order? Call %(shop)s:"
 msgstr "Pitanja o porudžbini? Pozovite prodavnicu %(shop)s:"
 
 #: tracking/templates/tracking/status.html:3
-#: tracking/templates/tracking/status.html:29
+#: tracking/templates/tracking/status.html:31
 msgid "Delivery status"
 msgstr "Status dostave"
 
@@ -1025,50 +1043,54 @@ msgstr "Vaša porudžbina je isporučena"
 msgid "Your order is on its way"
 msgstr "Vaša porudžbina je u dostavi"
 
-#: tracking/templates/tracking/status.html:20
+#: tracking/templates/tracking/status.html:21
+msgid "Running a little late — the courier is still on the way."
+msgstr "Dostava malo kasni — kurir je još na putu."
+
+#: tracking/templates/tracking/status.html:22
 #, python-format
 msgid "Arriving approximately by %(eta)s"
 msgstr "Stiže okvirno do %(eta)s"
 
-#: tracking/templates/tracking/status.html:22
+#: tracking/templates/tracking/status.html:24
 msgid "Your order has been received"
 msgstr "Vaša porudžbina je primljena"
 
-#: tracking/templates/tracking/status.html:34
+#: tracking/templates/tracking/status.html:36
 msgid "completed"
 msgstr "završeno"
 
-#: tracking/templates/tracking/status.html:34
+#: tracking/templates/tracking/status.html:36
 msgid "in progress"
 msgstr "u toku"
 
-#: tracking/templates/tracking/status.html:34
+#: tracking/templates/tracking/status.html:36
 msgid "not yet"
 msgstr "predstoji"
 
-#: tracking/templates/tracking/status.html:42
+#: tracking/templates/tracking/status.html:44
 msgid "I received the order"
 msgstr "Primio sam porudžbinu"
 
-#: tracking/templates/tracking/status.html:47
+#: tracking/templates/tracking/status.html:49
 #, python-format
 msgid "Thank you for your rating! Your rating: %(rating)s★"
 msgstr "Hvala na oceni! Vaša ocena: %(rating)s★"
 
-#: tracking/templates/tracking/status.html:50
+#: tracking/templates/tracking/status.html:52
 msgid "How did the delivery go?"
 msgstr "Kako je prošla dostava?"
 
-#: tracking/templates/tracking/status.html:51
+#: tracking/templates/tracking/status.html:53
 msgid "Tap the stars to rate (1 = poor, 5 = excellent)."
 msgstr "Dodirnite zvezdice da ocenite (1 = loše, 5 = odlično)."
 
-#: tracking/templates/tracking/status.html:58
+#: tracking/templates/tracking/status.html:60
 #, python-format
 msgid "Rating %(n)s of 5"
 msgstr "Ocena %(n)s od 5"
 
-#: tracking/templates/tracking/status.html:67
+#: tracking/templates/tracking/status.html:69
 msgid "Unsubscribe from notifications"
 msgstr "Odjavi se sa obaveštenja"
 

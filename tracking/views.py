@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 
 from common import ratelimit
 from common.client_ip import client_ip
-from common.timewindow import format_eta
+from common.timewindow import format_eta_label
 from deliveries.models import Delivery, Rating, TrackingToken
 from deliveries.services import customer_language
 
@@ -122,7 +122,13 @@ def status(request, token):
         "status": delivery.status,
         "steps": _stepper(delivery.status),
         "dest_city": delivery.dest_city,
-        "eta": format_eta(delivery.eta_at) if delivery.eta_at else None,
+        "eta": format_eta_label(delivery.eta_at) if delivery.eta_at else None,
+        # ETA прошло, а доставка ещё в пути — «немного опаздывает», а не «stiže do 14:00».
+        "late": bool(
+            delivery.status == Delivery.Status.ON_THE_WAY
+            and delivery.eta_at
+            and delivery.eta_at < timezone.now()
+        ),
         "token": token,
         "rating": rating.value if rating else None,
         "can_rate": delivery.status in _RATEABLE and rating is None,

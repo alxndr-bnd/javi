@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n javi %}
 <div class="card">
   <div class="card-head">
     <div class="card-name">{{ d.recipient_name }}</div>
@@ -8,7 +8,7 @@
   <div class="card-meta">
     <span class="chip chip-{{ d.status }}">{{ d.get_status_display }}</span>
     {% if d.status == "on_the_way" and d.eta_at %}
-      <span class="card-eta">{% trans "by" %} {{ d.eta_at|date:"H:i" }}</span>
+      <span class="card-eta">{% trans "by" %} {{ d.eta_at|eta_label }}</span>
     {% endif %}
     {% if d.on_the_way_notif %}
       {% if d.on_the_way_notif.status == "read" %}

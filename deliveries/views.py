@@ -1,5 +1,4 @@
 import hashlib
-from datetime import datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -13,7 +12,7 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from common.phone import InvalidPhone, normalize_phone
-from common.timewindow import BELGRADE, format_eta
+from common.timewindow import BELGRADE, format_eta, format_eta_label
 from notifications.models import Notification, OptOut
 from notifications.quotas import QuotaExceeded, shop_usage
 
@@ -291,8 +290,7 @@ class DeliveryStartView(LoginRequiredMixin, View):
             form = ManualEtaForm(request.POST)
             if not form.is_valid():
                 return render(request, self.template_name, {"form": form, "delivery": delivery})
-            today = timezone.now().astimezone(BELGRADE).date()
-            manual_eta = datetime.combine(today, form.cleaned_data["eta_time"], tzinfo=BELGRADE)
+            manual_eta = form.cleaned_data["eta_at"]
             try:
                 result = start_delivery(delivery, manual_eta=manual_eta)
             except QuotaExceeded as exc:
@@ -305,7 +303,7 @@ class DeliveryStartView(LoginRequiredMixin, View):
                 messages.success(
                     request,
                     _("Customer notified · arriving by %(time)s")
-                    % {"time": format_eta(result.eta_at)},
+                    % {"time": format_eta_label(result.eta_at)},
                 )
                 if not result.sent:
                     messages.warning(request, _("Message not sent — try again later."))
@@ -318,8 +316,12 @@ class DeliveryStartView(LoginRequiredMixin, View):
 
         # Шаг 1: считаем ETA (now + время в пути + запас) и показываем экран подтверждения.
         eta = compute_eta(delivery)
-        computed = format_eta(eta) if eta else None
-        initial = {"eta_time": computed} if computed else {}
+        computed = format_eta_label(eta) if eta else None
+        initial = (
+            {"eta_time": format_eta(eta), "eta_date": eta.astimezone(BELGRADE).date()}
+            if eta
+            else {"eta_date": timezone.now().astimezone(BELGRADE).date()}
+        )
         reason = None if computed else eta_unavailable_reason(delivery)
         return render(
             request,

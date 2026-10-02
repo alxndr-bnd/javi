@@ -1,9 +1,13 @@
+from datetime import datetime
+
 from django import forms
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.i18n import CUSTOMER_LANGUAGES, DEFAULT_CUSTOMER_LANGUAGE
 from common.phone import InvalidPhone, normalize_phone
 from common.text import SHOP_NAME_MAX_LEN, clean_shop_name
+from common.timewindow import BELGRADE
 from common.validators import validate_https_url
 
 INVALID_PHONE_MSG = _("Invalid number. E.g. 064 123 4567")
@@ -124,8 +128,17 @@ class RecipientPhoneForm(forms.Form):
 
 
 class ManualEtaForm(forms.Form):
-    """Ручной ввод ETA при недоступности маршрута (FR-9)."""
+    """Время прибытия на экране подтверждения (FR-9): дата + время, только в будущем.
 
+    Дата (SERBITO-356): без неё ETA после полуночи или на завтра не задать, а прошедшее
+    время принималось и висело на странице клиента как «stiže do 14:00».
+    """
+
+    eta_date = forms.DateField(
+        label=_("Arrival date"),
+        required=False,  # старые формы без даты — сегодня
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+    )
     eta_time = forms.TimeField(
         label=_("Arrival time (HH:MM)"),
         input_formats=["%H:%M"],
@@ -133,3 +146,17 @@ class ManualEtaForm(forms.Form):
             format="%H:%M", attrs={"inputmode": "numeric", "placeholder": "16:00"}
         ),
     )
+
+    def clean(self):
+        cleaned = super().clean()
+        eta_time = cleaned.get("eta_time")
+        if eta_time is None:
+            return cleaned
+        day = cleaned.get("eta_date") or timezone.now().astimezone(BELGRADE).date()
+        eta_at = datetime.combine(day, eta_time, tzinfo=BELGRADE)
+        if eta_at <= timezone.now():
+            raise forms.ValidationError(
+                _("This time has already passed. Enter a time in the future."), code="past"
+            )
+        cleaned["eta_at"] = eta_at
+        return cleaned
