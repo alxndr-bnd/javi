@@ -88,6 +88,8 @@
   }
   .langs button:hover{color:var(--ink);border-color:var(--brand)}
   /* darker than --brand so white text clears WCAG AA (4.5:1); was #4f7cff = 3.71 */
+  .langs .signin{margin-left:10px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;font-size:14px;line-height:1.4}
+  .langs .signin:hover{border-color:var(--brand)}
   .langs button.active{background:#3a5bd0;border-color:#3a5bd0;color:#fff}
 
   .hero{padding:46px 0 28px;text-align:center}
@@ -164,6 +166,7 @@
       <button data-lang="sr">SR</button>
       <button data-lang="en">EN</button>
       <button data-lang="ru">RU</button>
+      <a href="/accounts/login/" class="signin" data-app-link data-i18n="nav_signin">Prijava</a>
     </nav>
   </header>
 
@@ -172,8 +175,8 @@
     <h1 data-i18n="hero_h1">Obavestite kupca <span class="hl">kada paket krene — i kada stiže</span></h1>
     <p class="lead" data-i18n="hero_lead">Manje neuspešnih isporuka. Zadovoljniji kupci. Više ponovljenih porudžbina.</p>
     <div class="cta-row">
-      <a href="#prijava" class="btn btn-primary" data-i18n="hero_cta">Želim da probam</a>
-      <a href="#kako" class="btn btn-ghost" data-i18n="hero_cta2">Kako radi</a>
+      <a href="/accounts/register/" class="btn btn-primary" data-app-link data-i18n="hero_cta">Isprobaj besplatno</a>
+      <a href="#prijava" class="btn btn-ghost" data-i18n="hero_cta2">Ostavite kontakt</a>
     </div>
   </section>
 
@@ -268,7 +271,7 @@ const I18N = {
     meta_desc:"Javi obaveštava vaše kupce kada isporuka kreće i kada stiže. Manje neuspešnih isporuka, zadovoljniji kupci.",
     hero_h1:'Obavestite kupca <span class="hl">kada paket krene — i kada stiže</span>',
     hero_lead:"Manje neuspešnih isporuka. Zadovoljniji kupci. Više ponovljenih porudžbina.",
-    hero_cta:"Želim da probam", hero_cta2:"Kako radi",
+    hero_cta:"Isprobaj besplatno", hero_cta2:"Ostavite kontakt", nav_signin:"Prijava",
     offer_q:'Javi <em>obaveštava primaoca</em> kada isporuka krene i kada okvirno stiže.',
     f1_h:"Kupac zna da paket kreće", f1_p:"Automatska poruka preko Viber-a ili SMS-a čim pošaljete porudžbinu.",
     f2_h:"I kada otprilike stiže", f2_p:"Okvirno vreme dolaska — kupac je kod kuće, isporuka uspeva iz prvog pokušaja.",
@@ -291,7 +294,7 @@ const I18N = {
     meta_desc:"Javi notifies your customers when delivery starts and when it arrives. Fewer failed deliveries, happier customers.",
     hero_h1:'Tell your customer <span class="hl">when the parcel leaves — and when it arrives</span>',
     hero_lead:"Fewer failed deliveries. Happier customers. More repeat orders.",
-    hero_cta:"I want to try it", hero_cta2:"How it works",
+    hero_cta:"Try it free", hero_cta2:"Leave your contact", nav_signin:"Sign in",
     offer_q:'Javi <em>notifies the recipient</em> when the delivery starts and when it should arrive.',
     f1_h:"The customer knows it's on the way", f1_p:"Automatic Viber or SMS message the moment you ship the order.",
     f2_h:"And roughly when it arrives", f2_p:"An approximate arrival time — the customer is home, delivery succeeds on the first try.",
@@ -314,7 +317,7 @@ const I18N = {
     meta_desc:"Javi уведомляет ваших покупателей, когда доставка началась и когда приедет. Меньше срывов, довольные клиенты.",
     hero_h1:'Сообщите покупателю, <span class="hl">когда посылка выехала — и когда приедет</span>',
     hero_lead:"Меньше срывов доставки. Довольные покупатели. Больше повторных заказов.",
-    hero_cta:"Хочу попробовать", hero_cta2:"Как это работает",
+    hero_cta:"Попробовать бесплатно", hero_cta2:"Оставить контакт", nav_signin:"Войти",
     offer_q:'Javi <em>уведомляет получателя</em>, когда доставка началась и когда она примерно приедет.',
     f1_h:"Покупатель знает, что посылка выехала", f1_p:"Автоматическое сообщение в Viber или SMS сразу после отправки заказа.",
     f2_h:"И когда примерно приедет", f2_p:"Примерное время прибытия — покупатель дома, доставка проходит с первого раза.",
@@ -354,6 +357,14 @@ function setLang(lang){
 // language buttons
 document.querySelectorAll('#langs button').forEach(b=>{
   b.addEventListener('click',()=>setLang(b.dataset.lang));
+});
+// The app speaks sr-latn and en: carry the landing language over to it
+document.querySelectorAll('[data-app-link]').forEach(a=>{
+  a.addEventListener('click',()=>{
+    let lang='sr'; try{ lang = localStorage.getItem('javi_lang') || 'sr'; }catch(e){}
+    const app = {sr:'sr-latn', en:'en', ru:'en'}[lang] || 'sr-latn';
+    document.cookie = 'django_language=' + app + '; path=/; max-age=31536000; SameSite=Lax; Secure';
+  });
 });
 
 // initial language: saved → browser → default sr
