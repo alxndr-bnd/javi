@@ -39,9 +39,12 @@
     </ol>
 
     {% if status == "on_the_way" %}
-      <form method="post" action="{% url 'tracking:mark_received' token %}" class="confirm-block">
+      {# Irreversible, so it asks first; the wording is gender-neutral (SERBITO-356). #}
+      <form method="post" action="{% url 'tracking:mark_received' token %}" class="confirm-block"
+            data-confirm="{% trans "Confirm that you received the order? This can't be undone." %}">
         {% csrf_token %}
-        <button type="submit" class="btn btn-primary">{% trans "I received the order" %}</button>
+        <button type="submit" class="btn btn-primary">{% trans "Confirm receipt of the order" %}</button>
+        <p class="rate-hint">{% trans "After that you can rate the delivery." %}</p>
       </form>
     {% endif %}
 

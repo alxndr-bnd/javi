@@ -81,7 +81,7 @@ def test_expired_link_410(client):
 
 def test_rating_capture_and_thanks(client):
     """AC#4: тап звезды → Rating, страница показывает «Hvala!»; AC#5 — без дублей."""
-    token = _token(Delivery.Status.ON_THE_WAY)
+    token = _token(Delivery.Status.DELIVERED)
     url = f"/t/{token.token}/"
     # до оценки — видны звёзды
     assert "How did the delivery go" in client.get(url).content.decode()
@@ -103,7 +103,7 @@ def test_rating_capture_and_thanks(client):
 def test_rating_invalid_value_ignored(client):
     from deliveries.models import Rating
 
-    token = _token(Delivery.Status.ON_THE_WAY)
+    token = _token(Delivery.Status.DELIVERED)
     client.post(f"/t/{token.token}/oceni/", {"value": "9"})
     assert Rating.objects.count() == 0
 
@@ -112,14 +112,14 @@ def test_recipient_can_mark_received(client):
     """Получатель подтверждает получение → статус delivered, появляется блок оценки."""
     token = _token(Delivery.Status.ON_THE_WAY)
     url = f"/t/{token.token}/"
-    assert "I received the order" in client.get(url).content.decode()
+    assert "Confirm receipt of the order" in client.get(url).content.decode()
     resp = client.post(f"{url}primljeno/")
     assert resp.status_code == 302
     token.delivery.refresh_from_db()
     assert token.delivery.status == Delivery.Status.DELIVERED
     body = client.get(url).content.decode()
     assert "has been delivered" in body
-    assert "I received the order" not in body
+    assert "Confirm receipt of the order" not in body
     assert "How did the delivery go" in body  # оценку всё ещё можно поставить
 
 
@@ -272,7 +272,7 @@ def test_status_page_structure_for_screen_readers(client, status, lang, title, s
 
 
 def test_rating_stars_tab_left_to_right_in_a_labelled_group(client):
-    token = _token(Delivery.Status.ON_THE_WAY)
+    token = _token(Delivery.Status.DELIVERED)
     root = _tree(client.get(f"/t/{token.token}/"))
     group = root.find("form", {"role": "group"})
     assert "stars" in group.classes()

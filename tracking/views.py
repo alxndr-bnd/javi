@@ -20,7 +20,8 @@ _STEPS = [
     (_l("In delivery"), Delivery.Status.ON_THE_WAY),
     (_l("Delivered"), Delivery.Status.DELIVERED),
 ]
-_RATEABLE = (Delivery.Status.ON_THE_WAY, Delivery.Status.DELIVERED)
+# Оценить можно только доставленный заказ (SERBITO-356): раньше звёзды были и «в пути».
+_RATEABLE = (Delivery.Status.DELIVERED,)
 
 
 def _stepper(status: str) -> list[dict]:
@@ -183,8 +184,8 @@ def rate(request, token):
         value = int(request.POST.get("value", ""))
     except (TypeError, ValueError):
         value = 0
-    if 1 <= value <= 5:
-        delivery = token_obj.delivery
+    delivery = token_obj.delivery
+    if 1 <= value <= 5 and delivery.status in _RATEABLE:
         _rating, created = Rating.objects.update_or_create(
             delivery=delivery, defaults={"value": value}
         )

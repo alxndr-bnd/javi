@@ -1069,28 +1069,36 @@ msgid "not yet"
 msgstr "predstoji"
 
 #: tracking/templates/tracking/status.html:44
-msgid "I received the order"
-msgstr "Primio sam porudžbinu"
+msgid "Confirm that you received the order? This can't be undone."
+msgstr "Potvrđujete da je porudžbina primljena? Ovo ne može da se poništi."
 
-#: tracking/templates/tracking/status.html:49
+#: tracking/templates/tracking/status.html:46
+msgid "Confirm receipt of the order"
+msgstr "Potvrdi prijem porudžbine"
+
+#: tracking/templates/tracking/status.html:47
+msgid "After that you can rate the delivery."
+msgstr "Nakon toga možete da ocenite dostavu."
+
+#: tracking/templates/tracking/status.html:52
 #, python-format
 msgid "Thank you for your rating! Your rating: %(rating)s★"
 msgstr "Hvala na oceni! Vaša ocena: %(rating)s★"
 
-#: tracking/templates/tracking/status.html:52
+#: tracking/templates/tracking/status.html:55
 msgid "How did the delivery go?"
 msgstr "Kako je prošla dostava?"
 
-#: tracking/templates/tracking/status.html:53
+#: tracking/templates/tracking/status.html:56
 msgid "Tap the stars to rate (1 = poor, 5 = excellent)."
 msgstr "Dodirnite zvezdice da ocenite (1 = loše, 5 = odlično)."
 
-#: tracking/templates/tracking/status.html:60
+#: tracking/templates/tracking/status.html:63
 #, python-format
 msgid "Rating %(n)s of 5"
 msgstr "Ocena %(n)s od 5"
 
-#: tracking/templates/tracking/status.html:69
+#: tracking/templates/tracking/status.html:72
 msgid "Unsubscribe from notifications"
 msgstr "Odjavi se sa obaveštenja"
 
@@ -1113,6 +1121,6 @@ msgstr "Više vam nećemo slati poruke o ocenjivanju."
 msgid "You have been unsubscribed."
 msgstr "Odjavljeni ste."
 
-#: tracking/views.py:63
+#: tracking/views.py:64
 msgid "Too many requests. Try again later."
 msgstr "Previše zahteva. Pokušajte kasnije."
