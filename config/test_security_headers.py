@@ -130,3 +130,28 @@ def test_allowed_hosts_default_is_empty_not_wildcard(settings):
 def test_wsgi_entrypoint_runs_the_check():
     text = (ROOT / "config" / "wsgi.py").read_text(encoding="utf-8")
     assert "assert_safe_to_serve(settings)" in text
+
+
+# --- SERBITO-348: the static landing (WhiteNoise) cannot be framed ---
+
+
+@pytest.mark.parametrize("path", ["/", "/privacy.html"])
+def test_landing_html_forbids_framing(client, path):
+    resp = client.get(path)
+    assert resp.status_code == 200
+    assert resp["X-Frame-Options"] == "DENY"
+    assert resp[ENFORCE] == "frame-ancestors 'none'"
+    assert REPORT_ONLY not in resp  # no policy that could break the lead form or its scripts
+
+
+def test_landing_assets_get_no_framing_headers(client):
+    resp = client.get("/robots.txt")
+    assert resp.status_code == 200
+    assert "X-Frame-Options" not in resp and ENFORCE not in resp
+
+
+def test_django_pages_keep_their_own_policy(client):
+    # The WhiteNoise hook must not replace what Django's middleware sends on its pages.
+    resp = client.get("/accounts/login/")
+    assert resp[ENFORCE] != "frame-ancestors 'none'"
+    assert "form-action 'self'" in resp[ENFORCE]
