@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- Python is updated to 3.14.8 with current security fixes.
+  - SR: Python je ažuriran na 3.14.8 sa najnovijim bezbednosnim ispravkama.
+
 ## [0.71.0] - 2026-10-03
 
 ### Security
