@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- The app now gets operating-system security fixes every week, even between releases.
+  - SR: Aplikacija sada svake nedelje dobija bezbednosne ispravke operativnog sistema, i između izdanja.
+
 ## [0.69.0] - 2026-10-03
 
 ### Security
