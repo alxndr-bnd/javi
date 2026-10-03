@@ -414,3 +414,133 @@ def test_smoke_rolls_back_to_the_previous_revision(tmp_path, fakes, code, prev, 
     assert ("--to-revisions javi-00067=100" in log.read_text()) == rollback, log.read_text()
     if not ok:
         assert "::error::" in r.stdout
+
+
+# --- SERBITO-348: security headers check after the deploy -----------------------------------
+
+HEADERS_SCRIPT = ROOT / "scripts" / "check_security_headers.sh"
+HEADERS = _index(lambda s: s.get("name") == "Security headers check")
+GOOD_HEADERS = (
+    "HTTP/2 200\r\n"
+    "Strict-Transport-Security: max-age=31536000; includeSubDomains\r\n"
+    "X-Content-Type-Options: nosniff\r\n"
+    "X-Frame-Options: DENY\r\n"
+    "Referrer-Policy: same-origin\r\n"
+    "Content-Security-Policy: frame-ancestors 'none'\r\n"
+    "\r\n"
+)
+
+
+@pytest.fixture
+def fake_headers(tmp_path):
+    """A curl stub that prints $FAKE_HEADERS as the response headers (no network)."""
+    bin_dir = tmp_path / "hdrbin"
+    bin_dir.mkdir()
+    (bin_dir / "curl").write_text('#!/bin/sh\nprintf "%b" "$FAKE_HEADERS"\n')
+    (bin_dir / "curl").chmod(0o755)
+    (bin_dir / "gcloud").write_text('#!/bin/sh\necho "https://javi-x.a.run.app"\n')
+    (bin_dir / "gcloud").chmod(0o755)
+    return os.pathsep.join([str(bin_dir), "/usr/bin", "/bin"])
+
+
+def _check(path_env, headers):
+    return subprocess.run(
+        ["bash", str(HEADERS_SCRIPT), "https://javi-x.a.run.app/"],
+        env=_clean_env(PATH=path_env, FAKE_HEADERS=headers.replace("\r\n", "\\r\\n")),
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+
+def test_header_check_passes_on_a_complete_set(fake_headers):
+    r = _check(fake_headers, GOOD_HEADERS)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_header_check_accepts_frame_ancestors_and_report_only_csp(fake_headers):
+    headers = GOOD_HEADERS.replace("X-Frame-Options: DENY\r\n", "").replace(
+        "Content-Security-Policy: frame-ancestors 'none'",
+        "content-security-policy: object-src 'none'; frame-ancestors 'none'",
+    )
+    assert _check(fake_headers, headers).returncode == 0
+    report_only = GOOD_HEADERS.replace(
+        "Content-Security-Policy: frame-ancestors 'none'",
+        "Content-Security-Policy-Report-Only: default-src 'self'",
+    )
+    assert _check(fake_headers, report_only).returncode == 0  # X-Frame-Options covers framing
+
+
+@pytest.mark.parametrize(
+    "drop, reported",
+    [
+        ("Strict-Transport-Security: max-age=31536000; includeSubDomains\r\n", "Strict-Transport"),
+        ("X-Content-Type-Options: nosniff\r\n", "X-Content-Type-Options"),
+        ("Referrer-Policy: same-origin\r\n", "Referrer-Policy"),
+    ],
+)
+def test_header_check_names_each_missing_header(fake_headers, drop, reported):
+    r = _check(fake_headers, GOOD_HEADERS.replace(drop, ""))
+    assert r.returncode == 1 and reported in r.stdout, r.stdout
+
+
+def test_header_check_needs_a_framing_ban_and_a_csp(fake_headers):
+    # The live landing before SERBITO-348: HSTS, nosniff, Referrer-Policy only.
+    headers = GOOD_HEADERS.replace("X-Frame-Options: DENY\r\n", "").replace(
+        "Content-Security-Policy: frame-ancestors 'none'\r\n", ""
+    )
+    r = _check(fake_headers, headers)
+    assert r.returncode == 1
+    assert "X-Frame-Options or CSP frame-ancestors" in r.stdout
+    assert "Content-Security-Policy or" in r.stdout
+    # Report-only frame-ancestors is ignored by browsers, so it does not count.
+    ro = headers.replace(
+        "\r\n\r\n", "\r\nContent-Security-Policy-Report-Only: frame-ancestors 'none'\r\n\r\n"
+    )
+    r = _check(fake_headers, ro)
+    assert r.returncode == 1 and "X-Frame-Options or CSP frame-ancestors" in r.stdout
+
+
+def test_header_check_prints_names_not_values(fake_headers):
+    r = _check(
+        fake_headers,
+        GOOD_HEADERS.replace("X-Frame-Options: DENY\r\n", "").replace(
+            "Content-Security-Policy: frame-ancestors 'none'",
+            "Content-Security-Policy: secret-value-x",
+        ),
+    )
+    assert r.returncode == 1 and "secret-value-x" not in r.stdout + r.stderr
+
+
+def test_header_check_fails_when_the_request_fails(tmp_path):
+    bin_dir = tmp_path / "failbin"
+    bin_dir.mkdir()
+    (bin_dir / "curl").write_text("#!/bin/sh\nexit 28\n")
+    (bin_dir / "curl").chmod(0o755)
+    r = _check(os.pathsep.join([str(bin_dir), "/usr/bin", "/bin"]), "")
+    assert r.returncode == 1
+
+
+def test_header_step_runs_last_on_every_deploy_without_rollback():
+    step = STEPS[HEADERS]
+    assert HEADERS == len(STEPS) - 1 and SMOKE < HEADERS
+    assert "if" not in step and not step.get("continue-on-error")
+    assert "update-traffic" not in step["run"]
+    assert '"$SVC_URL/"' in step["run"]
+
+
+def test_header_step_fails_the_run_on_missing_headers(tmp_path, fake_headers):
+    env = dict(PATH=fake_headers, SERVICE="javi", REGION="europe-west1", RELEASE_TAG="v0.70.0")
+    bad = GOOD_HEADERS.replace("Referrer-Policy: same-origin\r\n", "")
+    r, _ = _run(HEADERS, ROOT, tmp_path, FAKE_HEADERS=bad.replace("\r\n", "\\r\\n"), **env)
+    assert r.returncode == 1 and "::error::" in r.stdout, r.stdout + r.stderr
+    good = GOOD_HEADERS.replace("\r\n", "\\r\\n")
+    r, _ = _run(HEADERS, ROOT, tmp_path, FAKE_HEADERS=good, **env)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_header_step_skips_a_refreshed_tag_without_the_script(tmp_path, fake_headers):
+    # A weekly refresh checks out the newest tag; tags before SERBITO-348 have no script.
+    env = dict(PATH=fake_headers, SERVICE="javi", REGION="europe-west1", RELEASE_TAG="v0.64.0")
+    r, _ = _run(HEADERS, tmp_path, tmp_path, FAKE_HEADERS="", **env)
+    assert r.returncode == 0 and "::notice::" in r.stdout, r.stdout + r.stderr

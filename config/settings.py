@@ -6,6 +6,7 @@ from pathlib import Path
 import environ
 from django.utils.csp import CSP
 
+from common.static_headers import add_landing_security_headers
 from config.sentry import init_sentry
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -158,6 +159,9 @@ STORAGES = {
 # Кабинет и API живут под /app/, /accounts/, ADMIN_PATH (их WhiteNoise пропускает в Django).
 WHITENOISE_ROOT = BASE_DIR / "landing"
 WHITENOISE_INDEX_FILE = True
+# Лендинг не проходит через XFrameOptions/CSP-middleware: запрет фреймов ставит WhiteNoise
+# (SERBITO-348, common/static_headers.py).
+WHITENOISE_ADD_HEADERS_FUNCTION = add_landing_security_headers
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

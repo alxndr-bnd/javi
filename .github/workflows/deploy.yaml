@@ -296,3 +296,21 @@ jobs:
             --to-revisions "${PREV_REVISION}=100"
           echo "::error::The main page does not return 200 after the deploy. Traffic is back on $PREV_REVISION."
           exit 1
+
+      # SERBITO-348: the landing and the app must keep their security headers (HSTS, nosniff,
+      # framing ban, Referrer-Policy, CSP). Checked on the run.app URL (the landing at `/`,
+      # no redirects). A missing header fails the run, but traffic stays on the new revision:
+      # the site still works, and the fix is a code change. A refresh of a tag older than the
+      # check has no script (and no landing headers yet), so the step skips it.
+      - name: Security headers check
+        run: |
+          set -euo pipefail
+          if [ ! -f scripts/check_security_headers.sh ]; then
+            echo "::notice::$RELEASE_TAG has no scripts/check_security_headers.sh. Header check skipped."
+            exit 0
+          fi
+          SVC_URL="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
+          if ! bash scripts/check_security_headers.sh "$SVC_URL/"; then
+            echo "::error::Security headers are missing on $SVC_URL/ (see the list above)."
+            exit 1
+          fi
