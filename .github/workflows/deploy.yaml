@@ -9,21 +9,35 @@ name: Deploy to Cloud Run
 # the Django + gunicorn image, Trivy gate, migrate job when migrations changed, Cloud Run).
 # A tag pushed without scripts/release_minor.sh still cannot ship untested code (SERBITO-277)
 # or ship without its release notes (SERBITO-389).
+#
+# SERBITO-401: weekly OS refresh. Every Wednesday 03:00 UTC (Cloud SQL maintenance is Tuesday
+# 02:00 UTC) and on a manual run, the deploy job checks out the NEWEST vX.Y.Z tag and rebuilds it
+# with today's APT_REFRESH, so Debian security fixes ship without a product release. It never
+# deploys a branch, so unreleased code still cannot bypass the tag gate. verify does not run:
+# the tag passed it at release, and main HEAD is not what ships.
 on:
-  # Deploy ONLY on a v*.*.* tag (via scripts/release_minor.sh). No
-  # workflow_dispatch — that would let unreleased code bypass the tag gate.
   push:
     tags:
       - "v*.*.*"
+  schedule:
+    - cron: "0 3 * * 3"
+  workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write # required for WIF / OIDC
 
+# SERBITO-401: a refresh and a release never deploy at the same time; a new run waits.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 env:
   PROJECT_ID: serbito
   REGION: europe-west1
   SERVICE: javi
+  # Image repo. The step "Pick the release tag" sets IMAGE=AR_IMAGE:<commit sha> (a refresh
+  # adds -r<YYYYMMDD>); the migration diff reads the live commit back from it.
   AR_IMAGE: europe-west1-docker.pkg.dev/serbito/javi/javi
   WIF_PROVIDER: projects/488744139718/locations/global/workloadIdentityPools/github-pool/providers/github
   DEPLOYER_SA: javi-deployer@serbito.iam.gserviceaccount.com
@@ -35,27 +49,60 @@ env:
   RUN_SECRETS: SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest,TASKS_SECRET=javi-tasks-secret:latest,SENTRY_DSN=javi-sentry-dsn:latest,ADMIN_PATH=javi-admin-path:latest
 
 jobs:
-  verify: # Same gate as scripts/release_minor.sh (ci.yaml) — deploy never runs without it
+  verify: # Same gate as scripts/release_minor.sh (ci.yaml) — a tag never deploys without it
+    if: github.event_name == 'push'
     uses: ./.github/workflows/ci.yaml
     permissions:
       contents: read # no id-token here: this job runs dependency and test code, not the deploy
 
   deploy:
     runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)
-    needs: verify # No deploy unless lint, system check and tests pass
+    needs: verify # No tag deploy unless lint, system check and tests pass
+    # A refresh (schedule / manual run) skips verify and redeploys an already verified tag.
+    if: ${{ !cancelled() && (needs.verify.result == 'success' || (needs.verify.result == 'skipped' && github.event_name != 'push')) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
         with:
           fetch-depth: 0 # full history + tags: the migration diff against the live commit
           persist-credentials: false # no step pushes; keep the token out of .git/config (SERBITO-385, Aikido)
 
+      # SERBITO-401: which release this run deploys. A tag push deploys its own tag. A schedule
+      # or manual run (a "refresh") checks out the newest vX.Y.Z tag; its image tag gets
+      # -r<YYYYMMDD>, so the refreshed revision differs from the release image of the same
+      # commit. Later steps read RELEASE_TAG and IMAGE (GITHUB_REF_NAME / github.sha are main
+      # on a schedule run).
+      - name: Pick the release tag
+        id: release
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            tag="$GITHUB_REF_NAME"
+            mode=release
+            suffix=""
+          else
+            tag="$(git tag --list 'v*.*.*' --sort=-v:refname \
+              | awk '/^v[0-9]+\.[0-9]+\.[0-9]+$/ && !t { t = $0 } END { print t }')"
+            if [ -z "$tag" ]; then
+              echo "::error::No vX.Y.Z tag to redeploy."
+              exit 1
+            fi
+            git -c advice.detachedHead=false checkout --quiet "refs/tags/$tag"
+            mode=refresh
+            suffix="-r$(date -u +%Y%m%d)"
+          fi
+          sha="$(git rev-parse HEAD)"
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          echo "IMAGE=${AR_IMAGE}:${sha}${suffix}" >> "$GITHUB_ENV"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Deploying $tag ($mode): ${AR_IMAGE}:${sha}${suffix}" | tee -a "$GITHUB_STEP_SUMMARY"
+
       # SERBITO-389: a tag ships only with its notes for shops. scripts/release_minor.sh writes the
       # "## [X.Y.Z] - date" section; a tag pushed by hand without it stops here, before the build.
       - name: CHANGELOG.md has this version
         run: |
-          ver="${GITHUB_REF_NAME#v}"
+          ver="${RELEASE_TAG#v}"
           if ! grep -qxE "## \[${ver//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
-            echo "::error file=CHANGELOG.md::No '## [$ver] - YYYY-MM-DD' section for tag $GITHUB_REF_NAME. Release with scripts/release_minor.sh (README, Releasing)."
+            echo "::error file=CHANGELOG.md::No '## [$ver] - YYYY-MM-DD' section for tag $RELEASE_TAG. Release with scripts/release_minor.sh (README, Releasing)."
             exit 1
           fi
           echo "CHANGELOG.md has [$ver]"
@@ -84,7 +131,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.AR_IMAGE }}:${{ github.sha }}
+          tags: ${{ env.IMAGE }}
           build-args: |
             APT_REFRESH=${{ steps.apt.outputs.refresh }}
           cache-from: type=registry,ref=${{ env.AR_IMAGE }}:buildcache
@@ -108,14 +155,15 @@ jobs:
           rm -f trivy.tar.gz trivy
           trivy image --scanners vuln,secret --severity HIGH,CRITICAL \
             --ignore-unfixed --exit-code 1 --format table --timeout 10m \
-            "${{ env.AR_IMAGE }}:${{ github.sha }}"
+            "$IMAGE"
 
       - name: Runtime env file
         run: |
           # SENTRY_RELEASE (javi@X.Y.Z из тега) дописываем в копию env-файла: gcloud не
           # разрешает сочетать --env-vars-file с --update-env-vars. Один файл на job и сервис.
+          # Пересборка (SERBITO-401) оставляет релиз своего тега.
           cp .github/deploy.env.yaml "$RUNNER_TEMP/deploy.env.yaml"
-          echo "SENTRY_RELEASE: \"javi@${GITHUB_REF_NAME#v}\"" >> "$RUNNER_TEMP/deploy.env.yaml"
+          echo "SENTRY_RELEASE: \"javi@${RELEASE_TAG#v}\"" >> "$RUNNER_TEMP/deploy.env.yaml"
 
       # --- Migrations run in the deploy, not on container start (SERBITO-323) ---
       # Every cold start used to run `manage.py migrate` first (~28 starts a day, "No
@@ -123,6 +171,8 @@ jobs:
       # migration files changed. Baseline = the commit the service runs now (its image tag),
       # not the previous tag: a tag whose deploy failed would otherwise hide its migrations
       # (serbito, 2026-09-07). Fail-safe: no job yet / no baseline / diff fails -> migrate.
+      # A refreshed image tag is <sha>-r<YYYYMMDD> (SERBITO-401): the commit is the part before
+      # the first "-", so a refresh of the live tag finds no migration change.
       - name: Detect pending migrations
         id: migrations
         run: |
@@ -134,6 +184,7 @@ jobs:
           LIVE_IMAGE="$(gcloud run services describe "$SERVICE" --region "$REGION" \
             --format='value(spec.template.spec.containers[0].image)' 2>/dev/null || true)"
           LIVE_SHA="${LIVE_IMAGE##*:}"
+          LIVE_SHA="${LIVE_SHA%%-*}"
           if [ -n "$LIVE_SHA" ] && git cat-file -e "${LIVE_SHA}^{commit}" 2>/dev/null; then
             BASE="$LIVE_SHA"
             echo "Baseline: the commit the service runs now ($BASE)."
@@ -165,7 +216,7 @@ jobs:
         if: steps.migrations.outputs.changed == 'true'
         run: |
           gcloud run jobs deploy "$MIGRATE_JOB" \
-            --image "$AR_IMAGE:${{ github.sha }}" \
+            --image "$IMAGE" \
             --region "$REGION" \
             --service-account "$RUNTIME_SA" \
             --set-cloudsql-instances "$CLOUDSQL_INSTANCE" \
@@ -181,10 +232,21 @@ jobs:
             --execute-now \
             --wait
 
+      # SERBITO-401: the revision that serves 100% now. The smoke check after the deploy routes
+      # traffic back to it if the main page fails. Empty = nothing to roll back to.
+      - name: Remember the serving revision
+        id: prev
+        run: |
+          set -euo pipefail
+          prev="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json \
+            | jq -r '[.status.traffic[]? | select(.percent == 100) | .revisionName] | first // empty')" || prev=""
+          echo "Serving now: ${prev:-<none>}"
+          echo "revision=$prev" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy "$SERVICE" \
-            --image "$AR_IMAGE:${{ github.sha }}" \
+            --image "$IMAGE" \
             --region "$REGION" \
             --platform managed \
             --allow-unauthenticated \
@@ -198,6 +260,9 @@ jobs:
             --add-cloudsql-instances="$CLOUDSQL_INSTANCE" \
             --env-vars-file="$RUNNER_TEMP/deploy.env.yaml" \
             --set-secrets="$RUN_SECRETS"
+          # After a smoke rollback, traffic is pinned to the old revision by name; a plain deploy
+          # would keep it there. Route 100% to the new revision (a no-op when already latest).
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest
         # One-time domain mapping (javi.serbito.rs -> service) — see SETUP_CICD.md.
         # Требуются Secret Manager секреты javi-secret-key, javi-database-url,
         # javi-google-maps-key, javi-infobip-key, javi-infobip-webhook-secret, javi-tasks-secret,
@@ -207,3 +272,27 @@ jobs:
         # roles/cloudtasks.enqueuer (постановка задач оценки в очередь javi-rating).
         # Deployer-SA: roles/run.admin (сервис и job) + roles/iam.serviceAccountUser (actAs RUNTIME_SA).
         # INFOBIP_BASE_URL/SENDER/CHANNEL, PUBLIC_BASE_URL, CLOUD_TASKS_* — из дефолтов settings.py.
+
+      # SERBITO-401: smoke check after every deploy (release or refresh). The main page of the
+      # service URL (run.app, redirects followed) must return 200. Otherwise traffic goes back to
+      # the revision that served before, and the run fails (GitHub e-mails the failure).
+      - name: Smoke check (roll back on failure)
+        env:
+          PREV_REVISION: ${{ steps.prev.outputs.revision }}
+        run: |
+          set -euo pipefail
+          SVC_URL="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
+          for i in 1 2 3 4 5; do
+            code="$(curl -sL -o /dev/null -w '%{http_code}' --max-time 30 "$SVC_URL/")" || true
+            echo "  smoke $i -> $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 5
+          done
+          if [ -z "$PREV_REVISION" ]; then
+            echo "::error::The main page does not return 200, and there is no previous revision to roll back to."
+            exit 1
+          fi
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" \
+            --to-revisions "${PREV_REVISION}=100"
+          echo "::error::The main page does not return 200 after the deploy. Traffic is back on $PREV_REVISION."
+          exit 1
