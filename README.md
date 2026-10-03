@@ -50,6 +50,8 @@ Infobip (Viber → SMS) · Cloud Tasks. Serbian (Latin) + English UI.
    Otherwise it dates the entries as `## [X.Y.0]`, runs the gate, tags, pushes and creates the GitHub Release.
 3. The deploy fails for a tag without its `## [X.Y.Z]` section in CHANGELOG.md.
    Details: [SETUP_CICD.md](SETUP_CICD.md#7-day-to-day-release-flow).
+4. Every Wednesday 03:00 UTC the deploy rebuilds the newest tag with fresh Debian packages and
+   redeploys it (same version). If the main page is not 200, traffic goes back to the previous revision.
 
 ## License
 

@@ -26,13 +26,14 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
 - **CI** — `.github/workflows/ci.yaml`: the release gate (`ruff check`, `manage.py check`,
   `pytest`, landing HTML parse) on every PR (incl. Dependabot) and every push to `main`.
   Tests use the sqlite fallback: no `DATABASE_URL`, no `.env`.
-- **Deploy** — `.github/workflows/deploy.yaml`, triggered only by a pushed `v*.*.*` tag
-  (no `workflow_dispatch`):
+- **Deploy** — `.github/workflows/deploy.yaml`, triggered by a pushed `v*.*.*` tag, and by the
+  weekly OS refresh of the newest tag ([section 7](#7-day-to-day-release-flow)):
   1. `verify` — the same `ci.yaml` via `workflow_call`;
   2. `deploy` — build the image with Buildx (registry cache `:buildcache`), push it to
-     Artifact Registry as `:<commit sha>`, Trivy scan (fails on a *fixed* HIGH/CRITICAL
+     Artifact Registry as `:<commit sha>` (a refresh: `:<commit sha>-r<YYYYMMDD>`), Trivy scan (fails on a *fixed* HIGH/CRITICAL
      vulnerability or a leaked secret), run the migrate job if migrations changed
-     ([section 9](#9-database-migrations)), then `gcloud run deploy`, which moves traffic.
+     ([section 9](#9-database-migrations)), then `gcloud run deploy`, which moves traffic, and a
+     smoke check of the main page (not 200 → traffic back to the previous revision, run fails).
 
   Auth is keyless via Workload Identity Federation. Pipeline `env`:
   - `PROJECT_ID=serbito`, `REGION=europe-west1`, `SERVICE=javi`
@@ -224,7 +225,10 @@ After section 5 it is also served at https://javi.serbito.rs.
 3. GitHub Actions: `verify` (the CI gate) → `CHANGELOG.md` has a `## [X.Y.Z]` section for the tag
    (a tag pushed by hand without it fails here) → build + push the image → Trivy → migrate job
    (only if migration files changed) → deploy a new Cloud Run revision (`javi`,
-   `europe-west1`).
+   `europe-west1`) → smoke check of the main page, rollback on failure.
+4. Weekly OS refresh (SERBITO-401): every Wednesday 03:00 UTC, or *Run workflow*, the deploy job
+   rebuilds the newest `vX.Y.Z` tag with fresh Debian packages and redeploys it. Same version and
+   Sentry release; `verify` is skipped (the tag passed it). It never deploys a branch.
 
 ---
 
