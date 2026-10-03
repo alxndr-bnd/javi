@@ -34,7 +34,10 @@ class Node:
 
     def find(self, tag: str | None = None, attrs: dict[str, str] | None = None) -> Node:
         found = self.find_all(tag, attrs)
-        assert found, f"no <{tag} {attrs or ''}>"
+        # An explicit raise, not `assert`: `python -O` drops asserts, and then this would fail
+        # with an IndexError that hides which element is missing (SERBITO-398, Aikido).
+        if not found:
+            raise AssertionError(f"no <{tag} {attrs or ''}>")
         return found[0]
 
     def classes(self) -> set[str]:
