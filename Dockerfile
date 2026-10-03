@@ -10,7 +10,7 @@ FROM ghcr.io/astral-sh/uv:0.12.20@sha256:100047e74f30778ab704942321a09750d615873
 # Base pinned by tag + multi-arch index digest (SERBITO-294): a re-pushed 3.14-slim can't
 # change prod without a commit; Dependabot (docker) bumps the digest. Python minor must match
 # .python-version (CI's interpreter) — config/test_dockerfile.py checks it.
-FROM python:3.14-slim@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d
+FROM python:3.14-slim@sha256:0741d101873c12ab927e6f8653feb8862b9bd58771177acb1b885b95141f91b4
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
