@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.72.0] - 2026-10-03
+
 ### Security
 - Python is updated to 3.14.8 with current security fixes.
   - SR: Python je ažuriran na 3.14.8 sa najnovijim bezbednosnim ispravkama.
@@ -84,7 +86,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.71.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.72.0...HEAD
+[0.72.0]: https://github.com/alxndr-bnd/javi/compare/v0.71.0...v0.72.0
 [0.71.0]: https://github.com/alxndr-bnd/javi/compare/v0.70.0...v0.71.0
 [0.70.0]: https://github.com/alxndr-bnd/javi/compare/v0.69.0...v0.70.0
 [0.69.0]: https://github.com/alxndr-bnd/javi/compare/v0.68.0...v0.69.0
