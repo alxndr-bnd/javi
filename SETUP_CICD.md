@@ -64,10 +64,12 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
   check-merge-conflict, end-of-file-fixer, trailing-whitespace), `ruff --fix`,
   `ruff-format`, and local hooks: landing HTML parses, `uv run python manage.py check`.
 - **Release script** — `scripts/release_minor.sh "message" [new_file ...]`, from `main` only:
-  runs the gate (`pytest`, `ruff check`, `manage.py check`, landing parse), stages tracked
-  changes (`git add -u`) plus the listed new files (warns about other untracked files),
-  commits, bumps the minor version (`vMAJOR.MINOR.0`; `v0.1.0` if no tags), then tags and
-  pushes, which triggers the deploy.
+  turns `## [Unreleased]` in `CHANGELOG.md` into `## [X.Y.0] - <today>` (refuses when it has no
+  entries, before anything else), runs the gate (`pytest`, `ruff check`, `manage.py check`,
+  landing parse), stages tracked changes (`git add -u`) plus the listed new files (warns about
+  other untracked files), commits, bumps the minor version (`vMAJOR.MINOR.0`; `v0.1.0` if no
+  tags), then tags and pushes, which triggers the deploy. Last, it creates the GitHub Release from
+  the version's English CHANGELOG lines (`changelog.py notes`).
 
 ---
 
@@ -215,9 +217,12 @@ After section 5 it is also served at https://javi.serbito.rs.
 
 ## 7. Day-to-day release flow
 
-1. Merge to `main` (CI runs the gate on the PR and on `main`).
-2. `bash scripts/release_minor.sh "what changed" [new_file ...]` — gate, commit, tag, push.
-3. GitHub Actions: `verify` (the CI gate) → build + push the image → Trivy → migrate job
+1. Merge to `main` (CI runs the gate on the PR and on `main`). Changes that shops notice carry
+   their `CHANGELOG.md` entry under `## [Unreleased]` (format: the file's header).
+2. `bash scripts/release_minor.sh "what changed" [new_file ...]` — CHANGELOG, gate, commit, tag,
+   push, GitHub Release. An empty `[Unreleased]` stops the release before the gate.
+3. GitHub Actions: `verify` (the CI gate) → `CHANGELOG.md` has a `## [X.Y.Z]` section for the tag
+   (a tag pushed by hand without it fails here) → build + push the image → Trivy → migrate job
    (only if migration files changed) → deploy a new Cloud Run revision (`javi`,
    `europe-west1`).
 
