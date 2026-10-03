@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.71.0] - 2026-10-03
+
 ### Security
 - The landing page and the privacy page can no longer be embedded in another site's frame. This protects the sign-up form from clickjacking.
   - SR: Početna stranica i stranica o privatnosti više ne mogu da se ugrade u okvir drugog sajta. Ovo štiti formular za prijavu od clickjacking napada.
@@ -78,7 +80,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.70.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.71.0...HEAD
+[0.71.0]: https://github.com/alxndr-bnd/javi/compare/v0.70.0...v0.71.0
 [0.70.0]: https://github.com/alxndr-bnd/javi/compare/v0.69.0...v0.70.0
 [0.69.0]: https://github.com/alxndr-bnd/javi/compare/v0.68.0...v0.69.0
 [0.68.0]: https://github.com/alxndr-bnd/javi/compare/v0.67.0...v0.68.0
