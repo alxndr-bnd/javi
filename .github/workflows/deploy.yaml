@@ -46,6 +46,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
         with:
           fetch-depth: 0 # full history + tags: the migration diff against the live commit
+          persist-credentials: false # no step pushes; keep the token out of .git/config (SERBITO-385, Aikido)
 
       - id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3 (SHA-pinned)
