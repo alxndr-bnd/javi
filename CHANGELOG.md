@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- The landing page and the privacy page can no longer be embedded in another site's frame. This protects the sign-up form from clickjacking.
+  - SR: Početna stranica i stranica o privatnosti više ne mogu da se ugrade u okvir drugog sajta. Ovo štiti formular za prijavu od clickjacking napada.
+
 ## [0.70.0] - 2026-10-03
 
 ### Security
