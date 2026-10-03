@@ -189,3 +189,29 @@ def test_trivy_comes_from_a_checksum_pinned_release():
     assert len(trivy["env"]["TRIVY_SHA256"]) == 64
     run = trivy["run"]
     assert run.index("sha256sum -c") < run.index("sudo install")
+
+
+# --- SERBITO-389: a tag without its CHANGELOG.md section stops before the build ---------------
+
+GUARD = _index(lambda s: "CHANGELOG.md" in s.get("run", ""))
+
+
+@pytest.mark.parametrize(
+    "tag, ok",
+    [("v0.3.0", True), ("v0.4.0", False), ("v0x3x0", False), ("v0.3", False)],
+)
+def test_deploy_refuses_a_tag_without_its_changelog_section(tmp_path, tag, ok):
+    assert GUARD == 1 and GUARD < _index(lambda s: s.get("name") == "Build & push image")
+    (tmp_path / "CHANGELOG.md").write_text(
+        "## [Unreleased]\n\n## [0.3.0] - 2026-10-03\n\n### Fixed\n- X\n  - SR: X\n"
+    )
+    r = subprocess.run(
+        ["bash", "-e", "-c", STEPS[GUARD]["run"]],
+        cwd=tmp_path,
+        env={"GITHUB_REF_NAME": tag, "PATH": "/usr/bin:/bin"},
+        capture_output=True,
+        text=True,
+    )
+    assert (r.returncode == 0) == ok, r.stdout + r.stderr
+    if not ok:
+        assert "::error" in r.stdout and tag in r.stdout

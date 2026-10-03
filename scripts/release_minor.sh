@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# Release helper for javi: runs the gate (pytest, ruff, manage.py check, landing parse),
-# commits, bumps the minor version tag and pushes. The v*.*.* tag triggers
+# Release helper for javi: CHANGELOG -> gate (pytest, ruff, manage.py check, landing parse) ->
+# commit -> next minor tag -> push -> GitHub Release. The v*.*.* tag triggers
 # .github/workflows/deploy.yaml, which re-runs the same gate and deploys to Cloud Run.
+# Entries for shops go into CHANGELOG.md under "## [Unreleased]" before the release. This script
+# turns them into "## [X.Y.0] - date" in the release commit and refuses to release without
+# entries (SERBITO-389, format: changelog.py).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+PY="${PYTHON:-python3}" # changelog.py needs only the standard library; PYTHON is for the script test
 
 msg="${1:-}"
 if [[ -z "$msg" ]]; then
@@ -19,6 +23,24 @@ if [[ "$branch" != "main" ]]; then
   echo "Release only from main (current: $branch)" >&2
   exit 1
 fi
+
+latest_tag="$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)"
+if [[ -z "$latest_tag" ]]; then
+  next_tag="v0.1.0"
+else
+  version="${latest_tag#v}"
+  IFS='.' read -r major minor patch <<<"$version"
+  next_minor=$((minor + 1))
+  next_tag="v${major}.${next_minor}.0"
+fi
+
+# --- CHANGELOG: [Unreleased] -> [X.Y.0] - today. No entries: refuse before the gate, commit and tag ---
+echo "==> CHANGELOG.md: ${next_tag#v}"
+if ! "$PY" changelog.py release "${next_tag#v}"; then
+  echo "Release $next_tag not made: add what shops get to CHANGELOG.md (README -> Releasing)" >&2
+  exit 1
+fi
+notes="$("$PY" changelog.py notes "${next_tag#v}")"
 
 # --- gate: tests always run and must pass before we tag — never skipped ---
 echo "==> pytest"
@@ -49,18 +71,18 @@ else
   git commit -m "$msg"
 fi
 
-latest_tag="$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)"
-if [[ -z "$latest_tag" ]]; then
-  next_tag="v0.1.0"
-else
-  version="${latest_tag#v}"
-  IFS='.' read -r major minor patch <<<"$version"
-  next_minor=$((minor + 1))
-  next_tag="v${major}.${next_minor}.0"
-fi
-
 git tag "$next_tag"
 git push
 git push origin "$next_tag"
 
 echo "Released $next_tag"
+
+# --- GitHub Release: the English lines of the version from CHANGELOG.md. Not fatal: the tag and
+# the deploy are already on their way ---
+retry="gh release create $next_tag --verify-tag --title $next_tag --notes \"\$($PY changelog.py notes ${next_tag#v})\""
+if ! command -v gh >/dev/null 2>&1; then
+  echo "WARNING: gh not found, no GitHub Release for $next_tag. Run: $retry" >&2
+elif ! gh release create "$next_tag" --verify-tag --title "$next_tag" --notes "$notes"; then
+  echo "WARNING: GitHub Release for $next_tag failed. Retry: $retry" >&2
+fi
+exit 0

@@ -5,9 +5,10 @@ name: Deploy to Cloud Run
 # Mirrors the planning-poker pipeline (same GCP project `serbito`).
 #
 # Pipeline: verify (the release-script gate from ci.yaml, reused via workflow_call: ruff,
-# manage.py check, pytest, landing parse) -> deploy (build the Django + gunicorn image,
-# Trivy gate, migrate job when migrations changed, Cloud Run). A tag pushed without
-# scripts/release_minor.sh still cannot ship untested code (SERBITO-277).
+# manage.py check, pytest, landing parse) -> deploy (CHANGELOG.md section for the tag, build
+# the Django + gunicorn image, Trivy gate, migrate job when migrations changed, Cloud Run).
+# A tag pushed without scripts/release_minor.sh still cannot ship untested code (SERBITO-277)
+# or ship without its release notes (SERBITO-389).
 on:
   # Deploy ONLY on a v*.*.* tag (via scripts/release_minor.sh). No
   # workflow_dispatch — that would let unreleased code bypass the tag gate.
@@ -47,6 +48,17 @@ jobs:
         with:
           fetch-depth: 0 # full history + tags: the migration diff against the live commit
           persist-credentials: false # no step pushes; keep the token out of .git/config (SERBITO-385, Aikido)
+
+      # SERBITO-389: a tag ships only with its notes for shops. scripts/release_minor.sh writes the
+      # "## [X.Y.Z] - date" section; a tag pushed by hand without it stops here, before the build.
+      - name: CHANGELOG.md has this version
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          if ! grep -qxE "## \[${ver//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
+            echo "::error file=CHANGELOG.md::No '## [$ver] - YYYY-MM-DD' section for tag $GITHUB_REF_NAME. Release with scripts/release_minor.sh (README, Releasing)."
+            exit 1
+          fi
+          echo "CHANGELOG.md has [$ver]"
 
       - id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3 (SHA-pinned)

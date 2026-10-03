@@ -42,6 +42,15 @@ Infobip (Viber → SMS) · Cloud Tasks. Serbian (Latin) + English UI.
 
 **Alpha** — in active development; expect changes and the occasional rough edge.
 
+## Releasing
+
+1. With every change shops notice, add an entry under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md):
+   an English line `- ...` and a Serbian (Latin) line `  - SR: ...` under it.
+2. On `main`: `bash scripts/release_minor.sh "message"`. It refuses to release when `[Unreleased]` is empty.
+   Otherwise it dates the entries as `## [X.Y.0]`, runs the gate, tags, pushes and creates the GitHub Release.
+3. The deploy fails for a tag without its `## [X.Y.Z]` section in CHANGELOG.md.
+   Details: [SETUP_CICD.md](SETUP_CICD.md#7-day-to-day-release-flow).
+
 ## License
 
 **[MIT](LICENSE)** — free and open source. Use it, modify it, build on it (incl. commercially);
