@@ -23,6 +23,8 @@ jobs:
       contents: read # no id-token: this job runs dependency and test code, never deploys
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
+        with:
+          persist-credentials: false # no step pushes; keep the token out of .git/config (SERBITO-385, Aikido)
 
       # One uv version for CI and the image (SERBITO-294): read it from the Dockerfile's pinned
       # uv stage, which Dependabot bumps. Never hardcode it here (config/test_dockerfile.py).

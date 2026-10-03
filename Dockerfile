@@ -18,8 +18,12 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Patch base-image OS packages (Debian security updates) so the Trivy deploy gate
-# doesn't fail on a fixed base CVE.
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+# doesn't fail on a fixed base CVE. APT_REFRESH is the UTC date (deploy.yaml passes it):
+# the RUN reads it, so each day's first build re-runs the upgrade instead of reusing a
+# stale cached layer (SERBITO-369).
+ARG APT_REFRESH
+RUN echo "apt refresh: ${APT_REFRESH:-unset}" && \
+    apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 # Манифесты вендоринга системного pip (pip/_vendor/bom.cdx.json, vendor.txt) декларируют его
 # внутренние setuptools 70.3.0 и msgpack 1.1.2 — Trivy видит в них HIGH CVE без PkgPath, хотя

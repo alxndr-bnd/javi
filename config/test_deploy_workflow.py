@@ -1,5 +1,6 @@
 """deploy.yaml: migrations run as a Cloud Run job before traffic moves (SERBITO-323)."""
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -177,3 +178,14 @@ def test_detect_is_fail_safe(repo, job_exists):
 def test_admin_path_comes_from_secret_manager():
     # SERBITO-362: the admin's URL is not in the public repo; without it the admin is off.
     assert "ADMIN_PATH=javi-admin-path:latest" in ENV["RUN_SECRETS"]
+
+
+def test_trivy_comes_from_a_checksum_pinned_release():
+    # SERBITO-385: no downloaded script piped to a shell; the tarball is checked against a
+    # pinned sha256 before it is installed.
+    for step in STEPS:
+        assert not re.search(r"\|\s*(sudo\s+)?(ba)?sh\b", step.get("run", "")), step["name"]
+    trivy = STEPS[TRIVY]
+    assert len(trivy["env"]["TRIVY_SHA256"]) == 64
+    run = trivy["run"]
+    assert run.index("sha256sum -c") < run.index("sudo install")
