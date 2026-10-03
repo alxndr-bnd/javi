@@ -1,5 +1,9 @@
 # Dependabot version updates. Security updates (for known CVEs) are enabled
 # separately in the repo's Security settings; this file schedules routine bumps.
+# SERBITO-400: every Monday, one PR per ecosystem for minor + patch bumps; a major gets its
+# own PR. Each PR runs CI (.github/workflows/ci.yml). Patch/minor PRs merge by themselves on
+# green CI; majors get the `major-update` label and wait for a person
+# (.github/workflows/dependabot-automerge.yml).
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 version: 2
 updates:
@@ -8,6 +12,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    groups:
+      uv-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # FROM lines in /Dockerfile: the python:3.14-slim base and the uv stage, both pinned
   # by tag + digest; Dependabot bumps the digest (and the uv tag). CI takes its uv version
@@ -16,9 +26,21 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    groups:
+      docker-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Pinned GitHub Actions in .github/workflows.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
