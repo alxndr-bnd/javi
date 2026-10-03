@@ -47,6 +47,7 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
   - OS packages upgraded (`apt-get upgrade`); pip's vendored SBOM manifests removed
     (false-positive Trivy CVEs);
   - dependencies installed with `uv sync --frozen --no-dev` from `pyproject.toml` + `uv.lock`;
+    uv is bind-mounted for that step only, so the runtime image has no `uv` (SERBITO-387);
   - bytecode compiled at build time (stdlib, dependencies, app), so a cold start doesn't
     compile every module from source;
   - `collectstatic` at build time; WhiteNoise serves static files and the landing page
