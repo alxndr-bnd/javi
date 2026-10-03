@@ -1,6 +1,8 @@
 # uv, pinned by version and digest (supply chain, SERBITO-289). A named stage rather than
 # `COPY --from=<image>`: Dependabot's docker ecosystem only parses and bumps FROM lines.
 # The single source of the uv version: CI (ci.yaml) reads it from this line (SERBITO-294).
+# Build-time only: the sync step bind-mounts the binary, the runtime image has no uv
+# (Aikido flagged its Rust crates, SERBITO-387).
 FROM ghcr.io/astral-sh/uv:0.12.20@sha256:100047e74f30778ab704942321a09750d6158739573ff58bf3924085cc6cd2d8 AS uv
 
 # ---- Stage 1: Django + gunicorn (Javi MVP) ----
@@ -30,9 +32,6 @@ RUN echo "apt refresh: ${APT_REFRESH:-unset}" && \
 # таких пакетов в окружении нет и pip они для работы не нужны (как в serbito и gtd).
 RUN find /usr/local/lib -type f \( -name 'bom.cdx.json' -o -name 'vendor.txt' \) -path '*/pip/_vendor/*' -delete
 
-# uv для установки зависимостей по lock-файлу
-COPY --from=uv /uv /usr/local/bin/uv
-
 # Cold start (SERBITO-323): every process start used to compile all imported modules from
 # source — the base image ships the stdlib without .pyc, uv installs without them, and
 # PYTHONDONTWRITEBYTECODE never caches them. Compile once at build time instead: stdlib here
@@ -40,7 +39,9 @@ COPY --from=uv /uv /usr/local/bin/uv
 RUN python -m compileall -q -j 0 "$(python -c 'import sysconfig; print(sysconfig.get_path("stdlib"))')"
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --compile-bytecode
+# uv only for this step: a BuildKit bind mount from the uv stage, not a COPY into the image.
+RUN --mount=from=uv,source=/uv,target=/usr/local/bin/uv \
+    uv sync --frozen --no-dev --compile-bytecode
 
 COPY . .
 RUN python -m compileall -q -j 0 -x '/\.venv/' /app

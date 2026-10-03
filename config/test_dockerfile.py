@@ -39,7 +39,9 @@ def test_bytecode_is_compiled_at_build_time():
     # Без .pyc каждый старт процесса компилировал stdlib, зависимости и код из исходников:
     # python:*-slim удаляет .pyc stdlib, uv по умолчанию их не создаёт (SERBITO-323).
     assert re.search(r"^RUN python -m compileall .*sysconfig.*stdlib", DOCKERFILE, re.M)
-    assert re.search(r"^RUN uv sync --frozen --no-dev --compile-bytecode$", DOCKERFILE, re.M)
+    assert any(
+        i.endswith(" uv sync --frozen --no-dev --compile-bytecode") for i in _runtime_stage()
+    )
     lines = DOCKERFILE.splitlines()
     copy_app = lines.index("COPY . .")
     assert re.match(r"RUN python -m compileall .* /app$", lines[copy_app + 1])
@@ -49,8 +51,34 @@ def test_uv_image_pinned_by_version_and_digest():
     # Мутабельный uv:latest менял сборку без коммита (SERBITO-289). Отдельная FROM-стадия,
     # а не COPY --from=<образ>: Dependabot (docker) обновляет только строки FROM.
     assert UV_STAGE.search(DOCKERFILE)
-    assert "COPY --from=uv /uv " in DOCKERFILE
     assert ":latest" not in DOCKERFILE
+
+
+def _instructions(text):
+    """Dockerfile instructions: comments dropped, backslash continuations joined."""
+    joined = re.sub(r"\\\n", " ", re.sub(r"^\s*#.*\n", "", text, flags=re.M))
+    return [" ".join(line.split()) for line in joined.splitlines() if line.strip()]
+
+
+def _runtime_stage():
+    instructions = _instructions(DOCKERFILE)
+    start = max(i for i, line in enumerate(instructions) if line.startswith("FROM "))
+    return instructions[start:]
+
+
+def test_runtime_image_has_no_uv():
+    # uv is a build tool: in the runtime image it only adds CVEs and attack surface
+    # (Aikido High in its Rust crate zerovec-derive, SERBITO-387). The sync step bind-mounts
+    # it from the uv stage; nothing copies it into the final stage.
+    runtime = _runtime_stage()
+    copies = [i for i in runtime if i.startswith(("COPY", "ADD"))]
+    assert not [i for i in copies if "--from=uv" in i or re.search(r"\s/uv\b", i)]
+    uv_runs = [i for i in runtime if re.search(r"\buv\b", i) and i.startswith("RUN")]
+    assert uv_runs == [
+        "RUN --mount=from=uv,source=/uv,target=/usr/local/bin/uv"
+        " uv sync --frozen --no-dev --compile-bytecode"
+    ]
+    assert not re.search(r"\buv\b", next(i for i in runtime if i.startswith("CMD")))
 
 
 def test_python_base_pinned_by_digest_and_matches_ci_python():
