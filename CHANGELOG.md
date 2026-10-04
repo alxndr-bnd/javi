@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- Sign-in and sign-up limits now count each visitor by their real address, also behind the Cloudflare proxy, and ignore forged address headers.
+  - SR: Ograničenja prijave i registracije sada broje svakog posetioca po njegovoj stvarnoj adresi, i iza Cloudflare proksija, i ignorišu lažna zaglavlja sa adresom.
+
 ## [0.72.0] - 2026-10-03
 
 ### Security
