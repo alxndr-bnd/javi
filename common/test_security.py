@@ -1,4 +1,4 @@
-"""Security helpers (SERBITO-362): client IP, DB rate limits, redaction, shared secrets."""
+"""Security helpers (SERBITO-362): DB rate limits, redaction, shared secrets."""
 
 import base64
 from datetime import timedelta
@@ -7,51 +7,16 @@ from unittest import mock
 import pytest
 import requests
 from django.core.exceptions import ValidationError
-from django.test import RequestFactory, override_settings
+from django.test import RequestFactory
 from django.utils import timezone
 
 from common import ratelimit
-from common.client_ip import client_ip
 from common.models import RateLimitCounter
 from common.redact import describe_request_error, redact
 from common.secrets import request_has_secret, secret_matches
 from common.validators import validate_https_url
 
 rf = RequestFactory()
-
-
-# --- client_ip (JAVI-8) ---
-
-
-@override_settings(TRUSTED_PROXY_HOPS=1)
-def test_client_ip_is_rightmost_xff_entry_behind_cloud_run():
-    request = rf.get("/", HTTP_X_FORWARDED_FOR="6.6.6.6, 203.0.113.7", REMOTE_ADDR="169.254.1.1")
-    assert client_ip(request) == "203.0.113.7"
-
-
-@override_settings(TRUSTED_PROXY_HOPS=2)
-def test_client_ip_skips_one_more_trusted_proxy():
-    request = rf.get("/", HTTP_X_FORWARDED_FOR="6.6.6.6, 203.0.113.7, 172.70.1.1")
-    assert client_ip(request) == "203.0.113.7"
-
-
-@override_settings(TRUSTED_PROXY_HOPS=0)
-def test_client_ip_without_proxy_ignores_xff():
-    request = rf.get("/", HTTP_X_FORWARDED_FOR="6.6.6.6", REMOTE_ADDR="198.51.100.2")
-    assert client_ip(request) == "198.51.100.2"
-
-
-@override_settings(TRUSTED_PROXY_HOPS=1)
-@pytest.mark.parametrize("xff", ["", "not-an-ip", " , "])
-def test_client_ip_falls_back_to_remote_addr(xff):
-    request = rf.get("/", HTTP_X_FORWARDED_FOR=xff, REMOTE_ADDR="198.51.100.2")
-    assert client_ip(request) == "198.51.100.2"
-
-
-@override_settings(TRUSTED_PROXY_HOPS=2)
-def test_client_ip_short_chain_does_not_trust_client_entry():
-    request = rf.get("/", HTTP_X_FORWARDED_FOR="6.6.6.6", REMOTE_ADDR="169.254.1.1")
-    assert client_ip(request) == "169.254.1.1"
 
 
 # --- ratelimit ---

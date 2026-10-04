@@ -118,10 +118,11 @@ LOGIN_FAILURE_LIMIT_IP = env.int("LOGIN_FAILURE_LIMIT_IP", default=10)
 LOGIN_FAILURE_LIMIT_ACCOUNT = env.int("LOGIN_FAILURE_LIMIT_ACCOUNT", default=20)
 LOGIN_LOCKOUT_MINUTES = env.int("LOGIN_LOCKOUT_MINUTES", default=15)
 
-# IP клиента = запись X-Forwarded-For на TRUSTED_PROXY_HOPS-м месте справа (common/client_ip.py).
-# 1 — только Google front end Cloud Run (javi.serbito.rs DNS-only); 2 — если добавится
-# Cloudflare-прокси; 0 — без прокси (REMOTE_ADDR).
-TRUSTED_PROXY_HOPS = env.int("TRUSTED_PROXY_HOPS", default=1)
+# IP клиента (common/client_ip.py, SERBITO-420): самый правый адрес X-Forwarded-For после наших
+# прокси (link-local, Google front end); если это сеть Cloudflare — CF-Connecting-IP. Подходит и
+# для DNS-only, и для Cloudflare-прокси без настройки. TRUSTED_PROXIES — CIDR через запятую для
+# своих прокси с публичным адресом (внешний балансировщик); по умолчанию не нужен.
+TRUSTED_PROXIES = env.list("TRUSTED_PROXIES", default=[])
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

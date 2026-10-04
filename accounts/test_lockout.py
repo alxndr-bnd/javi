@@ -73,6 +73,25 @@ def test_lock_uses_real_client_ip_not_spoofed_xff(client, user):
     assert "Too many failed sign-in attempts" in resp.content.decode()
 
 
+@override_settings(LOGIN_FAILURE_LIMIT_IP=2, LOGIN_FAILURE_LIMIT_ACCOUNT=100)
+def test_lock_behind_cloudflare_counts_per_visitor_not_per_edge(client, user):
+    """SERBITO-420: all visitors of one Cloudflare edge share its address; CF-Connecting-IP
+    tells them apart, so one noisy visitor does not lock out the others."""
+    edge = {"REMOTE_ADDR": "169.254.1.1", "HTTP_X_FORWARDED_FOR": "203.0.113.7, 172.70.1.1"}
+    for _ in range(2):
+        client.post(
+            LOGIN,
+            {"username": "owner@shop.rs", "password": "wrong"},
+            HTTP_CF_CONNECTING_IP="203.0.113.7",
+            **edge,
+        )
+    locked = {"username": "owner@shop.rs", "password": PASSWORD}
+    resp = client.post(LOGIN, locked, HTTP_CF_CONNECTING_IP="203.0.113.7", **edge)
+    assert "Too many failed sign-in attempts" in resp.content.decode()
+    resp = client.post(LOGIN, locked, HTTP_CF_CONNECTING_IP="198.51.100.9", **edge)
+    assert resp.status_code == 302
+
+
 # --- admin: moved off /admin/ and covered by the same lockout ---
 
 

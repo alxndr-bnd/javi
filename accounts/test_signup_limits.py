@@ -45,7 +45,7 @@ def test_signups_per_ip_are_limited(client):
     assert _signup(client, 4, ip="198.51.100.9").status_code == 302
 
 
-@override_settings(SIGNUP_LIMIT_PER_IP_DAY=1, TRUSTED_PROXY_HOPS=1)
+@override_settings(SIGNUP_LIMIT_PER_IP_DAY=1)
 def test_signup_limit_ignores_spoofed_forwarded_for(client):
     front_end = "169.254.1.1"  # REMOTE_ADDR on Cloud Run: the Google front end
     xff = "1.1.1.1, 203.0.113.7"
@@ -53,6 +53,25 @@ def test_signup_limit_ignores_spoofed_forwarded_for(client):
     client.logout()
     xff = "2.2.2.2, 203.0.113.7"
     assert _signup(client, 2, ip=front_end, HTTP_X_FORWARDED_FOR=xff).status_code == 429
+
+
+@override_settings(SIGNUP_LIMIT_PER_IP_DAY=1)
+def test_signup_limit_behind_cloudflare_uses_cf_connecting_ip(client):
+    """SERBITO-420: the edge address is shared; CF-Connecting-IP is the visitor."""
+    edge = {"ip": "169.254.1.1", "HTTP_X_FORWARDED_FOR": "203.0.113.7, 172.70.1.1"}
+    assert _signup(client, 1, HTTP_CF_CONNECTING_IP="203.0.113.7", **edge).status_code == 302
+    client.logout()
+    assert _signup(client, 2, HTTP_CF_CONNECTING_IP="203.0.113.7", **edge).status_code == 429
+    assert _signup(client, 3, HTTP_CF_CONNECTING_IP="198.51.100.9", **edge).status_code == 302
+
+
+@override_settings(SIGNUP_LIMIT_PER_IP_DAY=1)
+def test_signup_limit_ignores_spoofed_cf_connecting_ip(client):
+    """Without a Cloudflare hop (DNS-only, or straight to *.run.app) the header is ignored."""
+    real = {"ip": "169.254.1.1", "HTTP_X_FORWARDED_FOR": "203.0.113.7"}
+    assert _signup(client, 1, HTTP_CF_CONNECTING_IP="1.1.1.1", **real).status_code == 302
+    client.logout()
+    assert _signup(client, 2, HTTP_CF_CONNECTING_IP="2.2.2.2", **real).status_code == 429
 
 
 @override_settings(SIGNUP_LIMIT_PER_IP_DAY=5)
