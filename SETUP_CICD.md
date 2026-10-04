@@ -197,6 +197,22 @@ gcloud run domain-mappings describe \
 - Cloud Run issues the TLS certificate automatically once DNS propagates (~15-60 min).
   Done when all `status.conditions` of the mapping are `True` (same `describe`, no `--format`).
 
+### Client IP and the Cloudflare proxy (SERBITO-420)
+
+Sign-in lockout, the signup limit and the `/t/` rate limit count per client IP
+(`common/client_ip.py`). The same code works for a DNS-only and a proxied `javi` record:
+
+- The client is the rightmost `X-Forwarded-For` entry after our own proxies (link-local,
+  Google front end, `TRUSTED_PROXIES`). XFF is read only from a private or link-local peer.
+- If that entry is a Cloudflare address, the client is `CF-Connecting-IP`. From any other
+  address the header is ignored, so a direct request to `*.run.app` cannot forge it.
+- Cloudflare ranges are vendored in `common/cloudflare_ips.txt`. To refresh, follow the
+  steps at the top of that file (source: https://www.cloudflare.com/ips/), then run
+  `pytest common/test_client_ip.py`. If the list is out of date, visitors behind a new
+  Cloudflare range share the limit of their edge address. No one can forge an address.
+- `TRUSTED_PROXIES` (comma-separated CIDRs) is only for an extra proxy with a public
+  address, e.g. an external load balancer. It is not needed today.
+
 ---
 
 ## 6. First deploy

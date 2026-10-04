@@ -174,7 +174,7 @@ def test_rate_limit_covers_every_tracking_endpoint(client, method, suffix):
     assert call(url, REMOTE_ADDR="9.9.9.9").status_code == 429
 
 
-@override_settings(TRACKING_RATE_LIMIT=2, TRUSTED_PROXY_HOPS=1)
+@override_settings(TRACKING_RATE_LIMIT=2)
 def test_rate_limit_keys_on_real_client_ip_not_spoofed_xff(client):
     """JAVI-8: behind Cloud Run REMOTE_ADDR is the front end; a forged leftmost XFF entry
     must not buy a fresh bucket, and different real clients have their own buckets."""
