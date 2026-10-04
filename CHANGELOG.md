@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.73.0] - 2026-10-04
+
 ### Security
 - Sign-in and sign-up limits now count each visitor by their real address, also behind the Cloudflare proxy, and ignore forged address headers.
   - SR: Ograničenja prijave i registracije sada broje svakog posetioca po njegovoj stvarnoj adresi, i iza Cloudflare proksija, i ignorišu lažna zaglavlja sa adresom.
@@ -90,7 +92,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.72.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.73.0...HEAD
+[0.73.0]: https://github.com/alxndr-bnd/javi/compare/v0.72.0...v0.73.0
 [0.72.0]: https://github.com/alxndr-bnd/javi/compare/v0.71.0...v0.72.0
 [0.71.0]: https://github.com/alxndr-bnd/javi/compare/v0.70.0...v0.71.0
 [0.70.0]: https://github.com/alxndr-bnd/javi/compare/v0.69.0...v0.70.0
