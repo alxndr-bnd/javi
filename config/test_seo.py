@@ -15,12 +15,21 @@ SERBITO-459: one URL per language, so Google indexes the Serbian landing for Ser
   alternate lists it back. The language switch is plain links to those URLs.
 - The sitemap gives every URL a <lastmod> and the landing URLs the same alternates
   (xhtml:link). /privacy.html is one page with all three languages: no alternates.
+
+SERBITO-462: SEO polish.
+- "Javi" alone is ambiguous (Spanish footballers): the title, og:site_name and the schema
+  alternateName carry a descriptor in the page language.
+- Each language page has one JSON-LD @graph: Organization (No Handoff), WebSite, WebPage and
+  SoftwareApplication, with stable @ids under https://javi.serbito.rs/. No Offer: the price is
+  not public yet (SERBITO-461); add one only with the real price.
+- /index.html, /en/index.html, /ru/index.html answer 301 (WhiteNoise's default is 302).
 """
 
 import datetime
+import json
 import re
 import xml.etree.ElementTree as ET
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
 
 import pytest
@@ -179,11 +188,13 @@ def test_private_pages_are_noindex(client, db, path):
 LANGS = list(LANDING_PAGES)
 OG_LOCALE = {"sr": "sr_RS", "en": "en_US", "ru": "ru_RU"}
 # What a visitor (and Googlebot, which renders with en-US) reads, without running any script.
-TITLE = {
-    "sr": "Javi — obavestite kupca kada paket stiže",
-    "en": "Javi — tell your customer when the parcel is on the way",
-    "ru": "Javi — сообщите покупателю, когда посылка в пути",
+# The brand with a descriptor (SERBITO-462): title, og:site_name, schema alternateName.
+DESCRIPTOR = {
+    "sr": "Javi — Viber/SMS obaveštenja o isporuci",
+    "en": "Javi — Viber/SMS delivery notifications",
+    "ru": "Javi — уведомления о доставке в Viber/SMS",
 }
+TITLE = DESCRIPTOR
 H1 = {
     "sr": "Obavestite kupca kada paket krene — i kada stiže",
     "en": "Tell your customer when the parcel leaves — and when it arrives",
@@ -257,6 +268,15 @@ def test_title_and_h1_are_in_the_page_language_without_js(lang):
 
 
 @pytest.mark.parametrize("lang", LANGS)
+def test_brand_descriptor_in_title_and_site_name(lang):
+    """Google shows up to ~60 characters of a title; the descriptor names what Javi does."""
+    title = parse_html(_landing(lang)).find("title").text()
+    assert title.startswith(DESCRIPTOR[lang])
+    assert len(title) <= 60, len(title)
+    assert _meta(lang, "property", "og:site_name") == [DESCRIPTOR[lang]]
+
+
+@pytest.mark.parametrize("lang", LANGS)
 def test_no_script_switches_the_language(lang):
     """The text is the page's own: no translation table, no browser-language guess."""
     html = _landing(lang)
@@ -306,3 +326,133 @@ def test_language_pages_share_style_and_script():
     assert sr[0] and len(sr[1]) == 2  # Consent Mode default + page behaviour
     for lang in LANGS[1:]:
         assert shared(lang) == sr, lang
+
+
+# --- structured data (SERBITO-462) ---
+
+LINKEDIN = "https://www.linkedin.com/company/nohandoff/"
+ORG_ID = f"{SITE}/#organization"
+WEBSITE_ID = f"{SITE}/#website"
+APP_ID = f"{SITE}/#software"
+
+
+def _graph(lang):
+    """The page's one JSON-LD block: {@type: node}, one node per type."""
+    blocks = _head(lang).find_all("script", {"type": "application/ld+json"})
+    assert len(blocks) == 1, "one JSON-LD block per page"
+    data = json.loads("".join(c for c in blocks[0].children if isinstance(c, str)))
+    assert data["@context"] == "https://schema.org"
+    assert set(data) == {"@context", "@graph"}
+    nodes = {node["@type"]: node for node in data["@graph"]}
+    assert len(nodes) == len(data["@graph"]), "one node per type"
+    return nodes
+
+
+def _refs(value):
+    """Every {"@id": …} reference inside a node (not the node's own @id)."""
+    if isinstance(value, dict):
+        if set(value) == {"@id"}:
+            yield value["@id"]
+        else:
+            for v in value.values():
+                yield from _refs(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from _refs(v)
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_json_ld_graph_has_the_four_nodes_with_stable_ids(lang):
+    url = SITE + LANDING_PAGES[lang][0]
+    nodes = _graph(lang)
+    assert set(nodes) == {"Organization", "WebSite", "WebPage", "SoftwareApplication"}
+    ids = {t: n["@id"] for t, n in nodes.items()}
+    assert ids == {
+        "Organization": ORG_ID,
+        "WebSite": WEBSITE_ID,
+        "WebPage": f"{url}#webpage",
+        "SoftwareApplication": APP_ID,
+    }
+    for node in nodes.values():  # every reference points to a node of this graph
+        for ref in _refs({k: v for k, v in node.items() if k != "@id"}):
+            assert ref in ids.values(), ref
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_json_ld_organization_is_no_handoff(lang):
+    org = _graph(lang)["Organization"]
+    assert org == {"@type": "Organization", "@id": ORG_ID, "name": "No Handoff", "url": LINKEDIN}
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_json_ld_website(lang):
+    site = _graph(lang)["WebSite"]
+    assert site["url"] == f"{SITE}/"
+    assert site["name"] == "Javi"
+    assert site["alternateName"] == DESCRIPTOR[lang]
+    assert site["publisher"] == {"@id": ORG_ID}
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_json_ld_webpage_matches_the_page(lang):
+    """The WebPage node says what the page head says: url, title, description, language."""
+    page = _graph(lang)["WebPage"]
+    html = parse_html(_landing(lang))
+    assert page["url"] == SITE + LANDING_PAGES[lang][0]
+    assert page["name"] == html.find("title").text()
+    assert page["description"] == _meta(lang, "name", "description")[0]
+    assert page["inLanguage"] == html.find("html").attrs["lang"]
+    assert page["isPartOf"] == {"@id": WEBSITE_ID}
+    assert page["about"] == {"@id": APP_ID}
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_json_ld_software_application(lang):
+    app = _graph(lang)["SoftwareApplication"]
+    assert app["name"] == "Javi"
+    assert app["alternateName"] == DESCRIPTOR[lang]
+    assert app["applicationCategory"] == "BusinessApplication"
+    assert app["operatingSystem"] == "Web"
+    assert app["url"] == SITE + LANDING_PAGES[lang][0]
+    assert app["publisher"] == {"@id": ORG_ID}
+    description = app["description"]
+    assert bool(CYRILLIC.search(description)) == (lang == "ru"), description
+    if lang == "en":
+        assert not SERBIAN_LATIN.search(description), description
+    if lang == "sr":
+        assert SERBIAN_LATIN.search(description), description
+    # No public price yet (SERBITO-461): an Offer with a made-up price would mislead Google.
+    assert "offers" not in app
+
+
+def test_json_ld_shared_nodes_agree_across_languages():
+    """One organisation, one site, one app: only the words and the page URL differ."""
+    per_page = {"alternateName", "description", "url"}
+
+    def shared(lang):
+        nodes = _graph(lang)
+        site = {k: v for k, v in nodes["WebSite"].items() if k != "alternateName"}
+        app = {k: v for k, v in nodes["SoftwareApplication"].items() if k not in per_page}
+        return nodes["Organization"], site, app
+
+    for lang in LANGS[1:]:
+        assert shared(lang) == shared("sr"), lang
+
+
+# --- /index.html is a permanent redirect (SERBITO-462) ---
+
+
+@pytest.mark.parametrize(
+    "path, target",
+    [
+        ("/index.html", "/"),
+        ("/en/index.html", "/en/"),
+        ("/ru/index.html", "/ru/"),
+        ("/en", "/en/"),
+        ("/ru", "/ru/"),
+    ],
+)
+def test_index_html_redirects_permanently(client, path, target):
+    resp = client.get(path)
+    assert resp.status_code == 301
+    assert urljoin(f"{SITE}{path}", resp["Location"]) == f"{SITE}{target}"

@@ -8,8 +8,13 @@
   "Cookie settings" control (data-consent-open) that reopens it.
 - privacy.html explains consent, what is sent while denied and how to change it, in sr/en/ru.
 - /t/ tracking pages: still no GA (config/test_analytics.py), and no banner or settings either.
+- SERBITO-462: every page loads /consent.js?v=<content hash>, and /consent.js is cached for a
+  long time as immutable. A change to consent.js changes the hash, so browsers and Cloudflare
+  fetch the new file at once. Edit consent.js -> update the ?v= in every page (this test says
+  which value).
 """
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -27,8 +32,11 @@ GA_ID = "G-KHME7DK2K0"
 DEFAULT = "gtag('consent', 'default'"
 CONFIG = f"gtag('config', '{GA_ID}', {{cookie_domain: 'none'}});"
 LOADER = f"googletagmanager.com/gtag/js?id={GA_ID}"
+CONSENT_HASH = hashlib.sha256((LANDING / "consent.js").read_bytes()).hexdigest()[:12]
+CONSENT_SRC = f"/consent.js?v={CONSENT_HASH}"
 # Django pages add a CSP nonce (SERBITO-362); the static landing has none.
-SCRIPT = re.compile(r'<script(?: nonce="[^"]+")? src="/consent.js" defer></script>')
+SCRIPT = re.compile(rf'<script(?: nonce="[^"]+")? src="{re.escape(CONSENT_SRC)}" defer></script>')
+ROOT = LANDING.parent
 LANGS = ["sr", "en", "ru"]
 LANDINGS = ["landing", "landing_en", "landing_ru"]  # "/", "/en/", "/ru/" (SERBITO-459)
 
@@ -104,10 +112,27 @@ def test_page_loads_the_banner(client, shop, name):
     assert "data-consent-open" in body
 
 
-def test_banner_script_is_served(client):
-    resp = client.get("/consent.js")
+@pytest.mark.parametrize("path", ["/consent.js", CONSENT_SRC])
+def test_banner_script_is_served_with_a_long_immutable_cache(client, path):
+    resp = client.get(path)
     assert resp.status_code == 200
     assert "javascript" in resp["Content-Type"]
+    directives = [d.strip() for d in resp["Cache-Control"].split(",")]
+    assert "immutable" in directives and "public" in directives
+    max_age = next(int(d.split("=")[1]) for d in directives if d.startswith("max-age="))
+    assert max_age >= 365 * 24 * 3600
+
+
+def test_every_page_loads_the_banner_by_its_content_hash():
+    """A stale ?v= would keep the old banner in caches for a year: the hash must be current."""
+    files = [*LANDING.rglob("*.html"), *ROOT.glob("templates/**/*.html")]
+    files += ROOT.glob("*/templates/**/*.html")
+    found = 0
+    for path in files:
+        for src in re.findall(r'src="(/consent\.js[^"]*)"', path.read_text(encoding="utf-8")):
+            assert src == CONSENT_SRC, f'{path}: use src="{CONSENT_SRC}"'
+            found += 1
+    assert found == 5  # three landings, privacy page, templates/base.html
 
 
 # --- banner and "Cookie settings" in every language ---

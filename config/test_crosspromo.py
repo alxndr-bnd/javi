@@ -113,7 +113,8 @@ def test_crosspromo_in_the_page_language(client, lang):
 def test_crosspromo_keeps_seo_tags(client, lang):
     _, page = _landing(client, lang)
     ld = json.loads("".join(page.ld_json))
-    assert ld["url"] == "https://javi.serbito.rs/"
+    website = next(node for node in ld["@graph"] if node["@type"] == "WebSite")  # SERBITO-462
+    assert website["url"] == "https://javi.serbito.rs/"
     assert page.meta["og:url"] == "https://javi.serbito.rs" + LANDING_PAGES[lang][0]
     assert page.meta["og:image"] == "https://javi.serbito.rs/og.png"
 

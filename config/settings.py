@@ -65,7 +65,8 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     # Before WhiteNoise: on *.run.app the landing redirects to javi.serbito.rs too (SERBITO-430).
     "common.run_app_guard.RunAppHostGuardMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    # WhiteNoise with permanent redirects and a cached /consent.js (SERBITO-462).
+    "common.landing_whitenoise.LandingWhiteNoiseMiddleware",
     # После WhiteNoise: лендинг сюда не доходит, всё, что рендерит Django, — noindex (SERBITO-303).
     "common.middleware.NoIndexMiddleware",
     # CSP (SERBITO-362, JAVI-12): политика — SECURE_CSP / SECURE_CSP_REPORT_ONLY ниже.
