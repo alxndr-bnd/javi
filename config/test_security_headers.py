@@ -135,7 +135,7 @@ def test_wsgi_entrypoint_runs_the_check():
 # --- SERBITO-348: the static landing (WhiteNoise) cannot be framed ---
 
 
-@pytest.mark.parametrize("path", ["/", "/privacy.html"])
+@pytest.mark.parametrize("path", ["/", "/en/", "/ru/", "/privacy.html"])
 def test_landing_html_forbids_framing(client, path):
     resp = client.get(path)
     assert resp.status_code == 200
