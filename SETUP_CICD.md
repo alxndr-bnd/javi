@@ -44,7 +44,7 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
   - `AR_IMAGE=europe-west1-docker.pkg.dev/serbito/javi/javi`
   - `WIF_PROVIDER=projects/488744139718/locations/global/workloadIdentityPools/github-pool/providers/github`
   - `DEPLOYER_SA=javi-deployer@serbito.iam.gserviceaccount.com`
-  - `RUNTIME_SA=488744139718-compute@developer.gserviceaccount.com` (service and migrate job)
+  - `RUNTIME_SA=javi-run@serbito.iam.gserviceaccount.com` (service and migrate job; SERBITO-347)
   - `CLOUDSQL_INSTANCE`, `MIGRATE_JOB=javi-migrate`, `RUN_SECRETS` (shared by service and job)
 - **Dockerfile** — Django + gunicorn:
   - base `python:3.14-slim` and a `uv` stage (`ghcr.io/astral-sh/uv`), both pinned by
@@ -290,9 +290,12 @@ What `gcloud run deploy` in `deploy.yaml` expects to exist:
   to drop it, create an Infobip subscription with Basic auth (password = the webhook secret)
   and set `INFOBIP_WEBHOOK_SECRET_IN_URL=False`.
 
-- **Runtime service account roles**: `roles/cloudsql.client`,
-  `roles/secretmanager.secretAccessor` (on those secrets), `roles/cloudtasks.enqueuer`
-  (rating tasks go to the `javi-rating` queue).
+- **Runtime service account** `javi-run@serbito.iam.gserviceaccount.com` (SERBITO-347; before
+  it, the default compute SA): `roles/cloudsql.client` (project), `roles/secretmanager.secretAccessor`
+  on each `javi-*` secret only, `roles/cloudtasks.enqueuer` on the `javi-rating` queue only.
+  `javi-deployer` has `roles/iam.serviceAccountUser` on this SA. A new secret needs its own
+  secret-level grant: `gcloud secrets add-iam-policy-binding <secret>
+  --member=serviceAccount:javi-run@serbito.iam.gserviceaccount.com --role=roles/secretmanager.secretAccessor`.
 - **Non-secret env** — `.github/deploy.env.yaml` (`--env-vars-file`); the deploy appends
   `SENTRY_RELEASE=javi@<tag without v>`. The rest (`INFOBIP_BASE_URL/SENDER/CHANNEL`,
   `PUBLIC_BASE_URL`, `CLOUD_TASKS_*`) uses the defaults in `config/settings.py`.

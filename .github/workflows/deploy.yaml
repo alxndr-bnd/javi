@@ -43,7 +43,9 @@ env:
   DEPLOYER_SA: javi-deployer@serbito.iam.gserviceaccount.com
   # The service and the migrate job run as the same identity, with the same Cloud SQL
   # instance, secrets and env file — the job sees exactly the settings the app will.
-  RUNTIME_SA: 488744139718-compute@developer.gserviceaccount.com
+  # SERBITO-347: a javi-only runtime SA (its own secrets, Cloud SQL, queue javi-rating), not the
+  # default compute SA. javi-deployer has iam.serviceAccountUser on this SA only.
+  RUNTIME_SA: javi-run@serbito.iam.gserviceaccount.com
   CLOUDSQL_INSTANCE: serbito:europe-west1:serbitodb
   MIGRATE_JOB: javi-migrate
   RUN_SECRETS: SECRET_KEY=javi-secret-key:latest,DATABASE_URL=javi-database-url:latest,GOOGLE_MAPS_API_KEY=javi-google-maps-key:latest,INFOBIP_API_KEY=javi-infobip-key:latest,INFOBIP_WEBHOOK_SECRET=javi-infobip-webhook-secret:latest,TASKS_SECRET=javi-tasks-secret:latest,SENTRY_DSN=javi-sentry-dsn:latest,ADMIN_PATH=javi-admin-path:latest
@@ -272,9 +274,9 @@ jobs:
         # javi-google-maps-key, javi-infobip-key, javi-infobip-webhook-secret, javi-tasks-secret,
         # javi-sentry-dsn (Sentry, org nohandoff / project javi; release = javi@<тег без v>),
         # javi-admin-path (неочевидный путь админки, SERBITO-362; без него админки нет)
-        # и роли runtime-SA: roles/cloudsql.client, roles/secretmanager.secretAccessor (на секреты),
-        # roles/cloudtasks.enqueuer (постановка задач оценки в очередь javi-rating).
-        # Deployer-SA: roles/run.admin (сервис и job) + roles/iam.serviceAccountUser (actAs RUNTIME_SA).
+        # и роли runtime-SA javi-run (SERBITO-347): roles/cloudsql.client, roles/secretmanager.secretAccessor
+        # (только на секреты javi-*), roles/cloudtasks.enqueuer (только на очередь javi-rating).
+        # Deployer-SA: roles/run.admin (сервис и job) + roles/iam.serviceAccountUser (actAs на javi-run).
         # INFOBIP_BASE_URL/SENDER/CHANNEL, PUBLIC_BASE_URL, CLOUD_TASKS_* — из дефолтов settings.py.
 
       # SERBITO-401: smoke check after every deploy (release or refresh). The main page of the new

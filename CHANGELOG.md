@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- Javi now runs under its own Google Cloud account that can read only Javi's settings, so a fault in another service cannot reach them.
+  - SR: Javi sada radi pod sopstvenim Google Cloud nalogom koji može da čita samo Javi podešavanja, pa greška u drugom servisu ne može da dođe do njih.
+
 ## [0.74.0] - 2026-10-05
 
 ### Security
