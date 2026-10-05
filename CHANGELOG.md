@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- Requests to the direct Cloud Run address now go to javi.serbito.rs, so the site's edge protection always applies.
+  - SR: Zahtevi na direktnu Cloud Run adresu sada idu na javi.serbito.rs, pa zaštita sajta na ulazu uvek radi.
+
 ## [0.73.0] - 2026-10-04
 
 ### Security
