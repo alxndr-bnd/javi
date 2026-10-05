@@ -15,7 +15,7 @@ greenfield: true
 notes: 'Greenfield — существующий Django orders/ игнорируется (можно удалить). Инфраструктура Cloud Run + CI/CD (SETUP_CICD.md) сохраняется как данность.'
 ---
 
-Jira: SERBITO-336 (JSON-логи, Closed) · расхождение: колбэк Cloud Tasks защищён общим секретом `X-Tasks-Secret`, а не OIDC — [SERBITO-484](https://serbito.atlassian.net/browse/SERBITO-484)
+Jira: SERBITO-336 (JSON-логи, Closed) · SERBITO-484: документ исправлен — колбэки Cloud Tasks и вебхуки Infobip защищены общим секретом, а не OIDC и не подписью (сверено с кодом 2026-10-05)
 
 # Architecture Decision Document — Javi
 
@@ -107,8 +107,8 @@ uv run python manage.py startapp deliveries
 ### Authentication & Security
 - **Магазин:** встроенный Django auth (сессии), email+пароль. Курьер в MVP — общий вход магазина.
 - **Публичная страница:** без логина; доступ по unguessable-токену; минимум данных (FR-18); rate-limit; срок жизни токена.
-- **Вебхуки Infobip** (receipts/opt-out): проверка подписи/секрета.
-- **Колбэки Cloud Tasks:** OIDC-аутентификация (Cloud Tasks → Cloud Run сервис-аккаунтом).
+- **Вебхуки Infobip** (receipts/opt-out): общий секрет `INFOBIP_WEBHOOK_SECRET` — заголовок, Basic auth или `?secret=` в URL отчёта; сравнение constant-time (`common/secrets.py`).
+- **Колбэки Cloud Tasks** (`/tasks/send-rating/`, `/tasks/escalate/`): общий секрет `TASKS_SECRET` в заголовке `X-Tasks-Secret` (код принимает его и через Basic auth), сравнение constant-time, fail-closed (пустой секрет — 403). OIDC не используется. `?secret=` в URL принимается только для задач, поставленных до SERBITO-362.
 - **Секреты:** Secret Manager (ключи Google Maps, Infobip, Django SECRET_KEY, креды БД) → Cloud Run `--update-secrets`.
 - **Изоляция арендаторов:** каждый запрос скоупится по магазину.
 
@@ -166,7 +166,7 @@ _Стек Django/Python опинионирован — паттерны = иди
 - **Идемпотентность:** отправка дедупится по `logical_message_id`; повторный колбэк/клик не плодит сообщений.
 - **Внешние вызовы:** таймауты + малые ретраи (только идемпотентные); деградация на fallback (maps→ручной ETA; send→нативный Viber→SMS Infobip).
 - **Ошибки:** провайдерские вызовы обёрнуты; пользователю — через Django messages, без утечки внутренностей; в лог — structured (JSON в stdout → Cloud Logging), уровни INFO/ERROR, с корреляцией `delivery_id`.
-- **Колбэки Cloud Tasks/вебхуки:** проверка OIDC/подписи; обработчики идемпотентны.
+- **Колбэки Cloud Tasks/вебхуки:** проверка общего секрета; обработчики идемпотентны.
 - **Миграции:** по одной на изменение, ревью перед мержем.
 
 ### Enforcement Guidelines
@@ -225,7 +225,7 @@ javi/
 │   ├── urls.py · templates/tracking/ · tests/
 ├── tasks/                              # отложенные задачи Cloud Tasks
 │   ├── client.py                       # enqueue с scheduleTime (clamp в окно 08:00–22:00)
-│   ├── views.py                        # защищённые OIDC колбэки (отправка rating_request)
+│   ├── views.py                        # колбэки по общему секрету X-Tasks-Secret (rating_request, эскалация)
 │   ├── urls.py · tests/
 ├── common/                             # кросс-каттинг
 │   ├── phone.py                        # E.164 (phonenumbers, RS)
@@ -236,10 +236,10 @@ javi/
 ```
 
 ### Architectural Boundaries
-- **API:** публичного REST в MVP нет. Внешние эндпоинты: `/webhooks/infobip/` (подпись), `/tasks/send-rating/` (OIDC), публичный `/t/<token>/` (трекинг). Внутри: views → services → integrations/models.
+- **API:** публичного REST в MVP нет. Внешние эндпоинты: `/webhooks/infobip/` (общий секрет), `/tasks/send-rating/` (общий секрет `X-Tasks-Secret`), публичный `/t/<token>/` (трекинг). Внутри: views → services → integrations/models.
 - **Data:** `deliveries` владеет Shop/Delivery/TrackingToken; `notifications` — Notification/OptOut. Меж-апповый доступ через services, не reach-in в чужие модели.
 - **Integration:** любые вызовы Google/Infobip — только через `integrations`-интерфейсы (свап вендора без правок домена).
-- **Auth:** `accounts` — сессии магазина; `tracking`/`webhooks`/`tasks` — без сессии, защищены токеном/подписью/OIDC.
+- **Auth:** `accounts` — сессии магазина; `tracking`/`webhooks`/`tasks` — без сессии, защищены токеном/общим секретом.
 
 ### Requirements → Structure Mapping
 - **Настройка/origin (FR-1,2)** → `accounts` + `deliveries.Shop`.
@@ -283,7 +283,7 @@ javi/
 - Производительность <5 c: путь «старт» = 1 вызов Routes + enqueue + send (геокод сделан заранее при создании) → реалистично ✅
 - Надёжность сообщений: статусы Notification + receipts Infobip ✅
 - Приватность/ПДн: минимум на публичной странице, токен, согласие ✅ (срок хранения — открыт)
-- Локализация sr ✅ · Мобайл-first ✅ · Безопасность (изоляция, rate-limit, OIDC/подпись) ✅
+- Локализация sr ✅ · Мобайл-first ✅ · Безопасность (изоляция, rate-limit, общий секрет на колбэках и вебхуках) ✅
 
 ### Gap Analysis
 - **Critical:** нет блокеров реализации.
