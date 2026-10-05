@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from django.contrib.auth import get_user_model
 
-from common.testing import contrast, css_declarations
+from common.testing import LANDING_PAGES, contrast, css_declarations
 from deliveries.models import Shop
 
 pytestmark = pytest.mark.django_db
@@ -30,6 +30,7 @@ LOADER = f"googletagmanager.com/gtag/js?id={GA_ID}"
 # Django pages add a CSP nonce (SERBITO-362); the static landing has none.
 SCRIPT = re.compile(r'<script(?: nonce="[^"]+")? src="/consent.js" defer></script>')
 LANGS = ["sr", "en", "ru"]
+LANDINGS = ["landing", "landing_en", "landing_ru"]  # "/", "/en/", "/ru/" (SERBITO-459)
 
 
 def _body(resp):
@@ -49,7 +50,13 @@ def _page(client, shop, name, lang="en"):
         client.force_login(shop.owner)
         path = "/app/"
     else:
-        path = {"landing": "/", "privacy": "/privacy.html", "login": "/accounts/login/"}[name]
+        path = {
+            "landing": "/",
+            "landing_en": "/en/",
+            "landing_ru": "/ru/",
+            "privacy": "/privacy.html",
+            "login": "/accounts/login/",
+        }[name]
     resp = client.get(path, HTTP_ACCEPT_LANGUAGE=lang)
     assert resp.status_code == 200, path
     return _body(resp)
@@ -69,7 +76,7 @@ def _consent_script(body):
 # --- Consent Mode v2 default precedes the tag ---
 
 
-@pytest.mark.parametrize("name", ["landing", "privacy", "app", "login"])
+@pytest.mark.parametrize("name", [*LANDINGS, "privacy", "app", "login"])
 def test_consent_default_precedes_gtag_config(client, shop, name):
     body = _page(client, shop, name)
     assert body.count(DEFAULT) == 1
@@ -85,12 +92,12 @@ def test_consent_default_precedes_gtag_config(client, shop, name):
 
 def test_consent_default_is_the_same_everywhere(client, shop):
     scripts = {
-        name: _consent_script(_page(client, shop, name)) for name in ("landing", "privacy", "app")
+        name: _consent_script(_page(client, shop, name)) for name in (*LANDINGS, "privacy", "app")
     }
     assert len(set(scripts.values())) == 1, scripts
 
 
-@pytest.mark.parametrize("name", ["landing", "privacy", "app", "login"])
+@pytest.mark.parametrize("name", [*LANDINGS, "privacy", "app", "login"])
 def test_page_loads_the_banner(client, shop, name):
     body = _page(client, shop, name)
     assert SCRIPT.search(body)
@@ -120,18 +127,20 @@ def test_banner_and_settings_in_every_language(lang, accept, decline, settings):
     strings = block.group(1)
     assert f'accept: "{accept}"' in strings and f'decline: "{decline}"' in strings
     assert "Google Analytics" in strings  # the one sentence says what the cookies are for
-    # the landing's footer button translates with the rest of the page
-    landing = (LANDING / "index.html").read_text(encoding="utf-8")
-    assert f'cookies:"{settings}"' in landing
+    # each language landing has the footer button in its own language
+    landing = LANDING_PAGES[lang][1].read_text(encoding="utf-8")
+    footer = landing[landing.index("<footer>") : landing.index("</footer>")]
+    assert f"data-consent-open>{settings}</button>" in footer
     # the privacy page has a settings button in each language
     privacy = (LANDING / "privacy.html").read_text(encoding="utf-8")
     assert f'data-consent-open="{lang}">{settings}</button>' in privacy
 
 
-def test_landing_footer_has_cookie_settings(client, shop):
-    body = _page(client, shop, "landing")
+@pytest.mark.parametrize("name", LANDINGS)
+def test_landing_footer_has_cookie_settings(client, shop, name):
+    body = _page(client, shop, name)
     footer = body[body.index("<footer>") : body.index("</footer>")]
-    assert re.search(r'<button type="button"[^>]*data-consent-open[^>]*data-i18n="cookies"', footer)
+    assert re.search(r'<button type="button" class="cookie-btn" data-consent-open>', footer)
 
 
 @pytest.mark.parametrize(

@@ -6,8 +6,18 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
+from pathlib import Path
 
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "wbr"}
+
+# The landing in its three languages (SERBITO-459): one static page per language, served by
+# WhiteNoise at "/" (Serbian, Latin script), "/en/" and "/ru/". Language -> (path, file).
+LANDING_DIR = Path(__file__).resolve().parent.parent / "landing"
+LANDING_PAGES = {
+    "sr": ("/", LANDING_DIR / "index.html"),
+    "en": ("/en/", LANDING_DIR / "en" / "index.html"),
+    "ru": ("/ru/", LANDING_DIR / "ru" / "index.html"),
+}
 
 
 @dataclass(eq=False)  # identity: nodes link to their parent, so field equality would recurse

@@ -1,23 +1,22 @@
 """SERBITO-265: the "Other projects" cross-promo lives only on the public landing.
 
-The landing is static (WhiteNoise serves landing/ at the site root), so the block and its
-sr/en/ru strings sit in landing/index.html. The shop dashboard and the customer tracking
-page belong to the shop and its customers — no cross-promo there.
+The landing is static (WhiteNoise serves landing/ at the site root), so the block sits in each
+language page (landing/index.html, landing/en/, landing/ru/; SERBITO-459) in that language. The
+shop dashboard and the customer tracking page belong to the shop and its customers — no
+cross-promo there.
 """
 
 import json
-import re
 from html.parser import HTMLParser
-from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
 
+from common.testing import LANDING_PAGES
 from deliveries.models import Delivery, Shop, TrackingToken
 
 pytestmark = pytest.mark.django_db
 
-LANDING = Path(__file__).resolve().parent.parent / "landing" / "index.html"
 UTM = "?utm_source=javi&utm_medium=crosspromo&utm_campaign=footer"
 PRODUCTS = [
     "https://gtd.serbito.rs/",
@@ -25,7 +24,31 @@ PRODUCTS = [
     "https://serbito.rs/",
 ]
 MADE_BY = "https://www.linkedin.com/company/nohandoff/"
-LANGS = ["sr", "en", "ru"]
+LANGS = list(LANDING_PAGES)
+# The block's heading and descriptions in each page's own language.
+TEXTS = {
+    "sr": [
+        "Drugi projekti",
+        "Besplatan GTD menadžer zadataka sa Telegram botom",
+        "Besplatan planning poker za scrum timove, bez registracije",
+        "Mali oglasi u Srbiji",
+        "Napravio",
+    ],
+    "en": [
+        "Other projects",
+        "Free GTD task manager with a Telegram bot",
+        "Free planning poker for scrum teams, no sign-up",
+        "Classifieds in Serbia",
+        "Made by",
+    ],
+    "ru": [
+        "Другие проекты",
+        "Бесплатный GTD-менеджер задач с Telegram-ботом",
+        "Бесплатный planning poker для scrum-команд, без регистрации",
+        "Объявления в Сербии",
+        "Сделано в",
+    ],
+}
 
 
 class _Page(HTMLParser):
@@ -34,7 +57,7 @@ class _Page(HTMLParser):
     def __init__(self):
         super().__init__()
         self.promo_depth = 0
-        self.promo_links, self.i18n_keys, self.ld_json, self.meta = [], [], [], {}
+        self.promo_links, self.promo_text, self.ld_json, self.meta = [], [], [], {}
         self._in_ld = False
 
     def handle_starttag(self, tag, attrs):
@@ -46,8 +69,6 @@ class _Page(HTMLParser):
         if self.promo_depth:
             if tag == "a":
                 self.promo_links.append(a["href"])
-            if "data-i18n" in a:
-                self.i18n_keys.append(a["data-i18n"])
         if tag == "script" and a.get("type") == "application/ld+json":
             self._in_ld = True
         if tag == "meta" and a.get("property"):
@@ -62,10 +83,12 @@ class _Page(HTMLParser):
     def handle_data(self, data):
         if self._in_ld:
             self.ld_json.append(data)
+        if self.promo_depth and data.strip(" —\n"):
+            self.promo_text.append(data.strip(" —\n"))
 
 
-def _landing(client):
-    resp = client.get("/")
+def _landing(client, lang):
+    resp = client.get(LANDING_PAGES[lang][0])
     assert resp.status_code == 200
     html = b"".join(resp.streaming_content).decode()
     page = _Page()
@@ -73,26 +96,25 @@ def _landing(client):
     return html, page
 
 
-def test_landing_has_crosspromo_with_utm(client):
-    _, page = _landing(client)
+@pytest.mark.parametrize("lang", LANGS)
+def test_landing_has_crosspromo_with_utm(client, lang):
+    _, page = _landing(client, lang)
     assert page.promo_links == [p + UTM for p in PRODUCTS] + [MADE_BY]
 
 
-def test_crosspromo_translated_in_every_landing_language(client):
-    html, page = _landing(client)
-    i18n = html[html.index("const I18N") :]
-    langs = re.findall(r"^  (\w+):\{", i18n, flags=re.M)
-    assert langs == LANGS
-    assert page.i18n_keys  # every visible string is translatable
-    for key in page.i18n_keys:
-        assert len(re.findall(rf"\b{key}:\"", i18n)) == len(LANGS), key
+@pytest.mark.parametrize("lang", LANGS)
+def test_crosspromo_in_the_page_language(client, lang):
+    _, page = _landing(client, lang)
+    names = ["GTD", "Planning Poker", "Serbito", "No Handoff"]
+    assert [t for t in page.promo_text if t not in names] == TEXTS[lang]
 
 
-def test_crosspromo_keeps_seo_tags(client):
-    _, page = _landing(client)
+@pytest.mark.parametrize("lang", LANGS)
+def test_crosspromo_keeps_seo_tags(client, lang):
+    _, page = _landing(client, lang)
     ld = json.loads("".join(page.ld_json))
     assert ld["url"] == "https://javi.serbito.rs/"
-    assert page.meta["og:url"] == "https://javi.serbito.rs/"
+    assert page.meta["og:url"] == "https://javi.serbito.rs" + LANDING_PAGES[lang][0]
     assert page.meta["og:image"] == "https://javi.serbito.rs/og.png"
 
 

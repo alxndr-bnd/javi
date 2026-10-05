@@ -6,29 +6,30 @@
 - Every visible field has a <label for> pointing at it.
 - WCAG 1.4.11: field borders contrast at least 3:1 with the field's fill and the form card,
   and the focus rule only fires on focus (it used to paint every <select> as focused).
+- SERBITO-459: the form is on every language page; they share one stylesheet
+  (config/test_seo.py::test_language_pages_share_style_and_script).
 """
 
 import re
-from pathlib import Path
 
 import pytest
 
-from common.testing import contrast, css_declarations, parse_html
+from common.testing import LANDING_PAGES, contrast, css_declarations, parse_html
 
-LANDING = Path(__file__).resolve().parent.parent / "landing" / "index.html"
 NON_TEXT = 3.0
+LANGS = list(LANDING_PAGES)
 
 
-def _page():
-    return LANDING.read_text(encoding="utf-8")
+def _page(lang="sr"):
+    return LANDING_PAGES[lang][1].read_text(encoding="utf-8")
 
 
 def _css():
     return "".join(re.findall(r"<style>(.*?)</style>", _page(), flags=re.S))
 
 
-def _fields():
-    form = parse_html(_page()).find("form", {"id": "leadForm"})
+def _fields(lang):
+    form = parse_html(_page(lang)).find("form", {"id": "leadForm"})
     return form, [
         n
         for n in form.iter()
@@ -36,8 +37,9 @@ def _fields():
     ]
 
 
-def test_fields_name_their_purpose_for_autofill():
-    _, fields = _fields()
+@pytest.mark.parametrize("lang", LANGS)
+def test_fields_name_their_purpose_for_autofill(lang):
+    _, fields = _fields(lang)
     assert {f.attrs["name"]: f.attrs.get("autocomplete") for f in fields} == {
         "shop": "organization",
         "contact": "email",
@@ -46,8 +48,9 @@ def test_fields_name_their_purpose_for_autofill():
     }
 
 
-def test_every_field_has_a_label():
-    form, fields = _fields()
+@pytest.mark.parametrize("lang", LANGS)
+def test_every_field_has_a_label(lang):
+    form, fields = _fields(lang)
     labelled = {label.attrs.get("for") for label in form.find_all("label")}
     assert [f.attrs["id"] for f in fields if f.attrs["id"] not in labelled] == []
 

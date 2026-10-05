@@ -12,8 +12,9 @@
  *   GA is configured with cookie_domain 'none' (host-only), so that means the host's cookies;
  *   the first withdrawal also clears _ga* left on parent domains (.serbito.rs) by earlier
  *   versions, which set them there — once, so later ones never touch sibling sites' cookies.
- * - Language: <html lang> (the landing switches it client-side; the app sets it via Django
- *   i18n); data-consent-lang="visitor" (privacy page) uses the landing's saved choice instead.
+ * - Language: <html lang> (each landing page has its own: /, /en/, /ru/, SERBITO-459; the app
+ *   sets it via Django i18n); data-consent-lang="visitor" (privacy page) uses the language of
+ *   the landing page the visitor saw last (localStorage "javi_lang") instead.
  * - Any [data-consent-open] element reopens the banner; its value, if any, forces the language.
  * - /t/ tracking pages do not load this file (SERBITO-306).
  * - The banner never hides the focused element (SERBITO-352, WCAG 2.4.11): while it is up the page
@@ -214,7 +215,7 @@
       window.requestAnimationFrame(function () { unobscure(e.target); });
     });
     window.addEventListener("resize", reserve);
-    // The landing switches language by changing <html lang>; the banner follows.
+    // If a page changes <html lang> after load, the banner follows.
     if (window.MutationObserver) {
       new MutationObserver(function () { if (!forced) { render(); reserve(); } })
         .observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });

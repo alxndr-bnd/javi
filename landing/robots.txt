@@ -1,6 +1,6 @@
-# Public: the landing (/, /privacy.html) and /t/ — tracking pages stay crawlable only so bots
-# can see their noindex (X-Robots-Tag + meta); a Disallow would hide it and the URL could
-# still be indexed from links. Everything else Django serves is private (SERBITO-303).
+# Public: the landing (/, /en/, /ru/, /privacy.html) and /t/ — tracking pages stay crawlable
+# only so bots can see their noindex (X-Robots-Tag + meta); a Disallow would hide it and the URL
+# could still be indexed from links. Everything else Django serves is private (SERBITO-303).
 User-agent: *
 Disallow: /admin/
 Disallow: /app/

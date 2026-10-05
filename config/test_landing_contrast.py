@@ -3,18 +3,17 @@
 A link with no colour rule falls back to the browser's #0000ee, about 2:1 on the dark --bg;
 that is how the footer privacy link went unnoticed. The test reads the landing's inline <style>,
 resolves which rule colours each <a> (descendant selectors, specificity, source order) and checks
-the text colour against the link's own background, or --bg when it has none.
+the text colour against the link's own background, or --bg when it has none. Every language page
+(SERBITO-459) is checked: their links differ (language switch), their CSS must not.
 """
 
 import re
 from html.parser import HTMLParser
-from pathlib import Path
 
 import pytest
 
-from common.testing import contrast
+from common.testing import LANDING_PAGES, contrast
 
-LANDING = Path(__file__).resolve().parent.parent / "landing" / "index.html"
 AA = 4.5
 HEX = re.compile(r"#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b")
 SIMPLE = re.compile(r"^([a-z][a-z0-9]*)?((?:[.#][\w-]+)*)$")
@@ -48,9 +47,9 @@ class _Landing(HTMLParser):
             self.css.append(data)
 
 
-def _parse():
+def _parse(file):
     page = _Landing()
-    page.feed(LANDING.read_text(encoding="utf-8"))
+    page.feed(file.read_text(encoding="utf-8"))
     css = re.sub(r"/\*.*?\*/", "", "".join(page.css), flags=re.S)
     vars_ = dict(re.findall(r"(--[\w-]+)\s*:\s*([^;}]+)", css))
 
@@ -112,29 +111,35 @@ def _winning(prop, chain, rules):
     return max(hits)[2] if hits else None
 
 
-LINKS, RULES, PAGE_BG = _parse()
+PAGES = {lang: _parse(file) for lang, (_, file) in LANDING_PAGES.items()}
+LINKS = [(lang, href, chain) for lang, (links, _, _) in PAGES.items() for href, chain in links]
 
 
-def test_landing_has_links():
-    hrefs = [href for href, _ in LINKS]
+@pytest.mark.parametrize("lang", list(PAGES))
+def test_landing_has_links(lang):
+    hrefs = [href for href, _ in PAGES[lang][0]]
     assert "/privacy.html" in hrefs
-    assert len(hrefs) >= 7
+    assert {"/", "/en/", "/ru/"} <= set(hrefs)  # the language switch
+    assert len(hrefs) >= 10
 
 
-@pytest.mark.parametrize("href,chain", LINKS, ids=[h for h, _ in LINKS])
-def test_every_landing_link_has_aa_contrast(href, chain):
-    colour = _winning("color", chain, RULES)
+@pytest.mark.parametrize("lang,href,chain", LINKS, ids=[f"{lang}:{h}" for lang, h, _ in LINKS])
+def test_every_landing_link_has_aa_contrast(lang, href, chain):
+    _, rules, page_bg = PAGES[lang]
+    colour = _winning("color", chain, rules)
     assert colour, f"{href}: no colour rule, falls back to the browser's default blue"
     [fg] = HEX.findall(colour)
-    background = _winning("background", chain, RULES) or _winning("background-color", chain, RULES)
-    backgrounds = HEX.findall(background or "") or [PAGE_BG]
+    background = _winning("background", chain, rules) or _winning("background-color", chain, rules)
+    backgrounds = HEX.findall(background or "") or [page_bg]
     for bg in backgrounds:
         ratio = contrast(fg, bg)
         assert ratio >= AA, f"{href}: {fg} on {bg} = {ratio:.2f}:1, needs {AA}:1"
 
 
-def test_privacy_link_matches_other_footer_links():
-    footer = [chain for href, chain in LINKS if any(n[0] == "footer" for n in chain)]
-    colours = {_winning("color", chain, RULES) for chain in footer}
+@pytest.mark.parametrize("lang", list(PAGES))
+def test_privacy_link_matches_other_footer_links(lang):
+    links, rules, _ = PAGES[lang]
+    footer = [chain for href, chain in links if any(n[0] == "footer" for n in chain)]
+    colours = {_winning("color", chain, rules) for chain in footer}
     assert len(footer) == 5
     assert len(colours) == 1
