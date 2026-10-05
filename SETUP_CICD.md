@@ -35,7 +35,9 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
      ([section 9](#9-database-migrations)), then `gcloud run deploy`, which moves traffic, and a
      smoke check of the main page (not 200 → traffic back to the previous revision, run fails),
      then a security headers check of `/` (`scripts/check_security_headers.sh`; a missing header
-     fails the run, traffic stays on the new revision).
+     fails the run, traffic stays on the new revision). The new revision gets the tag
+     `candidate`; both checks use `https://candidate---<service host>/`, and the last step
+     removes the tag, also after a failure (SERBITO-430).
 
   Auth is keyless via Workload Identity Federation. Pipeline `env`:
   - `PROJECT_ID=serbito`, `REGION=europe-west1`, `SERVICE=javi`
@@ -212,6 +214,20 @@ Sign-in lockout, the signup limit and the `/t/` rate limit count per client IP
   Cloudflare range share the limit of their edge address. No one can forge an address.
 - `TRUSTED_PROXIES` (comma-separated CIDRs) is only for an extra proxy with a public
   address, e.g. an external load balancer. It is not needed today.
+
+### The `*.run.app` guard (SERBITO-430)
+
+`javi.serbito.rs` is behind the Cloudflare proxy (SERBITO-428). A request to the Cloud Run URL
+(`javi-….run.app`) skips it, so `common/run_app_guard.py` answers there:
+
+- GET/HEAD: `301` to the same path on `PUBLIC_BASE_URL`;
+- other methods: `403`;
+- the deploy tag host `candidate---…run.app`: served as usual (smoke and header checks).
+
+No machine caller uses run.app: Cloud Tasks callbacks go to `CLOUD_TASKS_SERVICE_URL` and
+Infobip webhooks to `PUBLIC_BASE_URL` (both `https://javi.serbito.rs`). Keep it so: a run.app
+value there gets 403. `.run.app` stays in `ALLOWED_HOSTS` for the tag host. The guard is off
+when `PUBLIC_BASE_URL` is itself a run.app URL.
 
 ---
 

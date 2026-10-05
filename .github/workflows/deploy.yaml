@@ -259,7 +259,11 @@ jobs:
             --timeout=60 \
             --add-cloudsql-instances="$CLOUDSQL_INSTANCE" \
             --env-vars-file="$RUNNER_TEMP/deploy.env.yaml" \
-            --set-secrets="$RUN_SECRETS"
+            --set-secrets="$RUN_SECRETS" \
+            --tag candidate
+          # SERBITO-430: the smoke and header checks use the tag URL candidate---…run.app. On the plain
+          # run.app URL the app answers 301 to javi.serbito.rs or 403 (common/run_app_guard.py).
+          # The last step removes the tag, also after a failure.
           # After a smoke rollback, traffic is pinned to the old revision by name; a plain deploy
           # would keep it there. Route 100% to the new revision (a no-op when already latest).
           gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest
@@ -273,17 +277,18 @@ jobs:
         # Deployer-SA: roles/run.admin (сервис и job) + roles/iam.serviceAccountUser (actAs RUNTIME_SA).
         # INFOBIP_BASE_URL/SENDER/CHANNEL, PUBLIC_BASE_URL, CLOUD_TASKS_* — из дефолтов settings.py.
 
-      # SERBITO-401: smoke check after every deploy (release or refresh). The main page of the
-      # service URL (run.app, redirects followed) must return 200. Otherwise traffic goes back to
-      # the revision that served before, and the run fails (GitHub e-mails the failure).
+      # SERBITO-401: smoke check after every deploy (release or refresh). The main page of the new
+      # revision (the candidate tag URL, redirects followed) must return 200. Otherwise traffic goes
+      # back to the revision that served before, and the run fails (GitHub e-mails the failure).
       - name: Smoke check (roll back on failure)
         env:
           PREV_REVISION: ${{ steps.prev.outputs.revision }}
         run: |
           set -euo pipefail
           SVC_URL="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
+          CAND_URL="https://candidate---${SVC_URL#https://}"
           for i in 1 2 3 4 5; do
-            code="$(curl -sL -o /dev/null -w '%{http_code}' --max-time 30 "$SVC_URL/")" || true
+            code="$(curl -sL -o /dev/null -w '%{http_code}' --max-time 30 "$CAND_URL/")" || true
             echo "  smoke $i -> $code"
             if [ "$code" = "200" ]; then exit 0; fi
             sleep 5
@@ -298,7 +303,7 @@ jobs:
           exit 1
 
       # SERBITO-348: the landing and the app must keep their security headers (HSTS, nosniff,
-      # framing ban, Referrer-Policy, CSP). Checked on the run.app URL (the landing at `/`,
+      # framing ban, Referrer-Policy, CSP). Checked on the candidate tag URL (the landing at `/`,
       # no redirects). A missing header fails the run, but traffic stays on the new revision:
       # the site still works, and the fix is a code change. A refresh of a tag older than the
       # check has no script (and no landing headers yet), so the step skips it.
@@ -310,7 +315,16 @@ jobs:
             exit 0
           fi
           SVC_URL="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
-          if ! bash scripts/check_security_headers.sh "$SVC_URL/"; then
-            echo "::error::Security headers are missing on $SVC_URL/ (see the list above)."
+          CAND_URL="https://candidate---${SVC_URL#https://}"
+          if ! bash scripts/check_security_headers.sh "$CAND_URL/"; then
+            echo "::error::Security headers are missing on $CAND_URL/ (see the list above)."
             exit 1
           fi
+
+      # SERBITO-430: the candidate tag URL is a way around Cloudflare, so it must not outlive the
+      # deploy. Runs on success and on failure.
+      - name: Remove the candidate tag
+        if: always()
+        run: |
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" --remove-tags candidate \
+            || echo "::warning::Could not remove the candidate tag. Remove it by hand: gcloud run services update-traffic $SERVICE --region $REGION --remove-tags candidate"
