@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.75.0] - 2026-10-05
+
 ### Security
 - Javi now runs under its own Google Cloud account that can read only Javi's settings, so a fault in another service cannot reach them.
   - SR: Javi sada radi pod sopstvenim Google Cloud nalogom koji može da čita samo Javi podešavanja, pa greška u drugom servisu ne može da dođe do njih.
@@ -102,7 +104,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.74.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.75.0...HEAD
+[0.75.0]: https://github.com/alxndr-bnd/javi/compare/v0.74.0...v0.75.0
 [0.74.0]: https://github.com/alxndr-bnd/javi/compare/v0.73.0...v0.74.0
 [0.73.0]: https://github.com/alxndr-bnd/javi/compare/v0.72.0...v0.73.0
 [0.72.0]: https://github.com/alxndr-bnd/javi/compare/v0.71.0...v0.72.0
