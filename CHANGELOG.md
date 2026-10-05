@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.74.0] - 2026-10-05
+
 ### Security
 - Requests to the direct Cloud Run address now go to javi.serbito.rs, so the site's edge protection always applies.
   - SR: Zahtevi na direktnu Cloud Run adresu sada idu na javi.serbito.rs, pa zaštita sajta na ulazu uvek radi.
@@ -96,7 +98,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.73.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.74.0...HEAD
+[0.74.0]: https://github.com/alxndr-bnd/javi/compare/v0.73.0...v0.74.0
 [0.73.0]: https://github.com/alxndr-bnd/javi/compare/v0.72.0...v0.73.0
 [0.72.0]: https://github.com/alxndr-bnd/javi/compare/v0.71.0...v0.72.0
 [0.71.0]: https://github.com/alxndr-bnd/javi/compare/v0.70.0...v0.71.0
