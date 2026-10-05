@@ -15,6 +15,8 @@ greenfield: true
 notes: 'Greenfield — существующий Django orders/ игнорируется (можно удалить). Инфраструктура Cloud Run + CI/CD (SETUP_CICD.md) сохраняется как данность.'
 ---
 
+Jira: SERBITO-336 (JSON-логи, Closed) · расхождение: колбэк Cloud Tasks защищён общим секретом `X-Tasks-Secret`, а не OIDC — [SERBITO-484](https://serbito.atlassian.net/browse/SERBITO-484)
+
 # Architecture Decision Document — Javi
 
 _Документ собирается пошагово в коллаборации. Разделы добавляются по мере проработки решений._

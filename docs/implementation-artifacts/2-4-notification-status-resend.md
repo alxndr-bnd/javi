@@ -4,7 +4,9 @@ baseline_commit: bb948cb
 
 # Story 2.4: Магазин видит статус уведомления и чинит сбой
 
-Status: review
+Status: done
+
+Jira: SERBITO-362 (секреты вебхуков убраны из query string, Closed) — follow-up
 
 ## Story
 
@@ -124,3 +126,4 @@ claude-opus-4-8 (1M context)
 ### Change Log
 
 - 2026-06-04: Story 2.4 реализована локально — вебхук receipts, статус уведомления у магазина, правка номера + переотправка, ручная отметка. 62 теста зелёные. Status → review. (Прод: секрет вебхука + регистрация URL в Infobip — отдельный шаг.)
+- 2026-10-05: Сверка документов: история выпущена в v0.8.0 (4eeef99, b592298). Status → done.

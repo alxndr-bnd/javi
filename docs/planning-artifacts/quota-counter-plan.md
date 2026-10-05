@@ -1,5 +1,7 @@
 # Plan: free-tier quota counter (Viber / SMS / Maps)
 
+Jira: follow-up SERBITO-345 (per-shop caps, Closed), SERBITO-356 (shops see their own caps, Closed) · leftover: real `FREE_QUOTA_VIBER/SMS` values — [SERBITO-484](https://serbito.atlassian.net/browse/SERBITO-484)
+
 **Goal:** show every signed-in cabinet a read-only counter of how much of our **global,
 account-wide** free quota is left for Viber, SMS and Google Maps. Provider credentials /
 billing access are NOT exposed to shops — they only see a number. Per-shop quotas: later.
@@ -60,3 +62,4 @@ Related: leaked Infobip key rotation → see `infobip-key-rotation.md` (schedule
   every signed-in account in the `⋯` menu. Per-shop quotas: future work.
 - Possible later refinements: real Infobip balance probe (operator-side) for money-accurate
   Viber/SMS remaining; split Maps into geocoding vs routes SKUs; an /ops-only detail page.
+- **Docs audit 2026-10-05:** done. T1–T6 shipped in v0.39.0 (0b42e83, 89938d2); Pacific-time reset in v0.40.0 (73dbecb). Per-shop quotas shipped as caps (SERBITO-345, SERBITO-357). Since v0.68.0 (SERBITO-356) shops see their own caps; only staff see the platform quota. Leftover: `FREE_QUOTA_VIBER/SMS` are still trial-era values in `.github/deploy.env.yaml` — SERBITO-484, together with the own-sender work in SERBITO-477.

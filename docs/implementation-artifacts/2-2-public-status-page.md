@@ -4,7 +4,9 @@ baseline_commit: 2e32268
 
 # Story 2.2: Публичная страница статуса по ссылке
 
-Status: review
+Status: done
+
+Jira: SERBITO-362 (лимиты трекинга ужесточены, Closed), SERBITO-352 (доступность страницы статуса, Closed) — follow-up
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -122,3 +124,4 @@ claude-opus-4-8 (1M context)
 ### Change Log
 
 - 2026-06-04: Story 2.2 реализована локально — брендовая публичная страница статуса (степпер, крупный ETA, город), срок ссылки + rate limit, приватность. Найден/исправлен баг кэша (терялся город). 46 тестов зелёные. Status → review.
+- 2026-10-05: Сверка документов: история выпущена в v0.6.0 (1f91ac2). Status → done.

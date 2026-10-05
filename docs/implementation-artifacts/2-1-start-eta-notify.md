@@ -4,7 +4,7 @@ baseline_commit: b53cc91e082092e31f438683faad62bc936e1814
 
 # Story 2.1: «Доставка началась» → получатель получает сообщение с ETA
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -175,3 +175,4 @@ claude-opus-4-8 (1M context)
 ### Change Log
 
 - 2026-06-04: Story 2.1 реализована локально — старт доставки, расчёт ETA (Routes), уведомление (Infobip), мин. публичная страница статуса, идемпотентность, ручной ETA fallback. 43 теста зелёные. Не задеплоено (реальная платная отправка — отдельный go). Status → review.
+- 2026-10-05: Сверка документов: история выпущена в v0.5.0 (2e32268); прод-отправка — v0.11.0 (6816d9f) и v0.13.0 (708f183). Status → done.

@@ -55,6 +55,8 @@ components:
   - brand_header
 ---
 
+Jira: SERBITO-352 (доступность, Closed), SERBITO-356 (UX-доработки, Closed) · выпущено к `v0.14.0`; сверка 2026-10-05 — DONE
+
 # Javi — DESIGN
 
 ## Brand & Style

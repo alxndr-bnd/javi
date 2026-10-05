@@ -4,7 +4,7 @@ baseline_commit: a76b56e
 
 # Story 3.2: Отписка получателя
 
-Status: review
+Status: done
 
 ## Story
 
@@ -115,3 +115,4 @@ claude-opus-4-8 (1M context)
 ### Change Log
 
 - 2026-06-04: Story 3.2 реализована локально — отписка (ссылка + opt-out вебхук), блоклист, гейт не-критичных, статус в кабинете. 78 тестов зелёные. Status → review. **Epic 3 и весь MVP-scope закрыты локально.**
+- 2026-10-05: Сверка документов: история выпущена в v0.10.0 (7bad688). Status → done.

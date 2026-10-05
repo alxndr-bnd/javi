@@ -4,7 +4,7 @@ baseline_commit: 1f91ac2
 
 # Story 2.3: Viber-first с авто-fallback на SMS
 
-Status: review
+Status: done
 
 ## Story
 
@@ -95,3 +95,4 @@ claude-opus-4-8 (1M context)
 ### Change Log
 
 - 2026-06-04: Story 2.3 реализована локально — Viber-first + авто-fallback на SMS, фактический канал в Notification, флаги канала/fallback. 51 тест зелёный. Status → review.
+- 2026-10-05: Сверка документов: история выпущена в v0.7.0 (35330cb, bb948cb); failover по receipts — DLR-эскалация, `multichannel-fallback-plan.md`. Status → done.

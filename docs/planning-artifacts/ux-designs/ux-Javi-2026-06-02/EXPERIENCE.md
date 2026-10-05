@@ -10,6 +10,8 @@ sources:
 design: ./DESIGN.md
 ---
 
+Jira: SERBITO-352 (доступность, Closed), SERBITO-356 (UX-доработки, Closed) · выпущено к `v0.14.0`; сверка 2026-10-05 — DONE
+
 # Javi — EXPERIENCE
 
 Визуальные токены — в `DESIGN.md` (ссылки вида `{path.to.token}`). При конфликте побеждают спайны, не макет.

@@ -1,5 +1,7 @@
 # Test suite review (SERBITO-364, 2026-09-29)
 
+Jira: SERBITO-364 (Closed) · optional follow-up (shared conftest fixtures): [SERBITO-484](https://serbito.atlassian.net/browse/SERBITO-484)
+
 The pytest gate was reviewed for slow setup, tests that repeat each other, copy-paste that fits `parametrize`, and checks of framework behaviour.
 
 ## Before / after

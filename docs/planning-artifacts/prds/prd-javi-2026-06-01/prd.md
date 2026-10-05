@@ -6,6 +6,8 @@ updated: 2026-06-01
 ---
 
 # PRD: Javi
+
+Jira: реализуют SERBITO-345, 356, 357 · follow-up SERBITO-461 · осталось: [SERBITO-466](https://serbito.atlassian.net/browse/SERBITO-466) (доставляются ли уведомления), [SERBITO-467](https://serbito.atlassian.net/browse/SERBITO-467) (срок хранения ПДн), [SERBITO-477](https://serbito.atlassian.net/browse/SERBITO-477) (свой отправитель Viber/SMS, метрики успеха)
 *Working title — confirm.*
 
 > Черновик. Строится на базе:
@@ -174,3 +176,14 @@ _Таргеты ниже — стартовые гипотезы Этапа 0, �
 - Приемлемо ли магазину двойное внесение адреса до появления API?
 - Приемлемая стоимость на доставку при двух сообщениях (в пути + оценка) при ценнике €100/мес — сходится ли юнит-экономика?
 - Срок хранения ПДн (телефоны/адреса/история уведомлений) после доставки.
+
+## Статус (сверка 2026-10-05)
+
+Все FR (FR-1…FR-25) выпущены историями 1.1–3.2: Viber→SMS — `v0.7.0`, opt-out и «MVP complete» — `v0.10.0`, подтверждение получения — `v0.14.0`. FR-6 (API, «later») — `v0.26.0`…`v0.30.0` (см. `api-plan.md`).
+
+Осталось:
+
+- §8 — свой отправитель Viber Business и SMS alphanumeric sender ID; прод всё ещё на `IBSelfServe` (trial Infobip) — [SERBITO-477](https://serbito.atlassian.net/browse/SERBITO-477).
+- §8 — проверить, что уведомления доходят в проде (за 60 дней нет логов отправки) — [SERBITO-466](https://serbito.atlassian.net/browse/SERBITO-466).
+- §6 — метрики успеха (удержание на 4-й неделе, средняя оценка, открываемость ссылки) нигде не считаются — [SERBITO-477](https://serbito.atlassian.net/browse/SERBITO-477); готовность платить — [SERBITO-461](https://serbito.atlassian.net/browse/SERBITO-461), [SERBITO-474](https://serbito.atlassian.net/browse/SERBITO-474).
+- §7, §9 — срок хранения телефонов и адресов получателей, задачи очистки нет — [SERBITO-467](https://serbito.atlassian.net/browse/SERBITO-467).

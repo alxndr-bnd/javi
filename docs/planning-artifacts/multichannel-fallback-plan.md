@@ -1,5 +1,7 @@
 # Plan: multi-channel notification fallback
 
+Jira: open — [SERBITO-479](https://serbito.atlassian.net/browse/SERBITO-479) (WhatsApp decision, switch on escalation), [SERBITO-484](https://serbito.atlassian.net/browse/SERBITO-484) (Telegram opt-in, low value)
+
 **Requested:** a fallback chain `Telegram → Viber → WhatsApp → iMessage → SMS` for the
 "delivery started" (and other) customer notifications.
 
@@ -211,3 +213,7 @@ once P0/P1 land), merged sequentially — mind shared files (`providers.py`, `me
   trigger — possible future refinement). **Full suite 234 green, ruff clean.**
 - **All phases P0–P4 complete.** Live in prod: P0/P1 (v0.40.0), P2/P3 + API parity (v0.41.0),
   all behind flags. WhatsApp/Telegram/escalation stay dark until flags + external onboarding.
+- **Docs audit 2026-10-05: code done, rollout not done.** P0/P1 v0.40.0, P2/P3 v0.41.0, P4 v0.42.0 (1ab6c3a). Prod sets none of `WHATSAPP_ENABLED`, `TELEGRAM_ENABLED`, `FALLBACK_ESCALATION_ENABLED`, so the live chain is still Viber → SMS. Left:
+  - ⬜ Owner decision on WhatsApp; if yes, Meta verification + Utility template, then the flags — [SERBITO-479](https://serbito.atlassian.net/browse/SERBITO-479).
+  - ⬜ Turn on `FALLBACK_ESCALATION_ENABLED` once two or more proactive channels are live — [SERBITO-479](https://serbito.atlassian.net/browse/SERBITO-479).
+  - ⬜ Telegram opt-in channel (bot, webhook secret, opt-in entry point) — low value — [SERBITO-484](https://serbito.atlassian.net/browse/SERBITO-484).
