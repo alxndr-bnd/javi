@@ -75,3 +75,22 @@ cd landing && python3 -m http.server 8080
   Edit a page → set its `<lastmod>` to the edit date.
 - After a release with new or changed pages: in Search Console resubmit `sitemap.xml`
   and request indexing of the changed URLs.
+
+## SEO polish (SERBITO-462)
+
+- **Brand descriptor.** "Javi" alone is ambiguous in search. `<title>`, `og:site_name` and the
+  schema `alternateName` carry the descriptor in the page language: sr «Javi — Viber/SMS
+  obaveštenja o isporuci», en "Javi — Viber/SMS delivery notifications", ru «Javi — уведомления
+  о доставке в Viber/SMS». Titles stay ≤ 60 characters. `og:title` keeps the benefit phrase.
+- **JSON-LD.** Each language page has one `@graph`: `Organization` (No Handoff),
+  `WebSite`, `WebPage` (this page's URL, title, description, language) and `SoftwareApplication`.
+  The `@id`s are stable: `https://javi.serbito.rs/#organization`, `#website`, `#software`, and
+  `<page URL>#webpage`. There is no `Offer`: the price is not public. Add one only with the real
+  price from the landing (SERBITO-461). `config/test_seo.py` checks the graph against the page.
+- **Redirects.** `/index.html`, `/en/index.html`, `/ru/index.html`, `/en`, `/ru` answer 301
+  (`common/landing_whitenoise.py`; plain WhiteNoise answers 302).
+- **consent.js cache.** Every page loads `/consent.js?v=<first 12 hex of its SHA-256>`, and
+  `/consent.js` is served `public, immutable` for 10 years. Edit `consent.js` → update `?v=` in
+  the three landings, `privacy.html` and `templates/base.html`. `config/test_consent.py` fails
+  with the right value until you do:
+  `shasum -a 256 landing/consent.js | cut -c1-12`.

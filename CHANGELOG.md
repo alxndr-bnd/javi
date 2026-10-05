@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Changed
+- Search results now show Javi with a short description of what it does: Viber/SMS delivery notifications. Google also gets structured facts about the app and who makes it.
+  - SR: Rezultati pretrage sada prikazuju Javi sa kratkim opisom: Viber/SMS obaveštenja o isporuci. Google dobija i strukturisane podatke o aplikaciji i o tome ko je pravi.
+
 ## [0.76.0] - 2026-10-05
 
 ### Changed

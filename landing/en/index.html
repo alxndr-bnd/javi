@@ -25,7 +25,7 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHME7DK2K0"></script>
 
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%234f7cff'/%3E%3Ctext x='50' y='72' font-size='62' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3Ej%3C/text%3E%3C/svg%3E">
-<title>Javi — tell your customer when the parcel is on the way</title>
+<title>Javi — Viber/SMS delivery notifications</title>
 <meta name="description" content="Javi notifies your customers when delivery starts and when it arrives. Fewer failed deliveries, happier customers.">
 <link rel="canonical" href="https://javi.serbito.rs/en/">
 <!-- One URL per language (SERBITO-459): the text is static, no script switches it. -->
@@ -38,7 +38,7 @@
      Static (crawlers don't run JS), in this page's language. -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://javi.serbito.rs/en/">
-<meta property="og:site_name" content="Javi">
+<meta property="og:site_name" content="Javi — Viber/SMS delivery notifications">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="sr_RS">
 <meta property="og:locale:alternate" content="ru_RU">
@@ -53,16 +53,61 @@
 <meta name="twitter:description" content="Automatic Viber/SMS notifications for your customers when delivery starts and when it arrives.">
 <meta name="twitter:image" content="https://javi.serbito.rs/og.png">
 
-<!-- Structured data: helps Google understand the site/brand -->
+<!-- Structured data (SERBITO-462): one @graph per language page, stable @ids under
+     https://javi.serbito.rs/. No Offer: the price is not public yet. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Javi",
-  "url": "https://javi.serbito.rs/",
-  "inLanguage": "en",
-  "description": "Automatic delivery status notifications for customers — for shops in Serbia.",
-  "publisher": { "@type": "Organization", "name": "Javi", "url": "https://javi.serbito.rs/" }
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://javi.serbito.rs/#organization",
+      "name": "No Handoff",
+      "url": "https://www.linkedin.com/company/nohandoff/"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://javi.serbito.rs/#website",
+      "url": "https://javi.serbito.rs/",
+      "name": "Javi",
+      "alternateName": "Javi — Viber/SMS delivery notifications",
+      "inLanguage": [
+        "sr",
+        "en",
+        "ru"
+      ],
+      "publisher": {
+        "@id": "https://javi.serbito.rs/#organization"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://javi.serbito.rs/en/#webpage",
+      "url": "https://javi.serbito.rs/en/",
+      "name": "Javi — Viber/SMS delivery notifications",
+      "description": "Javi notifies your customers when delivery starts and when it arrives. Fewer failed deliveries, happier customers.",
+      "inLanguage": "en",
+      "isPartOf": {
+        "@id": "https://javi.serbito.rs/#website"
+      },
+      "about": {
+        "@id": "https://javi.serbito.rs/#software"
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://javi.serbito.rs/#software",
+      "name": "Javi",
+      "alternateName": "Javi — Viber/SMS delivery notifications",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "url": "https://javi.serbito.rs/en/",
+      "description": "Automatic Viber/SMS notifications for your customers when delivery starts and when it arrives, with a tracking link — for shops in Serbia.",
+      "publisher": {
+        "@id": "https://javi.serbito.rs/#organization"
+      }
+    }
+  ]
 }
 </script>
 
@@ -312,6 +357,6 @@ form.addEventListener('submit', async (e)=>{
 });
 </script>
 <!-- Analytics consent banner (SERBITO-321); speaks the page language (<html lang>) -->
-<script src="/consent.js" defer></script>
+<script src="/consent.js?v=4851c84417bc" defer></script>
 </body>
 </html>
