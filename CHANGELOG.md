@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Changed
+- The home page now has its own address for each language: Serbian at javi.serbito.rs, English at /en/ and Russian at /ru/. Google can now show the Serbian page to people who search in Serbian.
+  - SR: Početna stranica sada ima posebnu adresu za svaki jezik: srpski na javi.serbito.rs, engleski na /en/ i ruski na /ru/. Google sada može da prikaže srpsku stranicu onima koji pretražuju na srpskom.
+
 ## [0.75.0] - 2026-10-05
 
 ### Security

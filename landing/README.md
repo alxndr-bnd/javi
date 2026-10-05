@@ -4,7 +4,7 @@
 См. бриф: `../docs/planning-artifacts/briefs/brief-Serbito-2026-06-01/brief.md`.
 
 - **Цель:** собрать 5–10 заявок от магазинов на бюджете рекламы €50–100.
-- **Языки:** сербский (по умолчанию), английский, русский. Переключатель + автоопределение по браузеру.
+- **Языки:** сербский (`/`), английский (`/en/`), русский (`/ru/`) — отдельная статичная страница на язык (SERBITO-459). Переключатель — обычные ссылки, без автоопределения по браузеру.
 - **Атрибуция:** UTM-параметры (`utm_source/medium/campaign`) из URL автоматически попадают в заявку — видно, какой канал (Google/Telegram) сработал.
 
 ## 1. Приём заявок — ✅ подключено (Formspree)
@@ -47,11 +47,31 @@ cd landing && python3 -m http.server 8080
 
 ## SEO: robots.txt and sitemap.xml (SERBITO-303)
 
-- `sitemap.xml` is hand-kept on purpose: two pages, and the image has no `.git` (file dates
+- `sitemap.xml` is hand-kept on purpose: four pages, and the image has no `.git` (file dates
   would be build dates, not edit dates). `config/test_seo.py` fails unless it lists exactly
-  the public `landing/*.html` pages (a page with `<meta name="robots" content="noindex…">`
+  the public `landing/**/*.html` pages (a page with `<meta name="robots" content="noindex…">`
   is not public) and each URL answers 200. New landing page → add a `<url>` here.
 - `robots.txt` disallows every private prefix Django serves; the same test fails when a new
   top-level route in `config/urls.py` is neither disallowed nor listed as crawlable.
   `/t/` stays crawlable so bots see its noindex; everything Django renders sends
   `X-Robots-Tag: noindex, nofollow` (`common/middleware.py`).
+
+## Languages and hreflang (SERBITO-459)
+
+- One static page per language: `index.html` (sr, Latin script) at `/`, `en/index.html` at `/en/`,
+  `ru/index.html` at `/ru/`. WhiteNoise serves a directory's `index.html` at the directory URL.
+- Each page has its own `<html lang>`, `<title>`, description, H1, self canonical, `og:url`,
+  `og:locale` (+ `og:locale:alternate`) and the same hreflang set: sr, en, ru, x-default = `/`.
+- No script changes the text. Googlebot renders with `en-US`; the old `navigator.language`
+  switch made Google index the English text for the Serbian URL. The header language switch is
+  plain links. Nothing redirects by browser language or by a saved choice.
+- Each page saves its language in `localStorage` `javi_lang`. Only the privacy page's consent
+  banner reads it. App links (sign in, register) set the app language from the page language.
+- CSS and the inline scripts must be the same on all three pages; only the words differ
+  (`config/test_seo.py`). Change text → change it in all three files.
+- `privacy.html` stays one page with all three languages (SERBITO-352 sections `#sr`, `#en`,
+  `#ru`; the app and the consent banner link to them). It has no hreflang: one URL, no variants.
+- `sitemap.xml` lists `/`, `/en/`, `/ru/` (with `xhtml:link` alternates) and `/privacy.html`.
+  Edit a page → set its `<lastmod>` to the edit date.
+- After a release with new or changed pages: in Search Console resubmit `sitemap.xml`
+  and request indexing of the changed URLs.
