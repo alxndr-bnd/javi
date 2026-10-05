@@ -1,6 +1,6 @@
 # Javi: лендинг в прод — пошаговый план (Этап 0)
 
-Jira: реализуют SERBITO-278, 285, 306, 321, 352, 356 · follow-up SERBITO-317, SERBITO-438 · осталось: [SERBITO-474](https://serbito.atlassian.net/browse/SERBITO-474) (конверсия GA4, платный тест), [SERBITO-484](https://serbito.atlassian.net/browse/SERBITO-484) (итог гейта)
+Jira: реализуют SERBITO-278, 285, 306, 321, 352, 356 · follow-up SERBITO-317, SERBITO-438 · осталось: [SERBITO-474](https://serbito.atlassian.net/browse/SERBITO-474) (конверсия GA4, платный тест) · итог гейта — «пропущен» (SERBITO-484)
 
 Практический чек-лист: как довести **статичный** лендинг Javi до продакшена и
 запустить Этап 0 (валидация спроса через рекламу).
@@ -192,7 +192,7 @@ Jira: реализуют SERBITO-278, 285, 306, 321, 352, 356 · follow-up SERBI
 
 ## 7. Гейт решения
 
-- [ ] Подвести итог по окончании бюджета/срока кампании. *Гейт пройден не был: MVP построен 2026-06-03…06-07 без кампании. Зафиксировать итог или «пропущен» — SERBITO-484.*
+- [x] Подвести итог по окончании бюджета/срока кампании. **Итог: гейт пропущен** — MVP построен 2026-06-03…06-07 без гейта: кампании не было, заявок и cost-per-lead нет. Зафиксировано 2026-10-05, SERBITO-484.
       - **≥ 5 заявок** → спрос подтверждён → переходим к **Этапу 1**: оживляем
         Django, строим MVP
         ([`SETUP_CICD.md`, раздел 8](../../SETUP_CICD.md#8-runtime-cloud-sql-secrets-env)).
@@ -225,4 +225,4 @@ Jira: реализуют SERBITO-278, 285, 306, 321, 352, 356 · follow-up SERBI
 - ✅ §5 — домен `javi.serbito.rs` отвечает 200.
 - ⬜ §2 — событие-конверсия при отправке формы — [SERBITO-474](https://serbito.atlassian.net/browse/SERBITO-474).
 - ⬜ §6 — платный тест Google Ads + Telegram Ads, заявки и CPL по каналам — [SERBITO-474](https://serbito.atlassian.net/browse/SERBITO-474).
-- ⬜ §7 — итог гейта (или «пропущен») — [SERBITO-484](https://serbito.atlassian.net/browse/SERBITO-484).
+- ✅ §7 — гейт пропущен: MVP построен 2026-06-03…06-07 без гейта — SERBITO-484.
