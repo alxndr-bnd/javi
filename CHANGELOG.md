@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.76.0] - 2026-10-05
+
 ### Changed
 - The home page now has its own address for each language: Serbian at javi.serbito.rs, English at /en/ and Russian at /ru/. Google can now show the Serbian page to people who search in Serbian.
   - SR: Početna stranica sada ima posebnu adresu za svaki jezik: srpski na javi.serbito.rs, engleski na /en/ i ruski na /ru/. Google sada može da prikaže srpsku stranicu onima koji pretražuju na srpskom.
@@ -108,7 +110,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.75.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.76.0...HEAD
+[0.76.0]: https://github.com/alxndr-bnd/javi/compare/v0.75.0...v0.76.0
 [0.75.0]: https://github.com/alxndr-bnd/javi/compare/v0.74.0...v0.75.0
 [0.74.0]: https://github.com/alxndr-bnd/javi/compare/v0.73.0...v0.74.0
 [0.73.0]: https://github.com/alxndr-bnd/javi/compare/v0.72.0...v0.73.0
