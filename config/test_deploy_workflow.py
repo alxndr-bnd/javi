@@ -360,7 +360,7 @@ def fakes(tmp_path):
     bin_dir.mkdir()
     for name, body in {
         "gcloud": FAKE_GCLOUD_TRAFFIC,
-        "curl": '#!/bin/sh\nprintf "%s" "$FAKE_CODE"\n',
+        "curl": '#!/bin/sh\necho "$*" >> "$FAKE_LOG.curl"\nprintf "%s" "$FAKE_CODE"\n',
         "sleep": "#!/bin/sh\nexit 0\n",
     }.items():
         (bin_dir / name).write_text(body)
@@ -521,12 +521,12 @@ def test_header_check_fails_when_the_request_fails(tmp_path):
     assert r.returncode == 1
 
 
-def test_header_step_runs_last_on_every_deploy_without_rollback():
+def test_header_step_runs_after_the_smoke_on_every_deploy_without_rollback():
     step = STEPS[HEADERS]
-    assert HEADERS == len(STEPS) - 1 and SMOKE < HEADERS
+    assert HEADERS == len(STEPS) - 2 and SMOKE < HEADERS  # then only the tag removal
     assert "if" not in step and not step.get("continue-on-error")
     assert "update-traffic" not in step["run"]
-    assert '"$SVC_URL/"' in step["run"]
+    assert '"$CAND_URL/"' in step["run"] and '"$SVC_URL/"' not in step["run"]
 
 
 def test_header_step_fails_the_run_on_missing_headers(tmp_path, fake_headers):
@@ -544,3 +544,67 @@ def test_header_step_skips_a_refreshed_tag_without_the_script(tmp_path, fake_hea
     env = dict(PATH=fake_headers, SERVICE="javi", REGION="europe-west1", RELEASE_TAG="v0.64.0")
     r, _ = _run(HEADERS, tmp_path, tmp_path, FAKE_HEADERS="", **env)
     assert r.returncode == 0 and "::notice::" in r.stdout, r.stdout + r.stderr
+
+
+# --- SERBITO-430: checks on the candidate tag URL, then the tag is removed ---------------------
+# On the plain run.app URL the app answers 301/403 (common/run_app_guard.py).
+
+UNTAG = _index(lambda s: s.get("name") == "Remove the candidate tag")
+
+
+def test_the_deploy_tags_the_new_revision():
+    run = STEPS[DEPLOY]["run"]
+    assert "--tag candidate" in run and "--remove-tags" not in run
+    assert run.index("--tag candidate") < run.index("--to-latest")
+
+
+def test_smoke_checks_the_candidate_tag_url(tmp_path, fakes):
+    env, log = fakes
+    r, _ = _run(SMOKE, tmp_path, tmp_path, FAKE_CODE="200", PREV_REVISION="javi-00067", **env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    curl = Path(f"{log}.curl").read_text()
+    assert "https://candidate---javi-x.a.run.app/" in curl
+    assert " https://javi-x.a.run.app/" not in curl
+
+
+def test_header_step_checks_the_candidate_tag_url(tmp_path):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "curl").write_text(
+        '#!/bin/sh\necho "$*" >> "$FAKE_LOG"\nprintf "%b" "$FAKE_HEADERS"\n'
+    )
+    (bin_dir / "gcloud").write_text('#!/bin/sh\necho "https://javi-x.a.run.app"\n')
+    for f in bin_dir.iterdir():
+        f.chmod(0o755)
+    log = tmp_path / "curl.log"
+    env = dict(
+        PATH=os.pathsep.join([str(bin_dir), "/usr/bin", "/bin"]),
+        SERVICE="javi",
+        REGION="europe-west1",
+        RELEASE_TAG="v0.70.0",
+        FAKE_LOG=str(log),
+        FAKE_HEADERS=GOOD_HEADERS.replace("\r\n", "\\r\\n"),
+    )
+    r, _ = _run(HEADERS, ROOT, tmp_path, **env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "https://candidate---javi-x.a.run.app/" in log.read_text()
+
+
+def test_the_candidate_tag_is_removed_last_even_after_a_failure(tmp_path, fakes):
+    step = STEPS[UNTAG]
+    assert UNTAG == len(STEPS) - 1 and step["if"] == "always()"
+    env, log = fakes
+    r, _ = _run(UNTAG, tmp_path, tmp_path, **env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert (
+        "run services update-traffic javi --region europe-west1 --remove-tags candidate"
+        in log.read_text()
+    )
+
+
+def test_a_failed_tag_removal_warns_but_does_not_fail(tmp_path, fakes):
+    env, _ = fakes
+    gcloud = Path(env["PATH"].split(os.pathsep, 1)[0]) / "gcloud"
+    gcloud.write_text("#!/bin/sh\nexit 1\n")  # no tag, or an expired token
+    r, _ = _run(UNTAG, tmp_path, tmp_path, **env)
+    assert r.returncode == 0 and "::warning::" in r.stdout, r.stdout + r.stderr

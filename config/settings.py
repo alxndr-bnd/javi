@@ -63,6 +63,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Before WhiteNoise: on *.run.app the landing redirects to javi.serbito.rs too (SERBITO-430).
+    "common.run_app_guard.RunAppHostGuardMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # После WhiteNoise: лендинг сюда не доходит, всё, что рендерит Django, — noindex (SERBITO-303).
     "common.middleware.NoIndexMiddleware",
