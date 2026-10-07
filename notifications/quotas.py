@@ -138,9 +138,7 @@ def _check(shop: Shop, phone: str, *, kind: str, delivery, risky: bool, now: dat
         logger.warning("send limit: shop %s daily cap %s hit", shop.pk, limits.day)
         raise QuotaExceeded(
             "daily_limit",
-            gettext(
-                "Daily message limit reached (%(limit)d per day). You can send again tomorrow."
-            )
+            gettext("Daily message limit reached (%(limit)d per day). You can send again tomorrow.")
             % {"limit": limits.day}
             + _trial_suffix(limits),
         )
@@ -160,7 +158,10 @@ def _check(shop: Shop, phone: str, *, kind: str, delivery, risky: bool, now: dat
         logger.error(
             "SEND GLOBAL DAILY CAP HIT: %s/%s messages today — all sending paused "
             "(blocked shop %s, kind %s)",
-            total, cap, shop.pk, kind,
+            total,
+            cap,
+            shop.pk,
+            kind,
         )
         raise QuotaExceeded(
             "global_limit",

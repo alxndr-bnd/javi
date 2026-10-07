@@ -28,6 +28,7 @@ def _tomorrow() -> str:
 
     return str(timezone.now().astimezone(BELGRADE).date() + timedelta(days=1))
 
+
 FAKE_OK = "integrations.testing.FakeMapsProvider"
 FAKE_FAIL = "integrations.testing.FailingMapsProvider"
 ROUTES_OK = "integrations.testing.FakeRoutesProvider"
@@ -41,7 +42,9 @@ def _geocoded_delivery(email="s@shop.rs", name="Shop S"):
     shop = _make_shop_with_origin(email, name)
     with override_settings(MAPS_PROVIDER=FAKE_OK):
         delivery, _ = create_delivery(
-            shop, recipient_name="Ana", phone=normalize_phone("064 123 4567"),
+            shop,
+            recipient_name="Ana",
+            phone=normalize_phone("064 123 4567"),
             dest_address="Neka adresa",
         )
     return shop, delivery
@@ -257,7 +260,9 @@ def test_delivery_isolation_between_shops(client):
     shop_a = _make_shop_with_origin("da@shop.rs", "Iso DA")
     shop_b = _make_shop_with_origin("db@shop.rs", "Iso DB")
     create_delivery(
-        shop_b, recipient_name="B-only", phone=normalize_phone("064 123 4567"),
+        shop_b,
+        recipient_name="B-only",
+        phone=normalize_phone("064 123 4567"),
         dest_address="adr",
     )
     client.login(username="da@shop.rs", password="pass12345")
@@ -451,8 +456,6 @@ def test_resend_view_success(client):
     assert delivery.recipient_phone == "+381641112233"
 
 
-
-
 @override_settings(ROUTES_PROVIDER=ROUTES_OK, MESSAGING_PROVIDER=MSG_OK)
 def test_mark_delivered(client):
     shop, delivery = _geocoded_delivery("md@shop.rs", "Mark Shop")
@@ -547,14 +550,14 @@ def test_toggle_completed_saves_state(client):
     assert shop.completed_expanded is False
 
 
-
-
 @override_settings(MAPS_PROVIDER=FAKE_OK)
 def test_recipient_lookup_returns_known_client(client):
     """Автоподстановка: по номеру возвращаются имя+адрес последней доставки магазина."""
     shop = _make_shop_with_origin("lk@shop.rs", "Lookup Shop")
     create_delivery(
-        shop, recipient_name="Ana Anić", phone=normalize_phone("064 123 4567"),
+        shop,
+        recipient_name="Ana Anić",
+        phone=normalize_phone("064 123 4567"),
         dest_address="Knez Mihailova 6",
     )
     client.login(username="lk@shop.rs", password="pass12345")
@@ -576,7 +579,9 @@ def test_recipient_lookup_isolated_by_shop(client):
     """Магазин не видит клиентов другого магазина."""
     other = _make_shop_with_origin("other@shop.rs", "Other")
     create_delivery(
-        other, recipient_name="Tuđ Klijent", phone=normalize_phone("064 123 4567"),
+        other,
+        recipient_name="Tuđ Klijent",
+        phone=normalize_phone("064 123 4567"),
         dest_address="Negde",
     )
     _make_shop_with_origin("me@shop.rs", "Me")
@@ -753,7 +758,9 @@ def test_single_channel_path_mirrors_one_attempt():
     attempts = list(n.attempts.all())
     assert len(attempts) == 1
     assert (attempts[0].channel, attempts[0].ok, attempts[0].provider_message_id) == (
-        "viber", True, "fake-msg-1",
+        "viber",
+        True,
+        "fake-msg-1",
     )
 
 

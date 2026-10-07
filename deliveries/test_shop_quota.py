@@ -52,9 +52,11 @@ def test_shop_sees_its_own_caps_not_platform_usage(client):
 def test_verified_shop_with_custom_caps(client):
     shop = _shop(sending_verified=True, daily_send_limit=80, monthly_send_limit=900)
     client.force_login(shop.owner)
-    menu = parse_html(client.get("/app/", HTTP_ACCEPT_LANGUAGE="en").content.decode()).find(
-        "div", {"class": "menu-pop"}
-    ).text()
+    menu = (
+        parse_html(client.get("/app/", HTTP_ACCEPT_LANGUAGE="en").content.decode())
+        .find("div", {"class": "menu-pop"})
+        .text()
+    )
     assert "0 of 80" in menu and "0 of 900" in menu
     assert "Trial limits" not in menu
 

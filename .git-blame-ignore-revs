@@ -1,0 +1,6 @@
+# Bulk formatting commits. git blame skips them:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub reads this file by itself.
+
+# SERBITO-563: ruff format . with the pinned ruff 0.16.1
+96fd9db8501247d013c754ace8f5334d26e02950

@@ -84,7 +84,10 @@ def test_menu_and_unsubscribe_page_use_their_own_words(client):
     user = get_user_model().objects.create_user(email="w@shop.rs", password="pass12345")
     shop = Shop.objects.create(owner=user, name="Pekara")
     delivery = Delivery.objects.create(
-        shop=shop, recipient_name="A", recipient_phone="+381641234567", dest_address="a",
+        shop=shop,
+        recipient_name="A",
+        recipient_phone="+381641234567",
+        dest_address="a",
         status=Delivery.Status.ON_THE_WAY,
     )
     token = TrackingToken.objects.create(delivery=delivery)

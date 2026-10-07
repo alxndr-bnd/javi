@@ -57,7 +57,9 @@ class RegisterView(CreateView):
             user = form.save()
             shop = Shop.objects.create(owner=user, name=form.cleaned_data["store_name"])
         ratelimit.hit(
-            "signup", client_ip(self.request), limit=settings.SIGNUP_LIMIT_PER_IP_DAY,
+            "signup",
+            client_ip(self.request),
+            limit=settings.SIGNUP_LIMIT_PER_IP_DAY,
             window_seconds=_DAY,
         )
         logger.warning(

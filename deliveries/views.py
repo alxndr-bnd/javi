@@ -494,9 +494,7 @@ class DeletedDeliveriesView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         shop = getattr(self.request.user, "shop", None)
-        ctx["deleted"] = (
-            list(shop.deliveries.filter(deleted_at__isnull=False)) if shop else []
-        )
+        ctx["deleted"] = list(shop.deliveries.filter(deleted_at__isnull=False)) if shop else []
         return ctx
 
 

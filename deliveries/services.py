@@ -152,8 +152,11 @@ def update_delivery(
         except Exception:
             logger.exception("failed to reschedule rating request for delivery %s", delivery.id)
 
-    fields = sorted(f for f in changed if f not in ("phone_risk", "dest_city", "dest_lat",
-                                                    "dest_lng", "eta_source"))
+    fields = sorted(
+        f
+        for f in changed
+        if f not in ("phone_risk", "dest_city", "dest_lat", "dest_lng", "eta_source")
+    )
     logger.info(
         "Delivery %s edited: %s",
         delivery.id,
@@ -183,7 +186,11 @@ def compute_eta(delivery: Delivery) -> datetime | None:
     if not have_coords:
         logger.warning(
             "ETA: нет координат для доставки %s (origin=%s,%s dest=%s,%s)",
-            delivery.id, shop.origin_lat, shop.origin_lng, delivery.dest_lat, delivery.dest_lng,
+            delivery.id,
+            shop.origin_lat,
+            shop.origin_lng,
+            delivery.dest_lat,
+            delivery.dest_lng,
         )
         return None
     seconds = get_routes_provider().route_duration_seconds(
@@ -192,8 +199,8 @@ def compute_eta(delivery: Delivery) -> datetime | None:
     if seconds is None:
         logger.warning("ETA: Routes вернул None для доставки %s", delivery.id)
         return None
-    return timezone.now() + timedelta(seconds=seconds) + timedelta(
-        minutes=settings.ETA_BUFFER_MINUTES
+    return (
+        timezone.now() + timedelta(seconds=seconds) + timedelta(minutes=settings.ETA_BUFFER_MINUTES)
     )
 
 
@@ -455,9 +462,10 @@ def _sync_start_fields(target: Delivery, source: Delivery) -> None:
 
 
 def _already_started(delivery: Delivery) -> bool:
-    return delivery.status == Delivery.Status.ON_THE_WAY or delivery.notifications.filter(
-        kind=Notification.Kind.ON_THE_WAY
-    ).exists()
+    return (
+        delivery.status == Delivery.Status.ON_THE_WAY
+        or delivery.notifications.filter(kind=Notification.Kind.ON_THE_WAY).exists()
+    )
 
 
 def start_delivery(delivery: Delivery, *, manual_eta: datetime | None = None) -> StartResult:
@@ -640,6 +648,4 @@ def send_rating_request(delivery: Delivery):
         kind=Notification.Kind.RATING_REQUEST,
         status=Notification.Status.QUEUED,
     )
-    return _send_and_record(
-        notification, delivery, _rating_request_text(delivery, token_obj.token)
-    )
+    return _send_and_record(notification, delivery, _rating_request_text(delivery, token_obj.token))

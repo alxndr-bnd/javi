@@ -52,7 +52,5 @@ def hit(scope: str, ident: str, *, limit: int, window_seconds: int) -> bool:
 def exceeded(scope: str, ident: str, *, limit: int, window_seconds: int) -> bool:
     """True if the current window already has `limit` events (does not count one)."""
     window = _window(scope, ident, window_seconds, timezone.now())
-    count = (
-        RateLimitCounter.objects.filter(key=window.key).values_list("count", flat=True).first()
-    )
+    count = RateLimitCounter.objects.filter(key=window.key).values_list("count", flat=True).first()
     return (count or 0) >= limit

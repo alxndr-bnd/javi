@@ -38,12 +38,15 @@ def _serve(route):
     url = route.request.url
     if not url.startswith(BASE + "/"):
         return route.abort()
-    path = url[len(BASE) + 1:].split("?")[0].split("#")[0] or "index.html"
+    path = url[len(BASE) + 1 :].split("?")[0].split("#")[0] or "index.html"
     file = LANDING / path
     if not file.is_file():
         return route.fulfill(status=404, body="")
-    return route.fulfill(status=200, body=file.read_bytes(),
-                         content_type=TYPES.get(file.suffix, "application/octet-stream"))
+    return route.fulfill(
+        status=200,
+        body=file.read_bytes(),
+        content_type=TYPES.get(file.suffix, "application/octet-stream"),
+    )
 
 
 @pytest.fixture
@@ -53,8 +56,9 @@ def page():
             browser = p.chromium.launch(channel="chromium")
         except PWError as e:
             if "Executable doesn't exist" in str(e) or "playwright install" in str(e):
-                pytest.fail("No Chromium for Playwright: uv run playwright install chromium",
-                            pytrace=False)
+                pytest.fail(
+                    "No Chromium for Playwright: uv run playwright install chromium", pytrace=False
+                )
             raise
         ctx = browser.new_context(viewport=PHONE, locale="en-US")
         ctx.route("**/*", _serve)

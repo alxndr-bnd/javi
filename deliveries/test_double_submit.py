@@ -48,8 +48,13 @@ def _delivery():
         owner=user, name="Pekara", origin_lat=44.8, origin_lng=20.45, sending_verified=True
     )
     return Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567", dest_address="a",
-        dest_lat=44.81, dest_lng=20.46, status=Delivery.Status.CREATED,
+        shop=shop,
+        recipient_name="Ana",
+        recipient_phone="+381641234567",
+        dest_address="a",
+        dest_lat=44.81,
+        dest_lng=20.46,
+        status=Delivery.Status.CREATED,
     )
 
 
@@ -78,9 +83,7 @@ def test_second_confirm_post_is_a_no_op(client):
     client.get("/app/")  # the first outcome message is shown and consumed
     resp = client.post(url, data, HTTP_ACCEPT_LANGUAGE="en")
     assert len(FakeMessagingProvider.sent) == 1
-    assert [str(m) for m in get_messages(resp.wsgi_request)] == [
-        "Delivery is already in progress."
-    ]
+    assert [str(m) for m in get_messages(resp.wsgi_request)] == ["Delivery is already in progress."]
 
 
 def test_confirm_form_submits_once(client):

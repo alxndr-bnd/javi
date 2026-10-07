@@ -161,8 +161,13 @@ def test_unsubscribe_expired_token_is_gone(client):
 @override_settings(TRACKING_RATE_LIMIT=2)
 @pytest.mark.parametrize(
     ("method", "suffix"),
-    [("get", ""), ("post", "oceni/"), ("post", "primljeno/"), ("get", "odjava/"),
-     ("post", "odjava/")],
+    [
+        ("get", ""),
+        ("post", "oceni/"),
+        ("post", "primljeno/"),
+        ("get", "odjava/"),
+        ("post", "odjava/"),
+    ],
 )
 def test_rate_limit_covers_every_tracking_endpoint(client, method, suffix):
     """JAVI-8: the limit applies to all /t/ endpoints, not just the status page."""

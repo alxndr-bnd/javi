@@ -385,8 +385,11 @@ class DeliveriesCollectionView(_ShopScopedView):
     def post(self, request):
         serializer = DeliveryCreateSerializer(data=request.data)
         if not serializer.is_valid():
-            missing = [f for f in ("recipient_name", "recipient_phone", "address")
-                       if f in serializer.errors]
+            missing = [
+                f
+                for f in ("recipient_name", "recipient_phone", "address")
+                if f in serializer.errors
+            ]
             if missing:
                 raise ApiError(
                     "invalid_request",
@@ -407,16 +410,16 @@ class DeliveriesCollectionView(_ShopScopedView):
             else DEFAULT_CUSTOMER_LANGUAGE
         )
         if language is None:
-            raise ApiError(
-                "invalid_language", _("language must be one of: sr, en."), 400
-            )
+            raise ApiError("invalid_language", _("language must be one of: sr, en."), 400)
 
         missing = [
-            f for f, val in (
+            f
+            for f, val in (
                 ("recipient_name", recipient_name),
                 ("recipient_phone", recipient_phone),
                 ("address", address),
-            ) if not val
+            )
+            if not val
         ]
         if missing:
             raise ApiError(
@@ -660,9 +663,7 @@ class DeliveryResendView(_ShopScopedView):
             try:
                 new_phone = normalize_phone(raw_phone)
             except InvalidPhone:
-                raise ApiError(
-                    "invalid_phone", _("Invalid recipient phone number."), 400
-                ) from None
+                raise ApiError("invalid_phone", _("Invalid recipient phone number."), 400) from None
 
         try:
             result = resend_on_the_way(delivery, new_phone=new_phone)
@@ -676,9 +677,7 @@ class DeliveryResendView(_ShopScopedView):
             )
         delivery.refresh_from_db()
         body = serialize_delivery(delivery)
-        return Response(
-            {"delivery": body, "notification": body["notification"]}, status=200
-        )
+        return Response({"delivery": body, "notification": body["notification"]}, status=200)
 
 
 # --- Профиль магазина (паритет: редактирование магазина + вебхуки через API) ---
@@ -701,16 +700,21 @@ class ShopSerializer(serializers.Serializer):
         help_text=_("Store name (shown to customers; no links or phone numbers)."),
     )
     address = serializers.CharField(
-        required=False, allow_blank=True,
+        required=False,
+        allow_blank=True,
         help_text=_("Store address; geocoded server-side into the ETA origin."),
     )
     webhook_url = serializers.URLField(
-        required=False, allow_blank=True,
+        required=False,
+        allow_blank=True,
         validators=[validate_https_url],
         help_text=_("Merchant https URL that receives signed event webhooks."),
     )
     webhook_secret = serializers.CharField(
-        required=False, allow_blank=True, write_only=True, max_length=200,
+        required=False,
+        allow_blank=True,
+        write_only=True,
+        max_length=200,
         help_text=_("Secret for the Javi-Signature HMAC of webhook bodies (write-only)."),
     )
 
@@ -729,7 +733,8 @@ class ShopView(_ShopScopedView):
         return Response(serialize_shop(self.shop), status=200)
 
     @extend_schema(
-        request=ShopSerializer, responses={200: ShopSerializer},
+        request=ShopSerializer,
+        responses={200: ShopSerializer},
         summary="Update store profile / webhook settings",
     )
     def patch(self, request):

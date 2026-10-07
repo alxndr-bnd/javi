@@ -51,8 +51,11 @@ def _auth(key):
 
 def _post_create(client, key, body, **headers):
     return client.post(
-        CREATE_URL, data=json.dumps(body), content_type="application/json",
-        **_auth(key), **headers,
+        CREATE_URL,
+        data=json.dumps(body),
+        content_type="application/json",
+        **_auth(key),
+        **headers,
     )
 
 
@@ -114,9 +117,14 @@ def test_auth_updates_last_used(client):
 def test_create_delivery_201_source_api(client):
     shop, key = _shop_and_key()
     resp = _post_create(
-        client, key,
-        {"recipient_name": "Ana", "recipient_phone": "064 123 4567", "address": "Neka adresa",
-         "description": "2 pice"},
+        client,
+        key,
+        {
+            "recipient_name": "Ana",
+            "recipient_phone": "064 123 4567",
+            "address": "Neka adresa",
+            "description": "2 pice",
+        },
     )
     assert resp.status_code == 201
     data = resp.json()
@@ -260,7 +268,8 @@ def test_start_with_manual_eta(client):
     ).json()
     resp = client.post(
         f"/api/v1/deliveries/{created['id']}/start",
-        data=json.dumps({"eta": _tomorrow_iso("16:30")}), content_type="application/json",
+        data=json.dumps({"eta": _tomorrow_iso("16:30")}),
+        content_type="application/json",
         **_auth(key),
     )
     assert resp.status_code == 200
@@ -276,7 +285,9 @@ def test_start_bad_eta_format_400(client):
     ).json()
     resp = client.post(
         f"/api/v1/deliveries/{created['id']}/start",
-        data=json.dumps({"eta": "25:99"}), content_type="application/json", **_auth(key),
+        data=json.dumps({"eta": "25:99"}),
+        content_type="application/json",
+        **_auth(key),
     )
     assert resp.status_code == 400
     assert resp.json()["error"]["code"] == "invalid_eta"
@@ -450,9 +461,7 @@ def test_resend_after_start(client):
     ).json()
     client.post(f"/api/v1/deliveries/{created['id']}/start", **_auth(key))
     assert len(FakeMessagingProvider.sent) == 1
-    resp = client.post(
-        f"/api/v1/deliveries/{created['id']}/notifications/resend", **_auth(key)
-    )
+    resp = client.post(f"/api/v1/deliveries/{created['id']}/notifications/resend", **_auth(key))
     assert resp.status_code == 200
     assert resp.json()["notification"]["status"] == "sent"
     assert len(FakeMessagingProvider.sent) == 2
@@ -469,7 +478,8 @@ def test_resend_with_new_phone(client):
     resp = client.post(
         f"/api/v1/deliveries/{created['id']}/notifications/resend",
         data=json.dumps({"recipient_phone": "064 765 4321"}),
-        content_type="application/json", **_auth(key),
+        content_type="application/json",
+        **_auth(key),
     )
     assert resp.status_code == 200
     assert Delivery.objects.get(id=created["id"]).recipient_phone == "+381647654321"
@@ -482,9 +492,7 @@ def test_resend_before_start_409(client):
     created = _post_create(
         client, key, {"recipient_name": "Ana", "recipient_phone": "064 123 4567", "address": "x"}
     ).json()
-    resp = client.post(
-        f"/api/v1/deliveries/{created['id']}/notifications/resend", **_auth(key)
-    )
+    resp = client.post(f"/api/v1/deliveries/{created['id']}/notifications/resend", **_auth(key))
     assert resp.status_code == 409
     assert resp.json()["error"]["code"] == "not_started"
 
@@ -640,7 +648,9 @@ def test_list_oldest_first_by_default_and_sort_override(client):
 def test_patch_shop_webhook_requires_https(client, url):
     shop, key = _shop_and_key()
     resp = client.patch(
-        SHOP_URL, data=json.dumps({"webhook_url": url}), content_type="application/json",
+        SHOP_URL,
+        data=json.dumps({"webhook_url": url}),
+        content_type="application/json",
         **_auth(key),
     )
     assert resp.status_code == 400

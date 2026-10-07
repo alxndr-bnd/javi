@@ -154,9 +154,7 @@ def test_all_green_merges_with_squash_on_the_tested_commit(fake_gh):
     ]
 
 
-@pytest.mark.parametrize(
-    "conclusion", ["failure", "cancelled", "timed_out", "skipped", "neutral"]
-)
+@pytest.mark.parametrize("conclusion", ["failure", "cancelled", "timed_out", "skipped", "neutral"])
 def test_a_required_check_that_did_not_pass_blocks_the_merge(fake_gh, conclusion):
     runs = [_run(c) for c in REQUIRED[1:]] + [_run(REQUIRED[0], conclusion)]
     out, merges = fake_gh(runs)

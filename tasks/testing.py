@@ -15,9 +15,7 @@ class RecordingTaskScheduler(TaskScheduler):
         type(self).scheduled.append((delivery_id, run_at))
 
     def schedule_webhook(self, url: str, body: bytes, headers: dict[str, str]) -> None:
-        RecordingWebhookScheduler.webhooks.append(
-            {"url": url, "body": body, "headers": headers}
-        )
+        RecordingWebhookScheduler.webhooks.append({"url": url, "body": body, "headers": headers})
 
     def schedule_escalation(self, delivery_id: int, run_at: datetime) -> None:
         type(self).escalations.append((delivery_id, run_at))

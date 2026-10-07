@@ -25,8 +25,12 @@ def _token(status, language="sr-latn"):
     user = get_user_model().objects.create_user(email="r@shop.rs", password="pass12345")
     shop = Shop.objects.create(owner=user, name="Pekara")
     delivery = Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567", dest_address="a",
-        status=status, recipient_language=language,
+        shop=shop,
+        recipient_name="Ana",
+        recipient_phone="+381641234567",
+        dest_address="a",
+        status=status,
+        recipient_language=language,
     )
     return TrackingToken.objects.create(delivery=delivery)
 

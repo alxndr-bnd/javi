@@ -36,9 +36,7 @@ class RegisterForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["email"].widget.attrs.update(
-            {"autocomplete": "email", "autofocus": True}
-        )
+        self.fields["email"].widget.attrs.update({"autocomplete": "email", "autofocus": True})
         self.fields["password1"].widget.attrs.update({"autocomplete": "new-password"})
         self.fields["password2"].widget.attrs.update({"autocomplete": "new-password"})
 

@@ -28,9 +28,13 @@ def _token(*, phone="", language="sr-latn", expired=False):
     user = get_user_model().objects.create_user(email="e@shop.rs", password="pass12345")
     shop = Shop.objects.create(owner=user, name="Pekara Mika", contact_phone=phone)
     delivery = Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567",
-        dest_address="Tajna 5", recipient_language=language,
-        status=Delivery.Status.ON_THE_WAY, eta_at=timezone.now() + timedelta(minutes=30),
+        shop=shop,
+        recipient_name="Ana",
+        recipient_phone="+381641234567",
+        dest_address="Tajna 5",
+        recipient_language=language,
+        status=Delivery.Status.ON_THE_WAY,
+        eta_at=timezone.now() + timedelta(minutes=30),
     )
     expires = timezone.now() + (timedelta(hours=-1) if expired else timedelta(days=1))
     return TrackingToken.objects.create(delivery=delivery, expires_at=expires)

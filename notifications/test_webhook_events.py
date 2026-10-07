@@ -38,8 +38,12 @@ def _shop(
 
 def _delivery(shop):
     return Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567",
-        dest_address="adr", dest_lat=44.81, dest_lng=20.46,
+        shop=shop,
+        recipient_name="Ana",
+        recipient_phone="+381641234567",
+        dest_address="adr",
+        dest_lat=44.81,
+        dest_lng=20.46,
     )
 
 
@@ -108,8 +112,10 @@ def test_infobip_report_sets_status_and_notifies_merchant(client, before, result
     delivery = _delivery(_shop())
     TrackingToken.objects.create(delivery=delivery)
     notif = Notification.objects.create(
-        delivery=delivery, kind=Notification.Kind.ON_THE_WAY,
-        provider_message_id="m-1", status=before,
+        delivery=delivery,
+        kind=Notification.Kind.ON_THE_WAY,
+        provider_message_id="m-1",
+        status=before,
     )
     resp = client.post(
         f"/webhooks/infobip/reports/?secret={INFOBIP_SECRET}",

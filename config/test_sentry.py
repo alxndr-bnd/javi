@@ -256,8 +256,15 @@ def test_scrubs_secret_query_values_bot_tokens_and_secret_headers():
     }
     scrubbed = scrub_tracking_tokens(event, {})
     text = json.dumps(scrubbed)
-    for secret in ("s3cr3t-value", "tasks-secret", "hook-secret", "tg-secret", "AAF-x_y",
-                   "AIzaSyX", "Zm9vOmJhcg=="):
+    for secret in (
+        "s3cr3t-value",
+        "tasks-secret",
+        "hook-secret",
+        "tg-secret",
+        "AAF-x_y",
+        "AIzaSyX",
+        "Zm9vOmJhcg==",
+    ):
         assert secret not in text
     assert scrubbed["request"]["query_string"] == "secret=[Filtered]&page=2"
     assert scrubbed["request"]["headers"]["User-Agent"] == "Infobip"
