@@ -47,6 +47,8 @@ echo "==> pytest"
 uv run pytest
 echo "==> ruff check"
 uv run ruff check .
+echo "==> ruff format --check"
+uv run ruff format --check .
 echo "==> manage.py check"
 uv run python manage.py check
 

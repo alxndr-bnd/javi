@@ -66,6 +66,8 @@ jobs:
       # Tests use the sqlite fallback, exactly as locally: no DATABASE_URL, no .env.
       - name: ruff check
         run: uv run --frozen ruff check .
+      - name: ruff format --check
+        run: uv run --frozen ruff format --check .
       - name: manage.py check
         run: uv run --frozen python manage.py check
       - name: pytest
