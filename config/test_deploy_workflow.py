@@ -1,6 +1,7 @@
 """deploy.yaml: migrations run as a Cloud Run job before traffic moves (SERBITO-323); a weekly
 refresh rebuilds and redeploys the newest release tag, with a smoke check and rollback
-(SERBITO-401)."""
+(SERBITO-401); the image builds while verify runs, and only the deploy waits for verify
+(SERBITO-552)."""
 
 import json
 import os
@@ -16,24 +17,33 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW = yaml.safe_load((ROOT / ".github" / "workflows" / "deploy.yaml").read_text("utf-8"))
 ENV = WORKFLOW["env"]
-STEPS = WORKFLOW["jobs"]["deploy"]["steps"]
+JOBS = WORKFLOW["jobs"]
+BUILD = JOBS["build"]["steps"]
+STEPS = JOBS["deploy"]["steps"]
 
 
-def _index(predicate) -> int:
-    matches = [i for i, step in enumerate(STEPS) if predicate(step)]
+def _index(predicate, steps=STEPS) -> int:
+    matches = [i for i, step in enumerate(steps) if predicate(step)]
     assert len(matches) == 1, matches
+    # Each step lives in one job only.
+    other = BUILD if steps is STEPS else STEPS
+    assert not [step for step in other if predicate(step)], "step is in both jobs"
     return matches[0]
 
 
 DETECT = _index(lambda s: s.get("id") == "migrations")
 MIGRATE = _index(lambda s: "gcloud run jobs deploy" in s.get("run", ""))
 DEPLOY = _index(lambda s: "gcloud run deploy" in s.get("run", ""))
-TRIVY = _index(lambda s: "trivy image" in s.get("run", ""))
+TRIVY = _index(lambda s: "trivy image" in s.get("run", ""), BUILD)
 
 
 def test_migrate_job_runs_after_the_gate_and_before_the_traffic_switch():
-    # Trivy-gated image -> decide -> migrate -> only then the revision that takes traffic.
-    assert TRIVY < DETECT < MIGRATE < DEPLOY
+    # Trivy-gated image (build job) -> decide -> migrate -> only then the revision that takes
+    # traffic. The deploy job needs a green build job.
+    assert TRIVY == len(BUILD) - 1
+    assert "build" in JOBS["deploy"]["needs"]
+    assert "needs.build.result == 'success'" in JOBS["deploy"]["if"]
+    assert DETECT < MIGRATE < DEPLOY
     assert "--no-traffic" not in STEPS[DEPLOY]["run"]  # this step is the traffic switch
 
 
@@ -65,8 +75,10 @@ def test_job_and_service_share_image_identity_and_settings():
 
 
 def test_checkout_has_history_for_the_migration_diff():
-    assert STEPS[0]["uses"].startswith("actions/checkout@")
-    assert STEPS[0]["with"]["fetch-depth"] == 0
+    # deploy: the migration diff; build: the tags for a refresh.
+    for steps in (STEPS, BUILD):
+        assert steps[0]["uses"].startswith("actions/checkout@")
+        assert steps[0]["with"]["fetch-depth"] == 0
 
 
 # --- The detection script, run as-is against a throwaway repo and a fake gcloud ----------
@@ -199,9 +211,9 @@ def test_admin_path_comes_from_secret_manager():
 def test_trivy_comes_from_a_checksum_pinned_release():
     # SERBITO-385: no downloaded script piped to a shell; the tarball is checked against a
     # pinned sha256 before it is installed.
-    for step in STEPS:
-        assert not re.search(r"\|\s*(sudo\s+)?(ba)?sh\b", step.get("run", "")), step["name"]
-    trivy = STEPS[TRIVY]
+    for step in BUILD + STEPS:
+        assert not re.search(r"\|\s*(sudo\s+)?(ba)?sh\b", step.get("run", "")), step.get("name")
+    trivy = BUILD[TRIVY]
     assert len(trivy["env"]["TRIVY_SHA256"]) == 64
     run = trivy["run"]
     assert run.index("sha256sum -c") < run.index("sudo install")
@@ -209,7 +221,7 @@ def test_trivy_comes_from_a_checksum_pinned_release():
 
 # --- SERBITO-389: a tag without its CHANGELOG.md section stops before the build ---------------
 
-GUARD = _index(lambda s: "CHANGELOG.md" in s.get("run", ""))
+GUARD = _index(lambda s: "CHANGELOG.md" in s.get("run", ""), BUILD)
 
 
 @pytest.mark.parametrize(
@@ -218,12 +230,12 @@ GUARD = _index(lambda s: "CHANGELOG.md" in s.get("run", ""))
 )
 def test_deploy_refuses_a_tag_without_its_changelog_section(tmp_path, tag, ok):
     # Right after checkout and the tag pick (SERBITO-401): it checks the tag that deploys.
-    assert GUARD == 2 and GUARD < _index(lambda s: s.get("name") == "Build & push image")
+    assert GUARD == 2 and GUARD < _index(lambda s: s.get("name") == "Build & push image", BUILD)
     (tmp_path / "CHANGELOG.md").write_text(
         "## [Unreleased]\n\n## [0.3.0] - 2026-10-03\n\n### Fixed\n- X\n  - SR: X\n"
     )
     r = subprocess.run(
-        ["bash", "-e", "-c", STEPS[GUARD]["run"]],
+        ["bash", "-e", "-c", BUILD[GUARD]["run"]],
         cwd=tmp_path,
         env={"RELEASE_TAG": tag, "PATH": "/usr/bin:/bin"},
         capture_output=True,
@@ -237,7 +249,7 @@ def test_deploy_refuses_a_tag_without_its_changelog_section(tmp_path, tag, ok):
 # --- SERBITO-401: weekly refresh of the newest release tag ---------------------------------
 
 ON = WORKFLOW[True]  # PyYAML reads the bare key `on` as True
-PICK = _index(lambda s: s.get("id") == "release")
+PICK = _index(lambda s: s.get("id") == "release", BUILD)
 PREV = _index(lambda s: s.get("id") == "prev")
 SMOKE = _index(lambda s: "Smoke check" in s.get("name", ""))
 
@@ -258,7 +270,7 @@ def test_verify_gates_a_tag_and_a_refresh_skips_it():
     jobs = WORKFLOW["jobs"]
     assert jobs["verify"]["if"] == "github.event_name == 'push'"
     cond = jobs["deploy"]["if"]
-    assert jobs["deploy"]["needs"] == "verify" and "!cancelled()" in cond
+    assert jobs["deploy"]["needs"] == ["verify", "build"] and "!cancelled()" in cond
     assert "needs.verify.result == 'success'" in cond
     assert "needs.verify.result == 'skipped' && github.event_name != 'push'" in cond
 
@@ -272,11 +284,11 @@ def test_later_steps_use_the_picked_tag_not_the_trigger_ref():
     assert code.count("GITHUB_REF_NAME") == 1  # only the tag pick, for a tag push
 
 
-def _run(i, cwd, tmp_path, **env):
+def _run(i, cwd, tmp_path, steps=STEPS, **env):
     out, genv = tmp_path / "out", tmp_path / "env"
     out.write_text("")
     genv.write_text("")
-    script = re.sub(r"\$\{\{\s*env\.(\w+)\s*\}\}", r"${\1}", STEPS[i]["run"])
+    script = re.sub(r"\$\{\{\s*env\.(\w+)\s*\}\}", r"${\1}", steps[i]["run"])
     r = subprocess.run(
         ["bash", "-eo", "pipefail", "-c", script],
         cwd=cwd,
@@ -298,6 +310,7 @@ def test_a_tag_push_deploys_its_own_commit(repo, tmp_path):
         PICK,
         tmp_path / "repo",
         tmp_path,
+        BUILD,
         GITHUB_EVENT_NAME="push",
         GITHUB_REF_NAME="v0.2.0",
         AR_IMAGE=ENV["AR_IMAGE"],
@@ -305,6 +318,7 @@ def test_a_tag_push_deploys_its_own_commit(repo, tmp_path):
     assert r.returncode == 0, r.stdout + r.stderr
     assert (out["mode"], out["RELEASE_TAG"]) == ("release", "v0.2.0")
     assert out["IMAGE"] == image(sha)
+    assert (out["tag"], out["image"]) == ("v0.2.0", image(sha))  # build job outputs
 
 
 @pytest.mark.parametrize("event", ["schedule", "workflow_dispatch"])
@@ -318,20 +332,26 @@ def test_a_refresh_rebuilds_the_newest_release_tag(repo, tmp_path, event):
     git("tag", "v0.11.0-rc1")  # not a vX.Y.Z release tag
     commit("deliveries/views.py", "work on main")
     r, out = _run(
-        PICK, tmp_path / "repo", tmp_path, GITHUB_EVENT_NAME=event, AR_IMAGE=ENV["AR_IMAGE"]
+        PICK, tmp_path / "repo", tmp_path, BUILD, GITHUB_EVENT_NAME=event, AR_IMAGE=ENV["AR_IMAGE"]
     )
     assert r.returncode == 0, r.stdout + r.stderr
     assert git("rev-parse", "HEAD") == newest, "the tag must be checked out"
     day = datetime.now(UTC).strftime("%Y%m%d")
     assert (out["mode"], out["RELEASE_TAG"]) == ("refresh", "v0.10.0")
     assert out["IMAGE"] == image(f"{newest}-r{day}")
+    assert (out["tag"], out["image"]) == ("v0.10.0", image(f"{newest}-r{day}"))
 
 
 def test_a_refresh_without_a_release_tag_fails(repo, tmp_path):
     commit, _, _ = repo
     commit("deliveries/views.py", "never released")
     r, _ = _run(
-        PICK, tmp_path / "repo", tmp_path, GITHUB_EVENT_NAME="schedule", AR_IMAGE=ENV["AR_IMAGE"]
+        PICK,
+        tmp_path / "repo",
+        tmp_path,
+        BUILD,
+        GITHUB_EVENT_NAME="schedule",
+        AR_IMAGE=ENV["AR_IMAGE"],
     )
     assert r.returncode != 0 and "::error::No vX.Y.Z tag" in r.stdout
 
@@ -608,3 +628,65 @@ def test_a_failed_tag_removal_warns_but_does_not_fail(tmp_path, fakes):
     gcloud.write_text("#!/bin/sh\nexit 1\n")  # no tag, or an expired token
     r, _ = _run(UNTAG, tmp_path, tmp_path, **env)
     assert r.returncode == 0 and "::warning::" in r.stdout, r.stdout + r.stderr
+
+
+# --- SERBITO-552: the image builds while verify runs; the deploy waits for both -------------
+
+USE_BUILT = _index(lambda s: s.get("name") == "Check out the built release")
+
+
+def test_build_runs_at_once_and_hands_its_tag_and_image_to_the_deploy():
+    build = JOBS["build"]
+    assert "needs" not in build and "if" not in build  # starts with verify, not after it
+    assert build["outputs"] == {
+        "release_tag": "${{ steps.release.outputs.tag }}",
+        "image": "${{ steps.release.outputs.image }}",
+    }
+    step = STEPS[USE_BUILT]
+    assert USE_BUILT == 1, "right after checkout, before any gcloud step"
+    assert step["env"] == {
+        "BUILT_TAG": "${{ needs.build.outputs.release_tag }}",
+        "BUILT_IMAGE": "${{ needs.build.outputs.image }}",
+    }
+
+
+def test_a_red_verify_never_deploys():
+    # verify failed or was cancelled -> no condition branch is true for a tag push.
+    cond = JOBS["deploy"]["if"]
+    assert "needs.verify.result == 'success'" in cond
+    assert "needs.verify.result == 'skipped' && github.event_name != 'push'" in cond
+    assert "always()" not in cond and "failure()" not in cond
+
+
+@pytest.mark.parametrize("suffix", ["", "-r20261007"])
+def test_deploy_checks_out_the_commit_the_build_built(repo, tmp_path, suffix):
+    commit, git, _ = repo
+    old = commit("deliveries/views.py", "release")
+    git("tag", "v0.2.0")
+    commit("deliveries/views.py", "main moved on")
+    r, out = _run(
+        USE_BUILT,
+        tmp_path / "repo",
+        tmp_path,
+        BUILT_TAG="v0.2.0",
+        BUILT_IMAGE=image(old + suffix),
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert git("rev-parse", "HEAD") == old
+    assert (out["RELEASE_TAG"], out["IMAGE"]) == ("v0.2.0", image(old + suffix))
+
+
+def test_deploy_stops_when_the_tag_moved_after_the_build(repo, tmp_path):
+    commit, git, _ = repo
+    built = commit("deliveries/views.py", "built")
+    commit("deliveries/views.py", "re-tagged")
+    git("tag", "v0.2.0")  # the tag now points at another commit than the image
+    r, out = _run(
+        USE_BUILT,
+        tmp_path / "repo",
+        tmp_path,
+        BUILT_TAG="v0.2.0",
+        BUILT_IMAGE=image(built),
+    )
+    assert r.returncode == 1 and "::error::" in r.stdout, r.stdout + r.stderr
+    assert "IMAGE" not in out

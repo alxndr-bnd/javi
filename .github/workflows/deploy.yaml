@@ -5,8 +5,10 @@ name: Deploy to Cloud Run
 # Mirrors the planning-poker pipeline (same GCP project `serbito`).
 #
 # Pipeline: verify (the release-script gate from ci.yaml, reused via workflow_call: ruff,
-# manage.py check, pytest, landing parse) -> deploy (CHANGELOG.md section for the tag, build
-# the Django + gunicorn image, Trivy gate, migrate job when migrations changed, Cloud Run).
+# manage.py check, pytest, landing parse) and build (CHANGELOG.md section for the tag, build
+# the Django + gunicorn image, Trivy gate) run at the same time (SERBITO-552); deploy (migrate
+# job when migrations changed, Cloud Run) starts only when both passed. A red verify leaves an
+# image in Artifact Registry that no service runs; it never reaches production.
 # A tag pushed without scripts/release_minor.sh still cannot ship untested code (SERBITO-277)
 # or ship without its release notes (SERBITO-389).
 #
@@ -57,15 +59,17 @@ jobs:
     permissions:
       contents: read # no id-token here: this job runs dependency and test code, not the deploy
 
-  deploy:
+  # SERBITO-552: no `needs`. The image build and the Trivy scan run while verify runs the tests;
+  # they do not depend on the test result. The deploy job below waits for both.
+  build:
     runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)
-    needs: verify # No tag deploy unless lint, system check and tests pass
-    # A refresh (schedule / manual run) skips verify and redeploys an already verified tag.
-    if: ${{ !cancelled() && (needs.verify.result == 'success' || (needs.verify.result == 'skipped' && github.event_name != 'push')) }}
+    outputs:
+      release_tag: ${{ steps.release.outputs.tag }}
+      image: ${{ steps.release.outputs.image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
         with:
-          fetch-depth: 0 # full history + tags: the migration diff against the live commit
+          fetch-depth: 0 # all tags: a refresh picks the newest one
           persist-credentials: false # no step pushes; keep the token out of .git/config (SERBITO-385, Aikido)
 
       # SERBITO-401: which release this run deploys. A tag push deploys its own tag. A schedule
@@ -96,6 +100,8 @@ jobs:
           echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
           echo "IMAGE=${AR_IMAGE}:${sha}${suffix}" >> "$GITHUB_ENV"
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "image=${AR_IMAGE}:${sha}${suffix}" >> "$GITHUB_OUTPUT"
           echo "Deploying $tag ($mode): ${AR_IMAGE}:${sha}${suffix}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       # SERBITO-389: a tag ships only with its notes for shops. scripts/release_minor.sh writes the
@@ -158,6 +164,44 @@ jobs:
           trivy image --scanners vuln,secret --severity HIGH,CRITICAL \
             --ignore-unfixed --exit-code 1 --format table --timeout 10m \
             "$IMAGE"
+
+  deploy:
+    runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)
+    needs: [verify, build] # No tag deploy unless lint, system check and tests pass, and the image passed Trivy
+    # A refresh (schedule / manual run) skips verify and redeploys an already verified tag.
+    if: ${{ !cancelled() && needs.build.result == 'success' && (needs.verify.result == 'success' || (needs.verify.result == 'skipped' && github.event_name != 'push')) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
+        with:
+          fetch-depth: 0 # full history + tags: the migration diff against the live commit
+          persist-credentials: false # no step pushes; keep the token out of .git/config (SERBITO-385, Aikido)
+
+      # The commit the build job built: its tag (a refresh deploys the newest tag, not main). If the
+      # tag moved since the build, the image is not this commit, and the deploy stops.
+      - name: Check out the built release
+        env:
+          BUILT_TAG: ${{ needs.build.outputs.release_tag }}
+          BUILT_IMAGE: ${{ needs.build.outputs.image }}
+        run: |
+          set -euo pipefail
+          git -c advice.detachedHead=false checkout --quiet "refs/tags/$BUILT_TAG"
+          sha="$(git rev-parse HEAD)"
+          built="${BUILT_IMAGE##*:}"
+          built="${built%%-*}"
+          if [ "$sha" != "$built" ]; then
+            echo "::error::$BUILT_TAG is commit $sha now, but the build job built $built. Deploy stopped."
+            exit 1
+          fi
+          echo "RELEASE_TAG=$BUILT_TAG" >> "$GITHUB_ENV"
+          echo "IMAGE=$BUILT_IMAGE" >> "$GITHUB_ENV"
+          echo "Deploying $BUILT_TAG: $BUILT_IMAGE" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3 (SHA-pinned)
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3 (SHA-pinned)
 
       - name: Runtime env file
         run: |
