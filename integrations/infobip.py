@@ -141,9 +141,7 @@ class InfobipProvider(_InfobipTransport, MessagingProvider):
     ) -> None:
         super().__init__(base_url=base_url, api_key=api_key, sender=sender, timeout=timeout)
         self.channel = channel or settings.INFOBIP_CHANNEL
-        self.sms_fallback = (
-            settings.INFOBIP_SMS_FALLBACK if sms_fallback is None else sms_fallback
-        )
+        self.sms_fallback = settings.INFOBIP_SMS_FALLBACK if sms_fallback is None else sms_fallback
 
     def send_text(self, to_e164: str, text: str) -> SendResult:
         if not self.api_key:

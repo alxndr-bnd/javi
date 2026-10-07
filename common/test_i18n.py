@@ -50,8 +50,15 @@ def test_html_lang(code, tag):
 
 @pytest.mark.parametrize(
     "code, expected",
-    [("sr", "sr-latn"), ("sr-RS", "sr-latn"), ("sr-Latn", "sr-latn"), ("en", "en"),
-     ("ru", "sr-latn"), ("", "sr-latn"), (None, "sr-latn")],
+    [
+        ("sr", "sr-latn"),
+        ("sr-RS", "sr-latn"),
+        ("sr-Latn", "sr-latn"),
+        ("en", "en"),
+        ("ru", "sr-latn"),
+        ("", "sr-latn"),
+        (None, "sr-latn"),
+    ],
 )
 def test_supported_language(code, expected):
     assert supported_language(code) == expected

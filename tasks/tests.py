@@ -24,8 +24,12 @@ def _make_shop(email="s@shop.rs", name="Shop"):
 
 def _delivery(shop):
     return Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567",
-        dest_address="adr", dest_lat=44.81, dest_lng=20.46,
+        shop=shop,
+        recipient_name="Ana",
+        recipient_phone="+381641234567",
+        dest_address="adr",
+        dest_lat=44.81,
+        dest_lng=20.46,
     )
 
 
@@ -149,12 +153,16 @@ def test_escalate_noop_when_delivered():
 def test_escalate_noop_when_channels_exhausted():
     delivery = _delivery(_make_shop())
     start_delivery(delivery)
-    assert escalate_delivery(delivery) is True   # → SMS
+    assert escalate_delivery(delivery) is True  # → SMS
     assert escalate_delivery(delivery) is False  # каналы исчерпаны
 
 
-@override_settings(MESSAGING_PROVIDER="", MESSAGING_CHAIN=P4_CHAIN, TASKS_SECRET=SECRET,
-                   FALLBACK_ESCALATION_ENABLED=True)
+@override_settings(
+    MESSAGING_PROVIDER="",
+    MESSAGING_CHAIN=P4_CHAIN,
+    TASKS_SECRET=SECRET,
+    FALLBACK_ESCALATION_ENABLED=True,
+)
 def test_escalate_callback_secret_guarded(client):
     delivery = _delivery(_make_shop())
     assert client.post(f"/tasks/escalate/{delivery.id}/?secret=wrong").status_code == 403

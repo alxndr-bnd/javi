@@ -41,16 +41,25 @@ def _clean():
 def _shop():
     user = get_user_model().objects.create_user(email="lang@shop.rs", password="pass12345")
     return Shop.objects.create(
-        owner=user, name="Pekara Mika", origin_address="Origin", origin_lat=44.8,
-        origin_lng=20.45, sending_verified=True,
+        owner=user,
+        name="Pekara Mika",
+        origin_address="Origin",
+        origin_lat=44.8,
+        origin_lng=20.45,
+        sending_verified=True,
     )
 
 
 def _delivery(shop, language=None):
     extra = {"recipient_language": language} if language else {}
     return Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567",
-        dest_address="adr", dest_lat=44.81, dest_lng=20.46, **extra,
+        shop=shop,
+        recipient_name="Ana",
+        recipient_phone="+381641234567",
+        dest_address="adr",
+        dest_lat=44.81,
+        dest_lng=20.46,
+        **extra,
     )
 
 
@@ -109,8 +118,11 @@ def test_lookup_returns_the_customers_last_language(client):
     shop = _shop()
     with override_settings(MAPS_PROVIDER=MAPS_OK):
         create_delivery(
-            shop, recipient_name="Ana", phone=normalize_phone("064 123 4567"),
-            dest_address="Adr", language="en",
+            shop,
+            recipient_name="Ana",
+            phone=normalize_phone("064 123 4567"),
+            dest_address="Adr",
+            language="en",
         )
     client.force_login(shop.owner)
     data = client.get("/app/klijent/", {"phone": "064 123 4567"}).json()
@@ -135,7 +147,8 @@ def test_cloud_tasks_rating_sms_in_customer_language(client, language, text):
     delivery.save(update_fields=["status"])
     TrackingToken.objects.create(delivery=delivery)
     resp = client.post(
-        f"/tasks/send-rating/{delivery.id}/", HTTP_X_TASKS_SECRET=SECRET,
+        f"/tasks/send-rating/{delivery.id}/",
+        HTTP_X_TASKS_SECRET=SECRET,
         HTTP_ACCEPT_LANGUAGE="en",
     )
     assert resp.status_code == 200
@@ -171,7 +184,9 @@ def test_api_create_takes_language(client, sent, stored, shown):
     if sent:
         body["language"] = sent
     resp = client.post(
-        "/api/v1/deliveries", data=json.dumps(body), content_type="application/json",
+        "/api/v1/deliveries",
+        data=json.dumps(body),
+        content_type="application/json",
         HTTP_AUTHORIZATION=f"Bearer {key}",
     )
     assert resp.status_code == 201
@@ -185,8 +200,12 @@ def test_api_rejects_unknown_language(client):
     resp = client.post(
         "/api/v1/deliveries",
         data=json.dumps(
-            {"recipient_name": "Ana", "recipient_phone": "064 123 4567", "address": "A",
-             "language": "de"}
+            {
+                "recipient_name": "Ana",
+                "recipient_phone": "064 123 4567",
+                "address": "A",
+                "language": "de",
+            }
         ),
         content_type="application/json",
         HTTP_AUTHORIZATION=f"Bearer {key}",

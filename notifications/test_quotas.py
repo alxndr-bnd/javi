@@ -45,6 +45,7 @@ def _tomorrow() -> str:
 
     return str(timezone.now().astimezone(BELGRADE).date() + timedelta(days=1))
 
+
 MAPS_OK = "integrations.testing.FakeMapsProvider"
 ROUTES_OK = "integrations.testing.FakeRoutesProvider"
 MSG_OK = "integrations.testing.FakeMessagingProvider"
@@ -147,8 +148,10 @@ def test_shop_monthly_cap():
 
 
 @override_settings(
-    SEND_LIMIT_SHOP_DAY=50, SEND_LIMIT_SHOP_MONTH=500,
-    SEND_LIMIT_TRIAL_DAY=10, SEND_LIMIT_TRIAL_MONTH=30,
+    SEND_LIMIT_SHOP_DAY=50,
+    SEND_LIMIT_SHOP_MONTH=500,
+    SEND_LIMIT_TRIAL_DAY=10,
+    SEND_LIMIT_TRIAL_MONTH=30,
 )
 def test_limits_trial_verified_and_override():
     assert shop_limits(_shop(verified=False)) == ShopLimits(10, 30, True)
@@ -359,7 +362,9 @@ def test_resend_view_shows_quota_error(client):
 
 def _api(client, method, url, key, body=None):
     return getattr(client, method)(
-        url, data=json.dumps(body or {}), content_type="application/json",
+        url,
+        data=json.dumps(body or {}),
+        content_type="application/json",
         HTTP_AUTHORIZATION=f"Bearer {key}",
     )
 
@@ -381,7 +386,10 @@ def test_api_resend_foreign_number_trial_403(client):
     _obj, key = ApiKey.generate(shop)
     delivery = _started(shop)
     resp = _api(
-        client, "post", f"/api/v1/deliveries/{delivery.pk}/notifications/resend", key,
+        client,
+        "post",
+        f"/api/v1/deliveries/{delivery.pk}/notifications/resend",
+        key,
         {"recipient_phone": FOREIGN},
     )
     assert resp.status_code == 403

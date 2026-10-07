@@ -14,7 +14,7 @@ from django.core.wsgi import get_wsgi_application
 
 from config.checks import assert_safe_to_serve
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 application = get_wsgi_application()
 # Без SECRET_KEY / ALLOWED_HOSTS при DEBUG=False не стартуем (SERBITO-362, JAVI-11).

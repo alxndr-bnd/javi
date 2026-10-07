@@ -20,9 +20,7 @@ def _post(body: dict, *, secret=SECRET):
     headers = {}
     if secret is not None:
         headers["HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN"] = secret
-    return Client().post(
-        URL, data=json.dumps(body), content_type="application/json", **headers
-    )
+    return Client().post(URL, data=json.dumps(body), content_type="application/json", **headers)
 
 
 def _shared_contact_update(phone="+381641234567", chat_id=555, from_id=None):

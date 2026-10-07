@@ -23,7 +23,7 @@ _DOMAIN_RE = re.compile(r"(?i)\S*\b[\w\-]+(?:\.[\w\-]+)*\.[a-z]{2,}\b\S*")
 _PHONE_RE = re.compile(r"[+(]?\d[\d\s().\-/]*\d\)?")
 _PHONE_MIN_DIGITS = 6
 # Кавычки — ими название ограничено в шаблоне сообщения, «выйти» из них нельзя.
-_QUOTES = str.maketrans("", "", "\"«»„“”‟〝〞＂<>")
+_QUOTES = str.maketrans("", "", '"«»„“”‟〝〞＂<>')
 # Unicode-категории на удаление: управляющие, форматные (bidi-override, zero-width),
 # приватные, суррогаты, неназначенные.
 _DROP_CATEGORIES = {"Cc", "Cf", "Co", "Cs", "Cn"}
@@ -82,8 +82,7 @@ def clean_shop_name(value: str) -> str:
     if not shop_name_is_clean(value):
         raise ValidationError(
             gettext(
-                "Store name can't contain links, email addresses, phone numbers "
-                "or quotation marks."
+                "Store name can't contain links, email addresses, phone numbers or quotation marks."
             ),
             code="shop_name_unsafe",
         )

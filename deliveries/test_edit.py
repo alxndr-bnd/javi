@@ -44,8 +44,13 @@ def _shop(email="edit@shop.rs"):
 
 def _delivery(shop, status=Delivery.Status.CREATED, **extra):
     return Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567",
-        dest_address="Stara 1, Beograd", dest_lat=44.81, dest_lng=20.46, status=status,
+        shop=shop,
+        recipient_name="Ana",
+        recipient_phone="+381641234567",
+        dest_address="Stara 1, Beograd",
+        dest_lat=44.81,
+        dest_lng=20.46,
+        status=status,
         **extra,
     )
 
@@ -85,8 +90,10 @@ def test_edit_name_phone_address_language_without_sending(client, caplog):
         resp = client.post(
             _url(delivery),
             _form(
-                recipient_name="Ana Anić", recipient_phone="065 765 4321",
-                dest_address="Nova 2, Novi Sad", recipient_language="en",
+                recipient_name="Ana Anić",
+                recipient_phone="065 765 4321",
+                dest_address="Nova 2, Novi Sad",
+                recipient_language="en",
             ),
         )
     assert resp.status_code == 302
@@ -98,8 +105,12 @@ def test_edit_name_phone_address_language_without_sending(client, caplog):
     assert FakeMessagingProvider.sent == []
     # audit: one structured event with the field names, no customer data
     (record,) = [r for r in caplog.records if getattr(r, "event", "") == "delivery.edited"]
-    assert record.fields == ["dest_address", "recipient_language", "recipient_name",
-                             "recipient_phone"]
+    assert record.fields == [
+        "dest_address",
+        "recipient_language",
+        "recipient_name",
+        "recipient_phone",
+    ]
     assert record.delivery_id == delivery.pk and record.shop_id == shop.pk
     assert "765" not in record.getMessage() and "Nova" not in record.getMessage()
 
@@ -123,8 +134,10 @@ def test_on_the_way_eta_can_move_and_rating_follows(client):
     old_eta = timezone.now() + timedelta(minutes=30)
     delivery = _delivery(shop, Delivery.Status.ON_THE_WAY, eta_at=old_eta)
     client.force_login(shop.owner)
-    new_local = (timezone.now() + timedelta(days=1)).astimezone(BELGRADE).replace(
-        hour=11, minute=45, second=0, microsecond=0
+    new_local = (
+        (timezone.now() + timedelta(days=1))
+        .astimezone(BELGRADE)
+        .replace(hour=11, minute=45, second=0, microsecond=0)
     )
     client.post(
         _url(delivery),
@@ -170,7 +183,8 @@ def test_moving_eta_into_the_past_is_refused(client):
     client.force_login(shop.owner)
     yesterday = timezone.now().astimezone(BELGRADE).date() - timedelta(days=1)
     resp = client.post(
-        _url(delivery), _form(eta_date=str(yesterday), eta_time="10:00"),
+        _url(delivery),
+        _form(eta_date=str(yesterday), eta_time="10:00"),
         HTTP_ACCEPT_LANGUAGE="en",
     )
     assert resp.status_code == 200

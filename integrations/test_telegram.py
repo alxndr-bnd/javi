@@ -96,9 +96,7 @@ def test_enabled_chain_prepends_telegram_and_falls_through_to_viber():
     assert classes[0] == "TelegramProvider"
     assert "ViberProvider" in classes
 
-    with patch(
-        "integrations.infobip._InfobipTransport._send_viber", return_value=(True, "vmid")
-    ):
+    with patch("integrations.infobip._InfobipTransport._send_viber", return_value=(True, "vmid")):
         result = chain.send_text(PHONE, "hello")  # PHONE has no TelegramContact
 
     assert result.ok is True

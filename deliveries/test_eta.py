@@ -45,8 +45,13 @@ def _shop():
 
 def _delivery(shop, **extra):
     return Delivery.objects.create(
-        shop=shop, recipient_name="Ana", recipient_phone="+381641234567", dest_address="adr",
-        status=Delivery.Status.CREATED, recipient_language="en", **extra,
+        shop=shop,
+        recipient_name="Ana",
+        recipient_phone="+381641234567",
+        dest_address="adr",
+        status=Delivery.Status.CREATED,
+        recipient_language="en",
+        **extra,
     )
 
 

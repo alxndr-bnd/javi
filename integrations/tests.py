@@ -163,9 +163,7 @@ def test_quota_maps_is_monthly_viber_is_lifetime():
 @override_settings(FREE_QUOTA_VIBER=0)
 def test_quota_unlimited_when_limit_zero():
     ProviderUsage.record(METRIC_VIBER, 7, now=datetime(2026, 6, 1, tzinfo=UTC))
-    viber = {b["key"]: b for b in quota_summary(now=datetime(2026, 6, 1, tzinfo=UTC))}[
-        "viber"
-    ]
+    viber = {b["key"]: b for b in quota_summary(now=datetime(2026, 6, 1, tzinfo=UTC))}["viber"]
     assert viber["remaining"] is None and viber["used"] == 7
 
 
@@ -306,9 +304,9 @@ def test_viber_payload_includes_report_webhook():
 @override_settings(INFOBIP_WEBHOOK_SECRET="whsec", PUBLIC_BASE_URL="https://javi.serbito.rs")
 def test_sms_payload_includes_notify_url():
     with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
-        InfobipProvider(
-            base_url="https://x", api_key="k", sender="S", channel="sms"
-        ).send_text("+381641234567", "hi")
+        InfobipProvider(base_url="https://x", api_key="k", sender="S", channel="sms").send_text(
+            "+381641234567", "hi"
+        )
     msg = post.call_args.kwargs["json"]["messages"][0]
     assert msg["notifyUrl"].endswith("/webhooks/infobip/reports/?secret=whsec")
     assert msg["notifyContentType"] == "application/json"
@@ -543,8 +541,10 @@ def test_factory_honors_single_messaging_provider_override():
 
 
 @override_settings(
-    TELEGRAM_ENABLED=True, WHATSAPP_ENABLED=True,
-    INFOBIP_CHANNEL="viber", INFOBIP_SMS_FALLBACK=True,
+    TELEGRAM_ENABLED=True,
+    WHATSAPP_ENABLED=True,
+    INFOBIP_CHANNEL="viber",
+    INFOBIP_SMS_FALLBACK=True,
 )
 def test_default_chain_order_with_all_channels_enabled():
     """Слитая логика P2+P3: при обоих флагах цепочка = telegram→viber→whatsapp→sms."""
@@ -570,9 +570,9 @@ def test_no_secret_in_report_url_when_subscription_is_used():
     """JAVI-3: with an Infobip subscription (Basic auth) the message carries no report URL."""
     with patch("integrations.infobip.requests.post", return_value=_ok_response()) as post:
         _infobip().send_text("+381641234567", "hi")
-        InfobipProvider(
-            base_url="https://x", api_key="k", sender="S", channel="sms"
-        ).send_text("+381641234567", "hi")
+        InfobipProvider(base_url="https://x", api_key="k", sender="S", channel="sms").send_text(
+            "+381641234567", "hi"
+        )
     for call in post.call_args_list:
         msg = call.kwargs["json"]["messages"][0]
         assert "webhooks" not in msg and "notifyUrl" not in msg
