@@ -47,6 +47,19 @@ jobs:
       - name: Install dependencies (locked, incl. dev)
         run: uv sync --frozen
       # config/test_consent_focus.py drives full Chromium headless (real window focus events).
+      # SERBITO-552: the browser download (~9 s) is cached, keyed on the locked playwright
+      # version. `install --with-deps` still installs the OS packages and skips the download
+      # when the cache has this version.
+      - name: Playwright version from uv.lock
+        id: playwright
+        run: |
+          version="$(uv run --frozen python -c 'import importlib.metadata as m; print(m.version("playwright"))')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (SHA-pinned)
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
       - name: Chromium for Playwright
         run: uv run --frozen playwright install --with-deps chromium
 

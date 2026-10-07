@@ -13,6 +13,11 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    # SERBITO-552: ruff is pinned to the ruff-pre-commit rev in .pre-commit-config.yaml, so the
+    # hook and `uv run ruff` give the same result. Bump both by hand, together
+    # (config/test_ruff_version.py checks they match).
+    ignore:
+      - dependency-name: "ruff"
     groups:
       uv-minor-patch:
         update-types:

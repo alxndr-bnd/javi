@@ -29,9 +29,12 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
 - **Deploy** — `.github/workflows/deploy.yaml`, triggered by a pushed `v*.*.*` tag, and by the
   weekly OS refresh of the newest tag ([section 7](#7-day-to-day-release-flow)):
   1. `verify` — the same `ci.yaml` via `workflow_call`;
-  2. `deploy` — build the image with Buildx (registry cache `:buildcache`), push it to
-     Artifact Registry as `:<commit sha>` (a refresh: `:<commit sha>-r<YYYYMMDD>`), Trivy scan (fails on a *fixed* HIGH/CRITICAL
-     vulnerability or a leaked secret), run the migrate job if migrations changed
+  2. `build`, at the same time as `verify` (SERBITO-552) — build the image with Buildx (registry
+     cache `:buildcache`), push it to Artifact Registry as `:<commit sha>` (a refresh:
+     `:<commit sha>-r<YYYYMMDD>`), Trivy scan (fails on a *fixed* HIGH/CRITICAL vulnerability or a
+     leaked secret). A red `verify` leaves this image unused in Artifact Registry;
+  3. `deploy`, only after `verify` and `build` passed — check out the built tag (stops if the tag
+     moved since the build), run the migrate job if migrations changed
      ([section 9](#9-database-migrations)), then `gcloud run deploy`, which moves traffic, and a
      smoke check of the main page (not 200 → traffic back to the previous revision, run fails),
      then a security headers check of `/` (`scripts/check_security_headers.sh`; a missing header
@@ -256,8 +259,9 @@ After section 5 it is also served at https://javi.serbito.rs.
    their `CHANGELOG.md` entry under `## [Unreleased]` (format: the file's header).
 2. `bash scripts/release_minor.sh "what changed" [new_file ...]` — CHANGELOG, gate, commit, tag,
    push, GitHub Release. An empty `[Unreleased]` stops the release before the gate.
-3. GitHub Actions: `verify` (the CI gate) → `CHANGELOG.md` has a `## [X.Y.Z]` section for the tag
-   (a tag pushed by hand without it fails here) → build + push the image → Trivy → migrate job
+3. GitHub Actions: `verify` (the CI gate) and, in parallel, `CHANGELOG.md` has a `## [X.Y.Z]`
+   section for the tag (a tag pushed by hand without it fails here) → build + push the image →
+   Trivy; then, only when both are green → migrate job
    (only if migration files changed) → deploy a new Cloud Run revision (`javi`,
    `europe-west1`) → smoke check of the main page, rollback on failure → security headers check.
 4. Weekly OS refresh (SERBITO-401): every Wednesday 03:00 UTC, or *Run workflow*, the deploy job

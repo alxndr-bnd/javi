@@ -24,7 +24,7 @@ dependencies = [
 dev = [
     "playwright>=1.63.0",
     "pytest-django>=4.12.0",
-    "ruff>=0.16.1",
+    "ruff==0.16.1", # same version as the ruff-pre-commit rev in .pre-commit-config.yaml
 ]
 
 [tool.ruff]
