@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.78.0] - 2026-10-08
+
 ### Security
 - Customer names, phone numbers and addresses are now deleted 90 days after a delivery is finished. Delivery status, ratings and dates stay. Customers who unsubscribed still get no messages.
   - SR: Imena, brojevi telefona i adrese kupaca sada se brišu 90 dana posle završetka dostave. Status dostave, ocene i datumi ostaju. Kupci koji su se odjavili i dalje ne dobijaju poruke.
@@ -120,7 +122,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.77.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.78.0...HEAD
+[0.78.0]: https://github.com/alxndr-bnd/javi/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/alxndr-bnd/javi/compare/v0.76.0...v0.77.0
 [0.76.0]: https://github.com/alxndr-bnd/javi/compare/v0.75.0...v0.76.0
 [0.75.0]: https://github.com/alxndr-bnd/javi/compare/v0.74.0...v0.75.0
