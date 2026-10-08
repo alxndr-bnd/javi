@@ -39,6 +39,12 @@ from .services import (
 )
 
 
+def _live_delivery_or_404(shop, pk, **filters) -> Delivery:
+    """Delivery of this shop. A delivery with erased recipient data (SERBITO-467) is history
+    only: no view can change it, so it is a 404 like a delivery of another shop."""
+    return get_object_or_404(Delivery, pk=pk, shop=shop, pii_purged_at__isnull=True, **filters)
+
+
 def _deliveries_signature(shop) -> str:
     """Сигнатура активных доставок магазина: меняется при новом/удалённом заказе и смене статуса."""
     if shop is None:
@@ -272,7 +278,7 @@ class DeliveryEditView(LoginRequiredMixin, View):
 
     def _delivery(self, request, pk):
         shop = getattr(request.user, "shop", None)
-        return get_object_or_404(Delivery, pk=pk, shop=shop, deleted_at__isnull=True)
+        return _live_delivery_or_404(shop, pk, deleted_at__isnull=True)
 
     def _closed(self, request, delivery):
         if delivery.status != Delivery.Status.DELIVERED:
@@ -380,7 +386,7 @@ class DeliveryStartView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         shop = getattr(request.user, "shop", None)
-        delivery = get_object_or_404(Delivery, pk=pk, shop=shop)  # изоляция
+        delivery = _live_delivery_or_404(shop, pk)  # изоляция
 
         # Шаг 2: подтверждение (с временем) → фиксируем статус + шлём.
         if "eta_time" in request.POST:
@@ -427,7 +433,7 @@ class DeliveryResendView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         shop = getattr(request.user, "shop", None)
-        delivery = get_object_or_404(Delivery, pk=pk, shop=shop)
+        delivery = _live_delivery_or_404(shop, pk)
         form = RecipientPhoneForm(request.POST)
         if not form.is_valid():
             messages.error(request, _("Invalid number. E.g. 064 123 4567"))
@@ -451,7 +457,7 @@ class DeliveryMarkDeliveredView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         shop = getattr(request.user, "shop", None)
-        delivery = get_object_or_404(Delivery, pk=pk, shop=shop)
+        delivery = _live_delivery_or_404(shop, pk)
         mark_delivered(delivery)
         messages.success(request, _("Marked as delivered."))
         return redirect("deliveries:list")
@@ -462,7 +468,7 @@ class DeliveryMarkReadyView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         shop = getattr(request.user, "shop", None)
-        delivery = get_object_or_404(Delivery, pk=pk, shop=shop, deleted_at__isnull=True)
+        delivery = _live_delivery_or_404(shop, pk, deleted_at__isnull=True)
         mark_ready(delivery)
         return redirect("deliveries:list")
 
@@ -483,7 +489,7 @@ class DeliveryDeleteView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         shop = getattr(request.user, "shop", None)
-        delivery = get_object_or_404(Delivery, pk=pk, shop=shop, deleted_at__isnull=True)
+        delivery = _live_delivery_or_404(shop, pk, deleted_at__isnull=True)
         soft_delete(delivery)
         messages.success(request, _("Delivery deleted."))
         return redirect("deliveries:list")
@@ -510,9 +516,7 @@ class DeliveryRestoreView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         shop = getattr(request.user, "shop", None)
-        delivery = get_object_or_404(
-            Delivery, pk=pk, shop=shop, deleted_at__isnull=False, pii_purged_at__isnull=True
-        )
+        delivery = _live_delivery_or_404(shop, pk, deleted_at__isnull=False)
         restore(delivery)
         messages.success(request, _("Delivery restored."))
         return redirect("deliveries:deleted")

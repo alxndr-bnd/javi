@@ -13,9 +13,11 @@ Recipients never signed up with Javi, so we keep their data only while a deliver
 Kept on purpose: OptOut (an opt-out must keep blocking sends) and TelegramContact (the
 recipient's own opt-in). Logs carry counts only, never the data.
 
-When is a delivery final? Deleted: from `deleted_at`. Otherwise from `delivered_at`; for a
-delivery never marked delivered (or delivered before `delivered_at` existed), from its last
-known time: ETA, start or creation. A delivery not touched for the whole period is over.
+When is a delivery final? Only when it is deleted (the period runs from `deleted_at`) or
+delivered (from `delivered_at`; for a delivery delivered before `delivered_at` existed, from its
+last known time: ETA, start or creation). An active delivery (new, ready, on the way) is never
+purged, however old: the shop may still need the phone and address. The job counts such stale
+active deliveries separately (`stale_active`), so the owner can see and close them.
 """
 
 from __future__ import annotations
@@ -26,6 +28,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.db.models import Q, QuerySet
 from django.db.models.functions import Coalesce
@@ -38,6 +41,9 @@ from .models import Delivery, TrackingToken
 
 logger = logging.getLogger(__name__)
 
+# The lowest retention period the config may set (days). Below it, fail at startup.
+MIN_RETENTION_DAYS = 30
+
 
 @dataclass
 class PurgeResult:
@@ -45,6 +51,7 @@ class PurgeResult:
     tracking_tokens: int = 0
     outbound_phones: int = 0
     geocode_entries: int = 0
+    stale_active: int = 0  # active (not delivered, not deleted) and older than the limit: kept
     complete: bool = True  # False: the time budget ran out; the next run continues
 
     def as_dict(self) -> dict:
@@ -56,16 +63,44 @@ def retention_cutoff(now: datetime | None = None) -> datetime:
     return now - timedelta(days=settings.RECIPIENT_PII_RETENTION_DAYS)
 
 
+def _last_known_at():
+    return Coalesce("delivered_at", "eta_at", "started_at", "created_at")
+
+
 def deliveries_due(cutoff: datetime) -> QuerySet[Delivery]:
-    """Deliveries whose recipient data is past the retention limit and not erased yet."""
-    final_at = Coalesce("delivered_at", "eta_at", "started_at", "created_at")
+    """Final deliveries (deleted or delivered) past the retention limit, not erased yet."""
     return (
         Delivery.objects.filter(pii_purged_at__isnull=True)
-        .annotate(final_at=final_at)
+        .annotate(final_at=_last_known_at())
         .filter(
-            Q(deleted_at__lt=cutoff) | Q(deleted_at__isnull=True, final_at__lt=cutoff),
+            Q(deleted_at__lt=cutoff)
+            | Q(deleted_at__isnull=True, status=Delivery.Status.DELIVERED, final_at__lt=cutoff),
         )
     )
+
+
+def stale_active_deliveries(cutoff: datetime) -> QuerySet[Delivery]:
+    """Active deliveries (not delivered, not deleted) untouched for the whole period. Kept."""
+    return (
+        Delivery.objects.filter(pii_purged_at__isnull=True, deleted_at__isnull=True)
+        .exclude(status=Delivery.Status.DELIVERED)
+        .annotate(last_at=_last_known_at())
+        .filter(last_at__lt=cutoff)
+    )
+
+
+def validate_retention_settings() -> None:
+    """Fail fast on a wrong config: a short period would erase data the shop still needs."""
+    days = settings.RECIPIENT_PII_RETENTION_DAYS
+    batch = settings.RECIPIENT_PII_PURGE_BATCH_SIZE
+    if not isinstance(days, int) or days < MIN_RETENTION_DAYS:
+        raise ImproperlyConfigured(
+            f"RECIPIENT_PII_RETENTION_DAYS must be an integer >= {MIN_RETENTION_DAYS}, got {days!r}"
+        )
+    if not isinstance(batch, int) or batch < 1:
+        raise ImproperlyConfigured(
+            f"RECIPIENT_PII_PURGE_BATCH_SIZE must be an integer >= 1, got {batch!r}"
+        )
 
 
 def _outbound_due(cutoff: datetime) -> QuerySet[OutboundSend]:
@@ -97,6 +132,7 @@ def purge_recipient_pii(
     cutoff = retention_cutoff(now)
     batch_size = batch_size or settings.RECIPIENT_PII_PURGE_BATCH_SIZE
     result = PurgeResult()
+    result.stale_active = stale_active_deliveries(cutoff).count()
 
     if not apply:
         due = deliveries_due(cutoff)
@@ -120,8 +156,20 @@ def purge_recipient_pii(
         if not ids:
             break
         with transaction.atomic():
-            result.tracking_tokens += TrackingToken.objects.filter(delivery_id__in=ids).delete()[0]
-            result.deliveries += Delivery.objects.filter(pk__in=ids).update(
+            # Lock the rows and check them again: a row can change (restored, edited) between
+            # the id read and this update.
+            locked = list(
+                deliveries_due(cutoff)
+                .filter(pk__in=ids)
+                .select_for_update()
+                .values_list("pk", flat=True)
+            )
+            if not locked:
+                continue
+            result.tracking_tokens += TrackingToken.objects.filter(delivery_id__in=locked).delete()[
+                0
+            ]
+            result.deliveries += Delivery.objects.filter(pk__in=locked).update(
                 recipient_name="",
                 recipient_phone="",
                 dest_address="",

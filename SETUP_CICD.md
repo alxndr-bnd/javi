@@ -346,6 +346,11 @@ SERBITO-467 (ZZPL, data minimisation). Javi erases the recipient's name, phone, 
 coordinates `RECIPIENT_PII_RETENTION_DAYS` (default 90) after a delivery is final. Status,
 rating, dates and city stay. The same limit clears phones in the send log (`OutboundSend`) and
 old geocode cache entries. Opt-outs stay, so they keep blocking sends. Code: `deliveries/retention.py`.
+"Final" means delivered or deleted. Active deliveries (new, ready, on the way) are never erased,
+however old; the job reports them as `stale_active`, so close or delete them by hand. A purged
+delivery is read-only: the cabinet and the API answer 404 for it, and the API list hides it.
+`RECIPIENT_PII_RETENTION_DAYS` must be >= 30 and `RECIPIENT_PII_PURGE_BATCH_SIZE` >= 1, or the
+app does not start.
 
 - **Trigger** — Cloud Scheduler job `javi-purge-recipient-pii`, daily 02:30 Europe/Belgrade,
   `POST https://javi.serbito.rs/tasks/purge-recipient-pii/` with the `X-Tasks-Secret` header

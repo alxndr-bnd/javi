@@ -34,7 +34,12 @@ class Command(BaseCommand):
             f"days, cutoff {retention_cutoff():%Y-%m-%d}:"
         )
         for name, value in result.as_dict().items():
-            if name != "complete":
+            if name not in ("complete", "stale_active"):
                 self.stdout.write(f"  {name}: {value}")
+        # Active deliveries are never erased; the owner closes or deletes them by hand.
+        self.stdout.write(
+            f"Kept: {result.stale_active} active deliveries (not delivered, not deleted) "
+            "older than the limit."
+        )
         if not apply:
             self.stdout.write("Nothing changed. Run with --apply to erase.")

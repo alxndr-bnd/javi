@@ -8,14 +8,17 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
+from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from deliveries.models import Delivery, Rating, Shop, TrackingToken
+from deliveries import retention
+from deliveries.models import ApiKey, Delivery, Rating, Shop, TrackingToken
 from deliveries.retention import purge_recipient_pii
 from deliveries.services import mark_delivered, restore, send_rating_request
 from integrations.models import GeocodeCache
@@ -117,40 +120,121 @@ def test_fresh_deliveries_are_kept():
         assert TrackingToken.objects.filter(delivery=d).exists()
 
 
-def test_deleted_and_stale_deliveries_count_as_final():
+def test_deleted_and_legacy_delivered_deliveries_count_as_final():
     shop = _shop()
     deleted = _delivery(shop, created_days=DAYS + 10, deleted_at=_ago(DAYS + 1))
-    # Started, never marked delivered, untouched for the whole period.
-    stale = _delivery(
+    # Deleted while on the way: deleted is final, whatever the status.
+    deleted_active = _delivery(
         shop,
-        created_days=DAYS + 3,
+        created_days=DAYS + 10,
         status=Delivery.Status.ON_THE_WAY,
-        started_at=_ago(DAYS + 2),
-        eta_at=_ago(DAYS + 2),
+        deleted_at=_ago(DAYS + 1),
     )
     # Delivered before delivered_at existed: falls back to the ETA.
     legacy = _delivery(
         shop, created_days=DAYS + 3, status=Delivery.Status.DELIVERED, eta_at=_ago(DAYS + 2)
     )
-    # Started long ago, but the ETA is inside the period: still kept.
+    # Delivered long ago by creation, but the ETA is inside the period: still kept.
     late_eta = _delivery(
         shop,
         created_days=DAYS + 3,
-        status=Delivery.Status.ON_THE_WAY,
+        status=Delivery.Status.DELIVERED,
         started_at=_ago(DAYS + 2),
         eta_at=_ago(DAYS - 2),
     )
 
     purge_recipient_pii(apply=True)
 
-    for d in (deleted, stale, legacy):
+    for d in (deleted, deleted_active, legacy):
         _assert_erased(d)
     assert not _is_purged(late_eta)
 
 
+@pytest.mark.parametrize(
+    "status",
+    [Delivery.Status.NEW, Delivery.Status.CREATED, Delivery.Status.ON_THE_WAY],
+)
+def test_stale_active_deliveries_are_kept_and_counted(status):
+    """An active delivery is never final: the shop may still need the phone and address."""
+    shop = _shop()
+    stale = _delivery(
+        shop,
+        created_days=DAYS + 30,
+        status=status,
+        started_at=_ago(DAYS + 20),
+        eta_at=_ago(DAYS + 20),
+    )
+    _delivery(shop, created_days=1, status=status)  # fresh: neither purged nor counted
+
+    dry = purge_recipient_pii(apply=False)
+    result = purge_recipient_pii(apply=True)
+
+    assert (dry.deliveries, dry.stale_active) == (0, 1)
+    assert (result.deliveries, result.stale_active) == (0, 1)
+    stale.refresh_from_db()
+    assert (stale.recipient_name, stale.recipient_phone, stale.dest_address) == (
+        NAME,
+        PHONE,
+        ADDRESS,
+    )
+    assert stale.pii_purged_at is None
+    assert TrackingToken.objects.filter(delivery=stale).exists()
+
+
+def test_command_reports_stale_active_deliveries_separately():
+    shop = _shop()
+    _delivery(shop, created_days=DAYS + 5, status=Delivery.Status.ON_THE_WAY)
+    _delivery(shop, created_days=DAYS + 5, status=Delivery.Status.DELIVERED)
+    out = StringIO()
+
+    call_command("purge_recipient_pii", "--apply", stdout=out)
+
+    assert "deliveries: 1" in out.getvalue()
+    assert "Kept: 1 active deliveries" in out.getvalue()
+    assert Delivery.objects.filter(pii_purged_at__isnull=True).count() == 1
+
+
+def test_apply_skips_rows_that_stop_being_due_after_the_id_read(monkeypatch):
+    """The update checks the rows again under a lock: a row changed between the id read and
+    the update (here: restored to active) keeps its data."""
+    shop = _shop()
+    racing = _delivery(shop, created_days=DAYS + 10, deleted_at=_ago(DAYS + 1))
+    real_ids = retention._ids
+    calls = []
+
+    def ids_then_restore(qs, batch_size):
+        ids = real_ids(qs, batch_size)
+        if qs.model is Delivery and not calls:
+            calls.append(ids)
+            Delivery.objects.filter(pk=racing.pk).update(deleted_at=None)
+        return ids
+
+    monkeypatch.setattr(retention, "_ids", ids_then_restore)
+    result = purge_recipient_pii(apply=True)
+
+    assert calls == [[racing.pk]]
+    assert result.deliveries == 0
+    assert not _is_purged(racing)
+    assert racing.recipient_phone == PHONE
+
+
+@pytest.mark.parametrize(
+    ("days", "batch", "ok"),
+    [(90, 500, True), (30, 1, True), (29, 500, False), (0, 500, False), (90, 0, False)],
+)
+def test_retention_settings_are_validated_at_startup(days, batch, ok):
+    with override_settings(RECIPIENT_PII_RETENTION_DAYS=days, RECIPIENT_PII_PURGE_BATCH_SIZE=batch):
+        app = apps.get_app_config("deliveries")
+        if ok:
+            app.ready()
+        else:
+            with pytest.raises(ImproperlyConfigured):
+                app.ready()
+
+
 def test_dry_run_counts_and_changes_nothing():
     shop = _shop()
-    old = _delivery(shop, created_days=DAYS + 1)
+    old = _delivery(shop, created_days=DAYS + 1, status=Delivery.Status.DELIVERED)
     _delivery(shop, created_days=1)
     OutboundSend.objects.create(
         shop=shop, phone=PHONE, kind="on_the_way", created_at=_ago(DAYS + 1)
@@ -165,6 +249,7 @@ def test_dry_run_counts_and_changes_nothing():
         "tracking_tokens": 1,
         "outbound_phones": 1,
         "geocode_entries": 1,
+        "stale_active": 0,
         "complete": True,
     }
     assert not _is_purged(old)
@@ -175,7 +260,10 @@ def test_dry_run_counts_and_changes_nothing():
 
 def test_apply_is_idempotent_and_batched():
     shop = _shop()
-    olds = [_delivery(shop, created_days=DAYS + 1 + i) for i in range(5)]
+    olds = [
+        _delivery(shop, created_days=DAYS + 1 + i, status=Delivery.Status.DELIVERED)
+        for i in range(5)
+    ]
 
     first = purge_recipient_pii(apply=True, batch_size=2)
     stamps = {d.pk: Delivery.objects.get(pk=d.pk).pii_purged_at for d in olds}
@@ -191,7 +279,7 @@ def test_apply_is_idempotent_and_batched():
 def test_time_budget_stops_between_batches():
     shop = _shop()
     for i in range(3):
-        _delivery(shop, created_days=DAYS + 1 + i)
+        _delivery(shop, created_days=DAYS + 1 + i, status=Delivery.Status.DELIVERED)
 
     result = purge_recipient_pii(apply=True, batch_size=1, time_budget=1e-9)
 
@@ -223,7 +311,7 @@ def test_send_log_phones_and_geocode_cache_follow_the_same_limit():
 @override_settings(MESSAGING_PROVIDER=MSG_OK)
 def test_opt_out_still_blocks_sends_after_the_purge():
     shop = _shop()
-    _delivery(shop, created_days=DAYS + 1)
+    _delivery(shop, created_days=DAYS + 1, status=Delivery.Status.DELIVERED)
     OptOut.objects.create(phone=PHONE)
 
     purge_recipient_pii(apply=True)
@@ -239,7 +327,7 @@ def test_opt_out_still_blocks_sends_after_the_purge():
 
 def test_logs_and_command_output_carry_counts_only(caplog):
     shop = _shop()
-    _delivery(shop, created_days=DAYS + 1)
+    _delivery(shop, created_days=DAYS + 1, status=Delivery.Status.DELIVERED)
     out = StringIO()
 
     with caplog.at_level(logging.INFO, logger="deliveries.retention"):
@@ -259,7 +347,7 @@ def test_logs_and_command_output_carry_counts_only(caplog):
 @override_settings(TASKS_SECRET=SECRET)
 def test_scheduler_endpoint_needs_the_secret_and_post(client):
     shop = _shop()
-    old = _delivery(shop, created_days=DAYS + 1)
+    old = _delivery(shop, created_days=DAYS + 1, status=Delivery.Status.DELIVERED)
     url = reverse("tasks:purge_recipient_pii")
 
     assert client.post(url).status_code == 403
@@ -309,3 +397,86 @@ def test_privacy_page_states_the_configured_period():
         para = re.search(rf'<p id="recipient-retention-{lang}">(.*?)</p>', page, re.S)
         assert para, lang
         assert f"<strong>{DAYS} {word}</strong>" in para.group(1), lang
+
+
+# --- SERBITO-467: a purged delivery is read-only, in the cabinet and in the API ---------------
+
+
+def _purged(shop, **fields):
+    d = _delivery(shop, created_days=DAYS + 5, status=Delivery.Status.DELIVERED, **fields)
+    purge_recipient_pii(apply=True)
+    assert _is_purged(d)
+    return d
+
+
+@pytest.mark.parametrize(
+    ("name", "method"),
+    [
+        ("deliveries:edit", "get"),
+        ("deliveries:edit", "post"),
+        ("deliveries:start", "post"),
+        ("deliveries:resend", "post"),
+        ("deliveries:mark_delivered", "post"),
+        ("deliveries:mark_ready", "post"),
+        ("deliveries:delete", "post"),
+    ],
+)
+def test_cabinet_views_do_not_touch_a_purged_delivery(client, name, method):
+    shop = _shop()
+    d = _purged(shop)
+    before = Delivery.objects.filter(pk=d.pk).values().get()
+    client.login(username="r@shop.rs", password="pass12345")
+
+    data = {"phone": "064 123 4567", "eta_time": "12:00"} if method == "post" else None
+    resp = getattr(client, method)(reverse(name, args=[d.pk]), data)
+
+    assert resp.status_code == 404
+    assert Delivery.objects.filter(pk=d.pk).values().get() == before
+
+
+@pytest.mark.parametrize(
+    ("suffix", "method"),
+    [
+        ("", "get"),
+        ("", "delete"),
+        ("/start", "post"),
+        ("/dispatch", "post"),
+        ("/ready", "post"),
+        ("/delivered", "post"),
+        ("/restore", "post"),
+        ("/notifications/resend", "post"),
+    ],
+)
+def test_api_returns_404_for_a_purged_delivery(client, suffix, method):
+    shop = _shop()
+    d = _purged(shop)
+    before = Delivery.objects.filter(pk=d.pk).values().get()
+    _, key = ApiKey.generate(shop)
+
+    url = f"/api/v1/deliveries/{d.pk}{suffix}"
+    auth = {"HTTP_AUTHORIZATION": f"Bearer {key}"}
+    if method == "post":
+        resp = client.post(url, data="{}", content_type="application/json", **auth)
+    else:
+        resp = getattr(client, method)(url, **auth)
+
+    assert resp.status_code == 404
+    assert resp.json()["error"]["code"] == "not_found"
+    assert Delivery.objects.filter(pk=d.pk).values().get() == before
+
+
+def test_api_list_hides_purged_deliveries(client):
+    shop = _shop()
+    purged = _purged(shop)
+    purged_deleted = _delivery(shop, created_days=DAYS + 10, deleted_at=_ago(DAYS + 1))
+    purge_recipient_pii(apply=True)
+    live = _delivery(shop, created_days=1)
+    _, key = ApiKey.generate(shop)
+    auth = {"HTTP_AUTHORIZATION": f"Bearer {key}"}
+
+    active = client.get("/api/v1/deliveries", **auth).json()
+    deleted = client.get("/api/v1/deliveries?deleted=true", **auth).json()
+
+    assert [row["id"] for row in active] == [live.pk]
+    assert purged.pk not in [row["id"] for row in active]
+    assert purged_deleted.pk not in [row["id"] for row in deleted]
