@@ -345,6 +345,14 @@ ETA_BUFFER_MINUTES = env.int("ETA_BUFFER_MINUTES", default=10)
 TRACKING_TOKEN_TTL_DAYS = env.int("TRACKING_TOKEN_TTL_DAYS", default=7)
 TRACKING_RATE_LIMIT = env.int("TRACKING_RATE_LIMIT", default=60)  # запросов/мин на IP, все /t/
 
+# SERBITO-467: retention of recipient personal data (ZZPL, data minimisation). After this many
+# days from the moment a delivery is final, the purge job erases the recipient's name, phone,
+# address and coordinates; status, rating, dates and city stay for the shop's stats. The same
+# limit applies to phones in the send log and to the geocode cache. Opt-outs are kept, so they
+# keep blocking sends. The purge runs daily: Cloud Scheduler -> POST /tasks/purge-recipient-pii/.
+RECIPIENT_PII_RETENTION_DAYS = env.int("RECIPIENT_PII_RETENTION_DAYS", default=90)
+RECIPIENT_PII_PURGE_BATCH_SIZE = env.int("RECIPIENT_PII_PURGE_BATCH_SIZE", default=500)
+
 # --- Публичный API (Django REST Framework + drf-spectacular) ---------------
 # Аутентификация по API-ключу магазина (см. deliveries.auth.ApiKeyAuthentication).
 # Единый формат ошибок {"error": {"code", "message"}} — через deliveries.api.exception_handler.

@@ -43,7 +43,9 @@ def _deliveries_signature(shop) -> str:
     """Сигнатура активных доставок магазина: меняется при новом/удалённом заказе и смене статуса."""
     if shop is None:
         return ""
-    rows = shop.deliveries.filter(deleted_at__isnull=True).values_list("id", "status", "deleted_at")
+    rows = shop.deliveries.filter(deleted_at__isnull=True, pii_purged_at__isnull=True).values_list(
+        "id", "status", "deleted_at"
+    )
     raw = ";".join(f"{i}:{s}" for i, s, _ in rows)
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
@@ -71,7 +73,8 @@ class DeliveryListView(LoginRequiredMixin, TemplateView):
         # Изоляция арендаторов: только доставки текущего магазина.
         deliveries = (
             list(
-                shop.deliveries.filter(deleted_at__isnull=True)
+                # SERBITO-467: a delivery with erased recipient data is history only, not a card.
+                shop.deliveries.filter(deleted_at__isnull=True, pii_purged_at__isnull=True)
                 .select_related("rating")
                 .prefetch_related("notifications")
             )
@@ -494,7 +497,11 @@ class DeletedDeliveriesView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         shop = getattr(self.request.user, "shop", None)
-        ctx["deleted"] = list(shop.deliveries.filter(deleted_at__isnull=False)) if shop else []
+        ctx["deleted"] = (
+            list(shop.deliveries.filter(deleted_at__isnull=False, pii_purged_at__isnull=True))
+            if shop
+            else []
+        )
         return ctx
 
 
@@ -503,7 +510,9 @@ class DeliveryRestoreView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         shop = getattr(request.user, "shop", None)
-        delivery = get_object_or_404(Delivery, pk=pk, shop=shop, deleted_at__isnull=False)
+        delivery = get_object_or_404(
+            Delivery, pk=pk, shop=shop, deleted_at__isnull=False, pii_purged_at__isnull=True
+        )
         restore(delivery)
         messages.success(request, _("Delivery restored."))
         return redirect("deliveries:deleted")

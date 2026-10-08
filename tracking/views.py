@@ -12,7 +12,7 @@ from common import ratelimit
 from common.client_ip import client_ip
 from common.timewindow import format_eta_label
 from deliveries.models import Delivery, Rating, TrackingToken
-from deliveries.services import customer_language
+from deliveries.services import customer_language, mark_delivered
 
 # Порядок шагов степпера и какой статус доставки на каком шаге.
 _STEPS = [
@@ -144,13 +144,7 @@ def mark_received(request, token):
     token_obj = _active_token(token)
     if token_obj is None:
         return _expired(request, token)
-    delivery = token_obj.delivery
-    if delivery.status != Delivery.Status.DELIVERED:
-        delivery.status = Delivery.Status.DELIVERED
-        delivery.save(update_fields=["status"])
-        from deliveries.services import emit_delivery_event
-
-        emit_delivery_event(delivery, "delivery.delivered")
+    mark_delivered(token_obj.delivery)  # идемпотентно; ставит delivered_at и шлёт вебхук
     return redirect("tracking:status", token=token)
 
 

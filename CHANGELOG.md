@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- Customer names, phone numbers and addresses are now deleted 90 days after a delivery is finished. Delivery status, ratings and dates stay. Customers who unsubscribed still get no messages.
+  - SR: Imena, brojevi telefona i adrese kupaca sada se brišu 90 dana posle završetka dostave. Status dostave, ocene i datumi ostaju. Kupci koji su se odjavili i dalje ne dobijaju poruke.
+
 ## [0.77.0] - 2026-10-05
 
 ### Changed

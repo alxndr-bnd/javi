@@ -3,17 +3,23 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from common.secrets import request_has_secret
 from common.timewindow import rating_send_time
 from deliveries.models import Delivery
+from deliveries.retention import purge_recipient_pii
 from deliveries.services import escalate_delivery, send_rating_request
 
 from .scheduler import TASKS_SECRET_HEADER
+
+# SERBITO-467: the purge stops between batches after this many seconds, well inside the Cloud Run
+# request timeout (60 s). The rest goes in the next daily run.
+PURGE_TIME_BUDGET_SECONDS = 40
 
 # Cloud Tasks может прийти чуть раньше срока — столько раньше ещё считается «вовремя».
 _EARLY = timedelta(minutes=5)
@@ -47,3 +53,15 @@ def escalate(request, delivery_id):
     delivery = get_object_or_404(Delivery, pk=delivery_id)
     escalate_delivery(delivery)  # no-op, если уже доставлено / каналы исчерпаны / флаг off
     return HttpResponse(status=200)
+
+
+@csrf_exempt
+@require_POST
+def purge_recipient_pii_view(request):
+    """SERBITO-467: daily POST from Cloud Scheduler → erase recipient data past the retention
+    limit (deliveries/retention.py). Shared secret, like the Cloud Tasks callbacks. The answer
+    carries counts only; `complete: false` means the next run continues."""
+    if not _secret_ok(request):
+        return HttpResponseForbidden("forbidden")
+    result = purge_recipient_pii(apply=True, time_budget=PURGE_TIME_BUDGET_SECONDS)
+    return JsonResponse(result.as_dict())

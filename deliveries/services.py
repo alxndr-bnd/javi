@@ -566,8 +566,9 @@ def mark_delivered(delivery: Delivery) -> bool:
     """
     if delivery.status != Delivery.Status.DELIVERED:
         delivery.status = Delivery.Status.DELIVERED
-        delivery.save(update_fields=["status"])
-        emit_delivery_event(delivery, "delivery.delivered")  # вебхук — и из UI, и из API
+        delivery.delivered_at = timezone.now()  # SERBITO-467: начало срока хранения
+        delivery.save(update_fields=["status", "delivered_at"])
+        emit_delivery_event(delivery, "delivery.delivered")  # вебхук — и из UI, и из API, и с /t/
         return True
     return False
 
@@ -582,8 +583,12 @@ def soft_delete(delivery: Delivery) -> bool:
 
 
 def restore(delivery: Delivery) -> bool:
-    """Восстановление мягко удалённой доставки. Идемпотентно (не удалена → False)."""
-    if delivery.deleted_at is not None:
+    """Восстановление мягко удалённой доставки. Идемпотентно (не удалена → False).
+
+    Доставку со стёртыми данными получателя (SERBITO-467) не восстанавливаем: без телефона
+    и адреса её нельзя ни отправить, ни исправить.
+    """
+    if delivery.deleted_at is not None and delivery.pii_purged_at is None:
         delivery.deleted_at = None
         delivery.save(update_fields=["deleted_at"])
         return True
