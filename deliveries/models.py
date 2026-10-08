@@ -121,8 +121,12 @@ class Delivery(models.Model):
     eta_at = models.DateTimeField("ETA (UTC)", null=True, blank=True)
     eta_source = models.CharField("источник ETA", max_length=6, blank=True)  # auto | manual
     started_at = models.DateTimeField("старт доставки", null=True, blank=True)
+    # Когда доставку отметили доставленной (SERBITO-467: от этой даты считается срок хранения).
+    delivered_at = models.DateTimeField("доставлена", null=True, blank=True)
     # Soft delete: удалённые скрыты из основного списка, видны в «Obrisane».
     deleted_at = models.DateTimeField("удалена", null=True, blank=True)
+    # SERBITO-467: когда purge стёр имя/телефон/адрес получателя (deliveries/retention.py).
+    pii_purged_at = models.DateTimeField("персональные данные стёрты", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

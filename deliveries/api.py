@@ -261,8 +261,11 @@ class _ShopScopedView(GenericAPIView):
         return self.request.user
 
     def get_owned_delivery(self, pk: int) -> Delivery:
-        """Доставка по pk в пределах магазина ключа. Иначе — 404 единым конвертом."""
-        delivery = self.shop.deliveries.filter(pk=pk).first()
+        """Доставка по pk в пределах магазина ключа. Иначе — 404 единым конвертом.
+
+        SERBITO-467: a delivery with erased recipient data is history only — 404 for reads and
+        for every change (start, dispatch, ready, delivered, restore, resend, delete)."""
+        delivery = self.shop.deliveries.filter(pk=pk, pii_purged_at__isnull=True).first()
         if delivery is None:
             raise ApiError("not_found", _("Delivery not found."), status.HTTP_404_NOT_FOUND)
         return delivery
@@ -335,7 +338,10 @@ class DeliveriesCollectionView(_ShopScopedView):
     def get(self, request):
         # Паритет с UI «Обрисане»: ?deleted=true перечисляет мягко удалённые.
         want_deleted = request.query_params.get("deleted") == "true"
-        qs = self.shop.deliveries.filter(deleted_at__isnull=not want_deleted)
+        qs = self.shop.deliveries.filter(
+            deleted_at__isnull=not want_deleted,
+            pii_purged_at__isnull=True,  # SERBITO-467: erased rows are not in the API
+        )
         status_filter = request.query_params.get("status")
         if status_filter:
             internal = STATUS_MAP_REVERSE.get(status_filter, status_filter)

@@ -15,6 +15,7 @@ region (`europe-west1`) and Workload Identity Pool (`github-pool`) as `poker.ser
 7. [Day-to-day release flow](#7-day-to-day-release-flow)
 8. [Runtime: Cloud SQL, secrets, env](#8-runtime-cloud-sql-secrets-env)
 9. [Database migrations](#9-database-migrations)
+10. [Scheduled jobs: recipient data purge](#10-scheduled-jobs-recipient-data-purge)
 
 > Commands assume an authenticated Google Cloud SDK
 > (`gcloud auth login`, `gcloud config set project serbito`).
@@ -336,3 +337,36 @@ gcloud run jobs executions list --job=javi-migrate --region=europe-west1 --proje
 
 Local or self-hosted Docker: the image no longer migrates on start, so run it once per
 schema change: `docker run --rm --env-file .env <image> python manage.py migrate --noinput`.
+
+---
+
+## 10. Scheduled jobs: recipient data purge
+
+SERBITO-467 (ZZPL, data minimisation). Javi erases the recipient's name, phone, address and
+coordinates `RECIPIENT_PII_RETENTION_DAYS` (default 90) after a delivery is final. Status,
+rating, dates and city stay. The same limit clears phones in the send log (`OutboundSend`) and
+old geocode cache entries. Opt-outs stay, so they keep blocking sends. Code: `deliveries/retention.py`.
+"Final" means delivered or deleted. Active deliveries (new, ready, on the way) are never erased,
+however old; the job reports them as `stale_active`, so close or delete them by hand. A purged
+delivery is read-only: the cabinet and the API answer 404 for it, and the API list hides it.
+`RECIPIENT_PII_RETENTION_DAYS` must be >= 30 and `RECIPIENT_PII_PURGE_BATCH_SIZE` >= 1, or the
+app does not start.
+
+- **Trigger** — Cloud Scheduler job `javi-purge-recipient-pii`, daily 02:30 Europe/Belgrade,
+  `POST https://javi.serbito.rs/tasks/purge-recipient-pii/` with the `X-Tasks-Secret` header
+  (same secret as the Cloud Tasks callbacks). The call stops after ~40 s (request timeout 60 s);
+  `"complete": false` in the answer means the next run continues. The answer and the log carry
+  counts only.
+- **One-time setup** — `bash scripts/setup_purge_scheduler.sh` (creates or updates the job; needs
+  `roles/cloudscheduler.admin` and read access to `javi-tasks-secret`). After a secret rotation,
+  run it again. No new role for the runtime SA.
+- **By hand** — dry run first, then apply:
+
+```bash
+uv run python manage.py purge_recipient_pii            # counts only, nothing changes
+uv run python manage.py purge_recipient_pii --apply    # erase
+gcloud scheduler jobs run javi-purge-recipient-pii --location=europe-west1 --project=serbito
+```
+
+Change the period with the env var `RECIPIENT_PII_RETENTION_DAYS` (`.github/deploy.env.yaml`)
+and update the privacy page (`landing/privacy.html`, sr/en/ru) in the same release.
