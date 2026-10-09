@@ -1215,3 +1215,17 @@ msgstr "Obaveštenja su otkazana."
 #: tracking/views.py:64
 msgid "Too many requests. Try again later."
 msgstr "Previše zahteva. Pokušajte kasnije."
+
+#: templates/accounts/register.html
+msgid ""
+"30 days free, then 30 € per month. No card needed to start. After the 30 "
+"days, payment is required to continue. Without payment, the trial limits "
+"stay."
+msgstr ""
+"30 dana besplatno, zatim 30 € mesečno. Kartica nije potrebna za početak. "
+"Posle 30 dana za nastavak je potrebno plaćanje. Bez plaćanja ostaju probni "
+"limiti."
+
+#: tracking/views.py:19
+msgid "Received"
+msgstr "Primljeno"

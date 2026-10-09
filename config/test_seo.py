@@ -16,12 +16,20 @@ SERBITO-459: one URL per language, so Google indexes the Serbian landing for Ser
 - The sitemap gives every URL a <lastmod> and the landing URLs the same alternates
   (xhtml:link). /privacy.html is one page with all three languages: no alternates.
 
+SERBITO-595: shop-owner search terms and a public price.
+- Title = descriptor + the search phrase (≤ 60 chars); H1 names Viber, SMS and delivery
+  notifications to customers; the description (≤ 155 chars) carries the price and the trial.
+- The SoftwareApplication has an Offer: 30 EUR a month. A FAQPage node repeats the questions and
+  answers shown on the page, word for word.
+- Owner answers (2026-10-09): Viber/SMS messages are in the 30 €, with no limit shown. After the
+  30 free days payment is required; without it the trial limits stay. No "card payment soon"
+  promise. No Handoff (the owner's company) makes Javi; no address or personal data.
+
 SERBITO-462: SEO polish.
 - "Javi" alone is ambiguous (Spanish footballers): the title, og:site_name and the schema
   alternateName carry a descriptor in the page language.
 - Each language page has one JSON-LD @graph: Organization (No Handoff), WebSite, WebPage and
-  SoftwareApplication, with stable @ids under https://javi.serbito.rs/. No Offer: the price is
-  not public yet (SERBITO-461); add one only with the real price.
+  SoftwareApplication, with stable @ids under https://javi.serbito.rs/.
 - /index.html, /en/index.html, /ru/index.html answer 301 (WhiteNoise's default is 302).
 """
 
@@ -194,12 +202,18 @@ DESCRIPTOR = {
     "en": "Javi — Viber/SMS delivery notifications",
     "ru": "Javi — уведомления о доставке в Viber/SMS",
 }
-TITLE = DESCRIPTOR
-H1 = {
-    "sr": "Obavestite kupca kada paket krene — i kada stiže",
-    "en": "Tell your customer when the parcel leaves — and when it arrives",
-    "ru": "Сообщите покупателю, когда посылка выехала — и когда приедет",
+TITLE = {
+    "sr": "Javi — Viber/SMS obaveštenja o isporuci i praćenje pošiljke",
+    "en": "Javi — Viber/SMS delivery notifications and parcel tracking",
+    "ru": "Javi — уведомления о доставке в Viber/SMS для магазинов",
 }
+H1 = {
+    "sr": "Viber i SMS obaveštenja kupcima o dostavi",
+    "en": "Viber and SMS delivery notifications for your customers",
+    "ru": "Уведомления покупателям о доставке в Viber и SMS",
+}
+# What a shop owner searches for (SERBITO-595): every page names the channels in title and H1.
+SEARCH_TERMS = ("Viber", "SMS")
 EXPECTED_ALTERNATES = {(lang, SITE + path) for lang, (path, _) in LANDING_PAGES.items()} | {
     ("x-default", f"{SITE}/")
 }
@@ -265,6 +279,10 @@ def test_title_and_h1_are_in_the_page_language_without_js(lang):
             assert not SERBIAN_LATIN.search(text), text
     if lang == "sr":
         assert SERBIAN_LATIN.search(title + h1.text() + description)
+    for term in SEARCH_TERMS:
+        assert term in title and term in h1.text() and term in description, term
+    assert len(description) <= 155, len(description)
+    assert "30" in description  # the price or the trial is in the snippet
 
 
 @pytest.mark.parametrize("lang", LANGS)
@@ -365,13 +383,14 @@ def _refs(value):
 def test_json_ld_graph_has_the_four_nodes_with_stable_ids(lang):
     url = SITE + LANDING_PAGES[lang][0]
     nodes = _graph(lang)
-    assert set(nodes) == {"Organization", "WebSite", "WebPage", "SoftwareApplication"}
+    assert set(nodes) == {"Organization", "WebSite", "WebPage", "SoftwareApplication", "FAQPage"}
     ids = {t: n["@id"] for t, n in nodes.items()}
     assert ids == {
         "Organization": ORG_ID,
         "WebSite": WEBSITE_ID,
         "WebPage": f"{url}#webpage",
         "SoftwareApplication": APP_ID,
+        "FAQPage": f"{url}#faq",
     }
     for node in nodes.values():  # every reference points to a node of this graph
         for ref in _refs({k: v for k, v in node.items() if k != "@id"}):
@@ -381,7 +400,20 @@ def test_json_ld_graph_has_the_four_nodes_with_stable_ids(lang):
 @pytest.mark.parametrize("lang", LANGS)
 def test_json_ld_organization_is_no_handoff(lang):
     org = _graph(lang)["Organization"]
-    assert org == {"@type": "Organization", "@id": ORG_ID, "name": "No Handoff", "url": LINKEDIN}
+    # SERBITO-595: the organisation's own site is javi; LinkedIn is a profile of it (sameAs).
+    assert org == {
+        "@type": "Organization",
+        "@id": ORG_ID,
+        "name": "No Handoff",
+        "url": f"{SITE}/",
+        "logo": {
+            "@type": "ImageObject",
+            "url": f"{SITE}/apple-touch-icon.png",
+            "width": 180,
+            "height": 180,
+        },
+        "sameAs": [LINKEDIN],
+    }
 
 
 @pytest.mark.parametrize("lang", LANGS)
@@ -421,8 +453,71 @@ def test_json_ld_software_application(lang):
         assert not SERBIAN_LATIN.search(description), description
     if lang == "sr":
         assert SERBIAN_LATIN.search(description), description
-    # No public price yet (SERBITO-461): an Offer with a made-up price would mislead Google.
-    assert "offers" not in app
+    # The public price (SERBITO-593/595): 30 EUR a month per shop, the same as on the page.
+    offer = app["offers"]
+    assert offer["@type"] == "Offer"
+    assert (offer["price"], offer["priceCurrency"]) == ("30", "EUR")
+    assert offer["priceSpecification"]["billingDuration"] == "P1M"
+    assert offer["url"] == SITE + LANDING_PAGES[lang][0] + "#cena"
+    price = parse_html(_landing(lang)).find("section", {"id": "cena"}).text()
+    assert "30 €" in price
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_json_ld_faq_matches_the_visible_faq(lang):
+    """Google ignores (or penalises) FAQ markup that the visitor cannot read on the page."""
+    faq = _graph(lang)["FAQPage"]
+    assert faq["inLanguage"] == lang
+    visible = parse_html(_landing(lang)).find("div", {"class": "faq"})
+    questions = [h.text() for h in visible.find_all("h3")]
+    # Node.text() puts a space between a link and the text after it: "docs/ ." -> "docs/."
+    answers = [re.sub(r" ([.,:;!?])", r"\1", p.text()) for p in visible.find_all("p")]
+    assert len(questions) >= 5
+    assert [(q["name"], q["acceptedAnswer"]["text"]) for q in faq["mainEntity"]] == list(
+        zip(questions, answers, strict=True)
+    )
+    assert all(q["@type"] == "Question" for q in faq["mainEntity"])
+
+
+# The owner's answers (SERBITO-595, 2026-10-09), in the price card, the FAQ and the Offer.
+AFTER_TRIAL = {
+    "sr": "Posle 30 dana za nastavak je potrebno plaćanje. Bez plaćanja ostaju probni limiti.",
+    "en": (
+        "After the 30 days, payment is required to continue. "
+        "Without payment, the trial limits stay."
+    ),
+    "ru": "После 30 дней для продолжения нужна оплата. Без оплаты остаются пробные лимиты.",
+}
+MESSAGES_INCLUDED = {
+    "sr": "Viber i SMS poruke su uključene u cenu.",
+    "en": "Viber and SMS messages are included in the price.",
+    "ru": "Сообщения в Viber и SMS входят в цену.",
+}
+NO_LONGER_PROMISED = ("soon", "uskoro", "скоро", "charges nothing", "ne naplaćuje", "не списывает")
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_price_says_payment_is_required_after_the_trial(lang):
+    page = parse_html(_landing(lang))
+    price = page.find("section", {"id": "cena"})
+    assert price.find("p", {"class": "after"}).text() == AFTER_TRIAL[lang]
+    faq = page.find("section", {"id": "pitanja"}).text()
+    assert AFTER_TRIAL[lang] in faq
+    assert MESSAGES_INCLUDED[lang] in faq
+    offer = _graph(lang)["SoftwareApplication"]["offers"]
+    assert MESSAGES_INCLUDED[lang] in offer["description"]
+    for text in (price.text(), faq, json.dumps(_graph(lang), ensure_ascii=False)):
+        for word in NO_LONGER_PROMISED:
+            assert word not in text.lower(), (lang, word)
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_no_handoff_runs_javi_without_personal_data(lang):
+    html = _landing(lang)
+    assert "TODO" not in html
+    about = parse_html(html).find("section", {"id": "o-nama"})
+    assert "No Handoff" in about.text()
+    assert "@" not in about.text()  # no personal or business e-mail on the page
 
 
 def test_json_ld_shared_nodes_agree_across_languages():
@@ -432,7 +527,11 @@ def test_json_ld_shared_nodes_agree_across_languages():
     def shared(lang):
         nodes = _graph(lang)
         site = {k: v for k, v in nodes["WebSite"].items() if k != "alternateName"}
-        app = {k: v for k, v in nodes["SoftwareApplication"].items() if k not in per_page}
+        app = {
+            k: v for k, v in nodes["SoftwareApplication"].items() if k not in per_page | {"offers"}
+        }
+        offer = nodes["SoftwareApplication"]["offers"]
+        app["price"] = (offer["price"], offer["priceCurrency"])
         return nodes["Organization"], site, app
 
     for lang in LANGS[1:]:

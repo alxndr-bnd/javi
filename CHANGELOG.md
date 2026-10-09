@@ -14,6 +14,20 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Changed
+- The home page now shows who Javi is for, how it works in 3 steps, the price, common questions and who runs Javi. The price is 30 € a month with Viber and SMS messages included. The first 30 days are free. After that, payment is required to continue; without it, the trial limits stay.
+  - SR: Početna stranica sada pokazuje za koga je Javi, kako radi u 3 koraka, cenu, česta pitanja i ko stoji iza Javija. Cena je 30 € mesečno, a Viber i SMS poruke su uključene. Prvih 30 dana je besplatno. Posle toga je za nastavak potrebno plaćanje; bez njega ostaju probni limiti.
+- The contact form is shorter: shop name, contact and an optional message.
+  - SR: Forma za kontakt je kraća: naziv prodavnice, kontakt i opciona poruka.
+- The home page shows the message a customer gets and the tracking page (test data).
+  - SR: Početna stranica pokazuje poruku koju kupac dobija i stranicu za praćenje (test podaci).
+- The site has its own icon files for browsers and phone home screens.
+  - SR: Sajt ima sopstvene ikonice za pregledače i početni ekran telefona.
+
+### Fixed
+- The tracking page shows the first step as "Primljeno" in Serbian, not "Received".
+  - SR: Stranica za praćenje prikazuje prvi korak kao „Primljeno“ na srpskom, a ne „Received“.
+
 ## [0.78.0] - 2026-10-08
 
 ### Security

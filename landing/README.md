@@ -85,8 +85,8 @@ cd landing && python3 -m http.server 8080
 - **JSON-LD.** Each language page has one `@graph`: `Organization` (No Handoff),
   `WebSite`, `WebPage` (this page's URL, title, description, language) and `SoftwareApplication`.
   The `@id`s are stable: `https://javi.serbito.rs/#organization`, `#website`, `#software`, and
-  `<page URL>#webpage`. There is no `Offer`: the price is not public. Add one only with the real
-  price from the landing (SERBITO-461). `config/test_seo.py` checks the graph against the page.
+  `<page URL>#webpage`. `SoftwareApplication` carries the `Offer` (see "Price" below).
+  `config/test_seo.py` checks the graph against the page.
 - **Redirects.** `/index.html`, `/en/index.html`, `/ru/index.html`, `/en`, `/ru` answer 301
   (`common/landing_whitenoise.py`; plain WhiteNoise answers 302).
 - **consent.js cache.** Every page loads `/consent.js?v=<first 12 hex of its SHA-256>`, and
@@ -94,3 +94,36 @@ cd landing && python3 -m http.server 8080
   the three landings, `privacy.html` and `templates/base.html`. `config/test_consent.py` fails
   with the right value until you do:
   `shasum -a 256 landing/consent.js | cut -c1-12`.
+
+## Seller content and the request funnel (SERBITO-595)
+
+- **Search terms.** Title = descriptor + the search phrase, ≤ 60 characters. H1 and description
+  name Viber, SMS and delivery notifications to customers; the description (≤ 155) has the price.
+- **Sections** on every language page: hero with one CTA (registration) and the trial line, who
+  it is for, how it works (3 steps), features, price (`#cena`), FAQ (`#pitanja`), who runs Javi
+  (`#o-nama`), the lead form (`#prijava`). Section ids are the same in every language.
+- **Price.** 30 €/month per shop, the first 30 days free (SERBITO-593). Viber/SMS messages are
+  included, with no limit shown. After 30 days payment is required; without it the trial limits
+  stay. The page names no checkout page, payment method or date. Change the price → change the page text,
+  the `Offer` in JSON-LD (`config/test_seo.py` checks both) and the registration page line.
+- **FAQPage.** The JSON-LD questions and answers are the visible FAQ, word for word (tested).
+- **Who runs Javi.** No Handoff, the owner's company (owner answer, 2026-10-09), the MIT licence,
+  public GitHub, alpha. No street address or personal data on the page.
+- **Icons.** `favicon.ico` (16/32/48) and `apple-touch-icon.png` (180×180, opaque) are files in
+  `landing/`, drawn from the same "j" logo as the inline SVG icon. Every landing page, `privacy.html`
+  and `templates/base.html` link all three (`config/test_landing_media.py`).
+- **Organization (JSON-LD).** `url` is `https://javi.serbito.rs/`, LinkedIn is in `sameAs`,
+  `logo` is the apple-touch icon.
+- **Product proof.** `img/viber-poruka.*` (the customer's Viber message) and `img/pracenje-dostave.*`
+  (the tracking page) sit under "how it works": AVIF with a WebP fallback, `width`/`height`,
+  `loading="lazy"`, alt text in the page language. Both are in Serbian and made from the app with
+  test data only (shop "Cvećara Demo", no real person or phone). The message text is the real
+  `_on_the_way_text` output; the tracking page is a screenshot of `/t/<token>/` at 360×600 CSS px
+  (×2), cropped to 720×1000. To remake them: seed a throwaway SQLite DB with one such delivery
+  (ETA 14:30, a fixed "now" before it), screenshot with Playwright, export AVIF/WebP with Pillow.
+  The message changes → remake the image.
+- **Funnel.** The server counts browser views of `/`, `/en/`, `/ru/` and registration form opens per
+  day (`common/funnel.py`, table `common_funnelcount`, no visitor data). Sign-ups and activated
+  shops (first started delivery) come from `Shop` / `Delivery`. GA4 gets `landing_view`,
+  `cta_click` (`data-cta` on each CTA), `lead_submit`, `signup_start`, `signup_complete`.
+  Weekly report: `uv run python manage.py funnel_report --weeks 8` (read-only, counts only).

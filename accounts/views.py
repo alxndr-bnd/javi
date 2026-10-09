@@ -8,7 +8,7 @@ from django.shortcuts import redirect
 from django.utils.translation import gettext as _
 from django.views.generic import CreateView
 
-from common import ratelimit
+from common import funnel, ratelimit
 from common.client_ip import client_ip
 from deliveries.models import Shop
 from deliveries.services import set_shop_origin
@@ -38,6 +38,12 @@ class RegisterView(CreateView):
             limit=settings.SIGNUP_LIMIT_PER_IP_DAY,
             window_seconds=_DAY,
         )
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        if funnel.is_human(request):  # SERBITO-595: the sign-up form was opened
+            funnel.record(funnel.SIGNUP_START, request.LANGUAGE_CODE[:2])
+        return response
 
     def post(self, request, *args, **kwargs):
         if self._signup_limit_reached():
@@ -69,6 +75,7 @@ class RegisterView(CreateView):
             extra={"event": "shop.signup", "shop_id": shop.pk, "shop_name": shop.name},
         )
         login(self.request, user)
+        funnel.queue_ga_event(self.request, "signup_complete")  # after login: new session
         address = form.cleaned_data.get("store_address", "").strip()
         if address and not set_shop_origin(shop, address):
             messages.warning(

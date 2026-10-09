@@ -29,3 +29,13 @@ def _fast_password_hasher():
     """
     with override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"]):
         yield
+
+
+@pytest.fixture(autouse=True)
+def _no_funnel_counting():
+    """Landing views and sign-up form opens are counted in the DB (SERBITO-595).
+
+    Most tests open the landing without database access; common/test_funnel.py turns counting on.
+    """
+    with override_settings(FUNNEL_COUNTING=False):
+        yield
