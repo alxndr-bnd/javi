@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Changed
+- The home page now has a short "What is Javi" summary, a "Why Javi" section with a comparison to other kinds of delivery tools, and more answers to common questions.
+  - SR: Početna stranica sada ima kratak opis „Šta je Javi“, odeljak „Zašto Javi“ sa poređenjem sa drugim vrstama alata za dostavu i više odgovora na česta pitanja.
+
 ## [0.79.0] - 2026-10-09
 
 ### Changed
