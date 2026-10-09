@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.80.0] - 2026-10-10
+
 ### Changed
 - The home page now has a short "What is Javi" summary, a "Why Javi" section with a comparison to other kinds of delivery tools, and more answers to common questions.
   - SR: Početna stranica sada ima kratak opis „Šta je Javi“, odeljak „Zašto Javi“ sa poređenjem sa drugim vrstama alata za dostavu i više odgovora na česta pitanja.
@@ -142,7 +144,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.79.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.80.0...HEAD
+[0.80.0]: https://github.com/alxndr-bnd/javi/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/alxndr-bnd/javi/compare/v0.78.0...v0.79.0
 [0.78.0]: https://github.com/alxndr-bnd/javi/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/alxndr-bnd/javi/compare/v0.76.0...v0.77.0
