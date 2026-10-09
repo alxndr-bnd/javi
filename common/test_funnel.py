@@ -96,6 +96,9 @@ def test_landing_sends_ga4_funnel_events():
         for event in ("landing_view", "cta_click", "lead_submit"):
             assert f"track('{event}'" in html, event
         assert "gtag('event', name" in html
+        # Once per page: a second copy of the script sent every view and CTA click twice.
+        assert html.count("track('landing_view');") == 1
+        assert html.count("function track(") == 1
 
 
 # --- registration form and sign-up ---
@@ -127,6 +130,9 @@ def test_registration_page_shows_the_trial_and_sends_signup_start(client):
     body = client.get(reverse("accounts:register"), HTTP_USER_AGENT=BROWSER).content.decode()
     assert "30 days free, then 30 € per month" in body
     assert "gtag('event', 'signup_start');" in body
+    invalid = client.post(reverse("accounts:register"), {"email": "x"}, HTTP_USER_AGENT=BROWSER)
+    assert invalid.status_code == 200  # the form again, with errors: not another start
+    assert "signup_start" not in invalid.content.decode()
     client.cookies["django_language"] = "sr-latn"
     body = client.get(reverse("accounts:register"), HTTP_USER_AGENT=BROWSER).content.decode()
     assert "30 dana besplatno, zatim 30 € mesečno" in body

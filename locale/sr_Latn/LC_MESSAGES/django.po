@@ -1219,3 +1219,7 @@ msgstr "Previše zahteva. Pokušajte kasnije."
 #: templates/accounts/register.html
 msgid "30 days free, then 30 € per month. No card needed to start."
 msgstr "30 dana besplatno, zatim 30 € mesečno. Kartica nije potrebna za početak."
+
+#: tracking/views.py:19
+msgid "Received"
+msgstr "Primljeno"

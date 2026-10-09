@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Create an account" %} · Javi{% endblock %}
-{% block ga_page_events %}gtag('event', 'signup_start');{% endblock %}
+{# A form re-shown with errors (POST) is not another start. #}
+{% block ga_page_events %}{% if request.method == "GET" %}gtag('event', 'signup_start');{% endif %}{% endblock %}
 {% block body %}
 <div class="auth">
   <div class="logo" style="margin-bottom:18px">javi<span>.</span></div>

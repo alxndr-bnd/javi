@@ -108,6 +108,19 @@ cd landing && python3 -m http.server 8080
 - **FAQPage.** The JSON-LD questions and answers are the visible FAQ, word for word (tested).
 - **Who runs Javi.** Only facts from the repo: No Handoff, MIT licence, public GitHub, alpha.
   TODO for the owner (SERBITO-461): company name, city, business e-mail.
+- **Icons.** `favicon.ico` (16/32/48) and `apple-touch-icon.png` (180×180, opaque) are files in
+  `landing/`, drawn from the same "j" logo as the inline SVG icon. Every landing page, `privacy.html`
+  and `templates/base.html` link all three (`config/test_landing_media.py`).
+- **Organization (JSON-LD).** `url` is `https://javi.serbito.rs/`, LinkedIn is in `sameAs`,
+  `logo` is the apple-touch icon.
+- **Product proof.** `img/viber-poruka.*` (the customer's Viber message) and `img/pracenje-dostave.*`
+  (the tracking page) sit under "how it works": AVIF with a WebP fallback, `width`/`height`,
+  `loading="lazy"`, alt text in the page language. Both are in Serbian and made from the app with
+  test data only (shop "Cvećara Demo", no real person or phone). The message text is the real
+  `_on_the_way_text` output; the tracking page is a screenshot of `/t/<token>/` at 360×600 CSS px
+  (×2), cropped to 720×1000. To remake them: seed a throwaway SQLite DB with one such delivery
+  (ETA 14:30, a fixed "now" before it), screenshot with Playwright, export AVIF/WebP with Pillow.
+  The message changes → remake the image.
 - **Funnel.** The server counts browser views of `/`, `/en/`, `/ru/` and registration form opens per
   day (`common/funnel.py`, table `common_funnelcount`, no visitor data). Sign-ups and activated
   shops (first started delivery) come from `Shop` / `Delivery`. GA4 gets `landing_view`,

@@ -24,7 +24,11 @@
 </script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHME7DK2K0"></script>
 
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%234f7cff'/%3E%3Ctext x='50' y='72' font-size='62' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3Ej%3C/text%3E%3C/svg%3E">
+<!-- Icons (SERBITO-595): /favicon.ico and /apple-touch-icon.png are files in landing/,
+     drawn from the same "j" logo as the SVG icon. -->
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%234f7cff'/%3E%3Ctext x='50' y='72' font-size='62' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3Ej%3C/text%3E%3C/svg%3E" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>Javi — Viber/SMS obaveštenja o isporuci i praćenje pošiljke</title>
 <meta name="description" content="Obaveštenja kupcima o dostavi preko Vibera i SMS-a: poruka kada paket krene, vreme dolaska i link za praćenje. 30 dana besplatno, zatim 30 €/mesec.">
 <link rel="canonical" href="https://javi.serbito.rs/">
@@ -64,7 +68,16 @@
       "@type": "Organization",
       "@id": "https://javi.serbito.rs/#organization",
       "name": "No Handoff",
-      "url": "https://www.linkedin.com/company/nohandoff/"
+      "url": "https://javi.serbito.rs/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://javi.serbito.rs/apple-touch-icon.png",
+        "width": 180,
+        "height": 180
+      },
+      "sameAs": [
+        "https://www.linkedin.com/company/nohandoff/"
+      ]
     },
     {
       "@type": "WebSite",
@@ -168,7 +181,7 @@
           "name": "Na koje brojeve Javi šalje poruke?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Nova prodavnica šalje samo na srpske mobilne brojeve i ima niži dnevni limit, dok je ne proverimo. Posle provere važe redovni limiti."
+            "text": "Nova prodavnica šalje samo na srpske mobilne brojeve i ima niže dnevne i mesečne limite, dok je ne proverimo. Posle provere važe redovni limiti."
           }
         },
         {
@@ -264,35 +277,13 @@
   .about p{margin:0 0 10px;color:var(--muted)}
   .about p:last-child{margin:0}
 
-  /* SERBITO-595: the offer next to the primary CTA */
-  .trial{margin:14px 0 0;color:var(--muted);font-size:14.5px}
-  .trial strong{color:var(--ink)}
-
-  /* SERBITO-595: content sections (who it is for, how it works, price, FAQ, who runs Javi) */
-  .sec{margin:46px 0}
-  .sec > h2{font-size:clamp(22px,3.4vw,30px);line-height:1.2;margin:0 0 14px;text-align:center}
-  .sec > p.intro{color:var(--muted);max-width:720px;margin:0 auto 18px;text-align:center}
-  .intro a,.who a,.faq a,.about a{color:#9db8ff;font-weight:600}
-  .who{list-style:none;margin:0 auto;padding:0;max-width:720px;display:grid;gap:10px}
-  .who li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-  .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:step}
-  @media(max-width:760px){.steps{grid-template-columns:1fr}}
-  .steps li{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;counter-increment:step}
-  .steps li::before{content:counter(step);display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:50%;background:#3a5bd0;color:#fff;font-weight:800;margin-bottom:10px}
-  .steps h3{margin:0 0 6px;font-size:17px}
-  .steps p{margin:0;color:var(--muted);font-size:14.5px}
-  .price-card{background:var(--card);border:1px solid var(--brand);border-radius:var(--radius);padding:28px 24px;max-width:560px;margin:0 auto;text-align:center}
-  .price-card .amount{font-size:46px;font-weight:800;line-height:1;margin:0}
-  .price-card .per{color:var(--muted);margin:6px 0 4px}
-  .price-card .free{color:var(--ok);font-weight:700;margin:0 0 16px}
-  .price-card ul{text-align:left;margin:0 0 18px;padding-left:20px;color:var(--muted)}
-  .price-card .soon{font-size:13.5px;color:var(--muted);margin:14px 0 0}
-  .faq{max-width:760px;margin:0 auto}
-  .faq h3{font-size:17px;margin:20px 0 6px}
-  .faq p{margin:0;color:var(--muted)}
-  .about{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
-  .about p{margin:0 0 10px;color:var(--muted)}
-  .about p:last-child{margin:0}
+  /* SERBITO-595: product proof: the customer's message and the tracking page (test data).
+     Below the fold: lazy, fixed width/height, so no layout shift and no LCP cost. */
+  .proof{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin:26px 0 0}
+  .proof figure{margin:0;width:260px;max-width:100%}
+  .proof img{display:block;width:100%;height:auto;border-radius:18px;border:1px solid var(--line);background:var(--card)}
+  .proof figcaption{margin-top:8px;color:var(--muted);font-size:13.5px;text-align:center}
+  .proof-note{text-align:center;color:var(--muted);font-size:12.5px;margin:10px 0 0}
 
   .question{
     margin:34px auto;max-width:760px;text-align:center;background:var(--card);
@@ -397,6 +388,23 @@
         <p>Na linku vidi status i vreme dolaska, bez aplikacije. Posle isporuke ocenjuje dostavu jednim dodirom.</p>
       </li>
     </ol>
+    <div class="proof">
+      <figure>
+        <picture>
+          <source srcset="/img/viber-poruka.avif" type="image/avif">
+          <img src="/img/viber-poruka.webp" width="360" height="500" loading="lazy" decoding="async" alt="Primer Viber poruke kupcu: porudžbina iz prodavnice Cvećara Demo je u dostavi, stiže okvirno do 14:30, uz link za praćenje">
+        </picture>
+        <figcaption>Poruka koju kupac dobija: Viber, ili SMS ako Viber ne prođe</figcaption>
+      </figure>
+      <figure>
+        <picture>
+          <source srcset="/img/pracenje-dostave.avif" type="image/avif">
+          <img src="/img/pracenje-dostave.webp" width="360" height="500" loading="lazy" decoding="async" alt="Stranica za praćenje na telefonu: Cvećara Demo, porudžbina je u dostavi, stiže okvirno do 14:30, koraci Primljeno, U dostavi, Isporučeno i dugme Potvrdi prijem porudžbine">
+        </picture>
+        <figcaption>Stranica za praćenje, bez aplikacije</figcaption>
+      </figure>
+    </div>
+    <p class="proof-note">Primer sa test podacima.</p>
   </section>
 
   <section class="sec" id="mogucnosti" aria-labelledby="mogucnosti-h">
@@ -463,7 +471,7 @@
       <h3>Mogu li da povežem svoju online prodavnicu?</h3>
       <p>Da. Javi ima REST API i potpisane webhookove: napravite porudžbinu, označite da je krenula i dobijete link za praćenje. Dokumentacija: <a href="/api/docs/">javi.serbito.rs/api/docs/</a>.</p>
       <h3>Na koje brojeve Javi šalje poruke?</h3>
-      <p>Nova prodavnica šalje samo na srpske mobilne brojeve i ima niži dnevni limit, dok je ne proverimo. Posle provere važe redovni limiti.</p>
+      <p>Nova prodavnica šalje samo na srpske mobilne brojeve i ima niže dnevne i mesečne limite, dok je ne proverimo. Posle provere važe redovni limiti.</p>
       <h3>Šta je sa podacima kupaca?</h3>
       <p>Ime, telefon i adresu kupca brišemo 90 dana posle završene dostave. Kupac može da se odjavi od poruka. Detalji su u <a href="/privacy.html#sr">politici privatnosti</a>.</p>
     </div>
@@ -544,16 +552,6 @@ document.querySelectorAll('[data-app-link]').forEach(a=>{
     const app = {sr:'sr-latn', en:'en', ru:'en'}[LANG] || 'sr-latn';
     document.cookie = 'django_language=' + app + '; path=/; max-age=31536000; SameSite=Lax; Secure';
   });
-});
-
-// Request funnel (SERBITO-595): GA4 events in GA4 terms. The server counts landing views and
-// sign-up form opens itself (manage.py funnel_report); GA4 also sees the CTA and lead form.
-function track(name, params){
-  try{ gtag('event', name, Object.assign({page_language: LANG}, params || {})); }catch(e){}
-}
-track('landing_view');
-document.querySelectorAll('[data-cta]').forEach(a=>{
-  a.addEventListener('click',()=>track('cta_click', {cta: a.getAttribute('data-cta')}));
 });
 
 // Request funnel (SERBITO-595): GA4 events in GA4 terms. The server counts landing views and

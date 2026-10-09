@@ -398,7 +398,20 @@ def test_json_ld_graph_has_the_four_nodes_with_stable_ids(lang):
 @pytest.mark.parametrize("lang", LANGS)
 def test_json_ld_organization_is_no_handoff(lang):
     org = _graph(lang)["Organization"]
-    assert org == {"@type": "Organization", "@id": ORG_ID, "name": "No Handoff", "url": LINKEDIN}
+    # SERBITO-595: the organisation's own site is javi; LinkedIn is a profile of it (sameAs).
+    assert org == {
+        "@type": "Organization",
+        "@id": ORG_ID,
+        "name": "No Handoff",
+        "url": f"{SITE}/",
+        "logo": {
+            "@type": "ImageObject",
+            "url": f"{SITE}/apple-touch-icon.png",
+            "width": 180,
+            "height": 180,
+        },
+        "sameAs": [LINKEDIN],
+    }
 
 
 @pytest.mark.parametrize("lang", LANGS)
