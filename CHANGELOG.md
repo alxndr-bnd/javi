@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.79.0] - 2026-10-09
+
 ### Changed
 - The home page now shows who Javi is for, how it works in 3 steps, the price, common questions and who runs Javi. The price is 30 € a month with Viber and SMS messages included. The first 30 days are free. After that, payment is required to continue; without it, the trial limits stay.
   - SR: Početna stranica sada pokazuje za koga je Javi, kako radi u 3 koraka, cenu, česta pitanja i ko stoji iza Javija. Cena je 30 € mesečno, a Viber i SMS poruke su uključene. Prvih 30 dana je besplatno. Posle toga je za nastavak potrebno plaćanje; bez njega ostaju probni limiti.
@@ -136,7 +138,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.78.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.79.0...HEAD
+[0.79.0]: https://github.com/alxndr-bnd/javi/compare/v0.78.0...v0.79.0
 [0.78.0]: https://github.com/alxndr-bnd/javi/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/alxndr-bnd/javi/compare/v0.76.0...v0.77.0
 [0.76.0]: https://github.com/alxndr-bnd/javi/compare/v0.75.0...v0.76.0
