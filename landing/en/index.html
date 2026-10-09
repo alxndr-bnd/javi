@@ -191,6 +191,30 @@
             "@type": "Answer",
             "text": "We delete the customer's name, phone and address 90 days after the delivery ends. The customer can unsubscribe from messages. Details are in the privacy policy."
           }
+        },
+        {
+          "@type": "Question",
+          "name": "How do customers know when the delivery arrives?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "When the courier leaves, tap “Delivery started”. Javi sends the customer a Viber message or an SMS with the approximate arrival time and a tracking link. We compute the time from the route, with traffic."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I send Viber notifications to my online shop's customers?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Register your shop and add deliveries by hand or through the API. Javi sends a Viber message with your shop's name, or an SMS if the customer has no Viber. The messages are included in the 30 € per month."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there an alternative to foreign delivery tracking tools in Serbia?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Javi. It sends Viber first and then SMS, works in Serbian and costs 30 € per month with messages included. The courier needs no app. Javi does not track the courier by live GPS and does not plan routes with many stops."
+          }
         }
       ]
     }
@@ -285,6 +309,34 @@
   .proof figcaption{margin-top:8px;color:var(--muted);font-size:13.5px;text-align:center}
   .proof-note{text-align:center;color:var(--muted);font-size:12.5px;margin:10px 0 0}
 
+  /* SERBITO-597: "What is Javi" facts (AI answers quote it), "Why Javi" and the comparison table */
+  .facts{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
+  .facts > p{margin:0 0 14px;color:var(--ink)}
+  .facts dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:8px 16px}
+  .facts dt{font-weight:700;color:var(--ink)}
+  .facts dd{margin:0;color:var(--muted)}
+  @media(max-width:560px){.facts dl{grid-template-columns:1fr;gap:2px}.facts dd{margin-bottom:8px}}
+  .why{list-style:none;margin:0 0 26px;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(max-width:760px){.why{grid-template-columns:1fr}}
+  .why li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--muted);font-size:14.5px}
+  .why li strong{display:block;color:var(--ink);font-size:16px;margin-bottom:2px}
+  .compare{width:100%;border-collapse:collapse;font-size:14.5px;table-layout:fixed}
+  .compare thead td{width:22%}
+  .compare caption{font-weight:700;font-size:18px;margin:0 0 10px}
+  .compare th,.compare td{border-bottom:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  .compare thead th{color:var(--muted);font-size:13.5px}
+  .compare tbody th{font-weight:600}
+  .compare td{color:var(--muted)}
+  .compare .us{color:var(--ink);background:var(--card)}
+  @media(max-width:640px){
+    .compare thead{display:none}
+    .compare tr{display:block;border:1px solid var(--line);border-radius:12px;margin:0 0 12px;padding:6px 0}
+    .compare th,.compare td{display:block;border:0;padding:4px 14px}
+    .compare td::before{content:attr(data-label) ": ";color:var(--muted);font-weight:600}
+    .compare .us{background:transparent}
+  }
+  .compare-note{color:var(--muted);font-size:12.5px;margin:10px 0 0;text-align:center}
+
   .question{
     margin:34px auto;max-width:760px;text-align:center;background:var(--card);
     border:1px solid var(--line);border-radius:var(--radius);padding:26px 24px
@@ -356,6 +408,25 @@
       <a href="/accounts/register/" class="btn btn-primary" data-app-link data-cta="hero">Try it free for 30 days</a>
     </div>
     <p class="trial"><strong>30 days free</strong>, then 30 € per month. No card needed to start.</p>
+  </section>
+
+  <section class="sec" id="sta-je-javi" aria-labelledby="sta-je-javi-h">
+    <h2 id="sta-je-javi-h">What is Javi</h2>
+    <div class="facts">
+      <p>Javi is a web service that sends delivery notifications to customers, for shops in Serbia that deliver with their own courier. When the courier leaves, the customer gets a Viber message, or an SMS if they have no Viber, with the approximate arrival time and a tracking link.</p>
+      <dl>
+        <dt>What</dt>
+        <dd>Viber and SMS delivery notifications, an arrival time that counts traffic, and a tracking link.</dd>
+        <dt>For whom</dt>
+        <dd>Online shops, restaurants, bakeries and florists with their own courier.</dd>
+        <dt>Price</dt>
+        <dd>30 € per month per shop, Viber and SMS messages included. The first 30 days are free, no card needed.</dd>
+        <dt>Where</dt>
+        <dd>Serbia. It works in the browser: neither the courier nor the customer needs an app.</dd>
+        <dt>Made by</dt>
+        <dd>The company No Handoff. The code is open source (MIT licence).</dd>
+      </dl>
+    </div>
   </section>
 
   <section class="question">
@@ -443,6 +514,37 @@
     </div>
   </section>
 
+  <section class="sec" id="zasto" aria-labelledby="zasto-h">
+    <h2 id="zasto-h">Why Javi</h2>
+    <p class="intro">Delivery updates like Wolt's, for your own courier. Your customer knows when the parcel arrives, and the delivery, the courier and the brand stay yours.</p>
+    <ul class="why">
+      <li><strong>Viber first, SMS as a backup.</strong> Most customers in Serbia use Viber. If a customer has no Viber, an SMS goes out.</li>
+      <li><strong>Arrival time with traffic.</strong> We compute it from the route to the customer's address.</li>
+      <li><strong>Tracking link in the customer's language.</strong> The customer sees the status in Serbian or English.</li>
+      <li><strong>See when a message is read.</strong> Fix a wrong number and send the message again.</li>
+      <li><strong>Rating after delivery.</strong> The customer rates the delivery in one tap.</li>
+      <li><strong>No courier app.</strong> You start a delivery with one click in the dashboard.</li>
+      <li><strong>30 € a month, messages included.</strong> No fee per message. The first 30 days are free, no card needed.</li>
+      <li><strong>Your courier, your brand.</strong> Unlike delivery platforms, the customer gets a message with your shop's name.</li>
+    </ul>
+    <table class="compare">
+      <caption>Javi and other options</caption>
+      <thead>
+        <tr><td></td><th scope="col" class="us">Javi</th><th scope="col">Foreign dispatch tools</th><th scope="col">Delivery platforms</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Who delivers</th><td data-label="Javi" class="us">Your courier</td><td data-label="Foreign dispatch tools">Your courier</td><td data-label="Delivery platforms">The platform's courier</td></tr>
+        <tr><th scope="row">Customer message</th><td data-label="Javi" class="us">Viber, then SMS</td><td data-label="Foreign dispatch tools">Usually SMS or e-mail, no Viber</td><td data-label="Delivery platforms">The platform's notifications</td></tr>
+        <tr><th scope="row">Arrival time and tracking link</th><td data-label="Javi" class="us">Yes</td><td data-label="Foreign dispatch tools">Yes</td><td data-label="Delivery platforms">Yes</td></tr>
+        <tr><th scope="row">Courier app</th><td data-label="Javi" class="us">Not needed</td><td data-label="Foreign dispatch tools">Needed</td><td data-label="Delivery platforms">The platform's app</td></tr>
+        <tr><th scope="row">Live courier GPS</th><td data-label="Javi" class="us">No, the time comes from the route</td><td data-label="Foreign dispatch tools">Yes</td><td data-label="Delivery platforms">Yes</td></tr>
+        <tr><th scope="row">Price</th><td data-label="Javi" class="us">30 €/month, messages included</td><td data-label="Foreign dispatch tools">A subscription that grows with orders or couriers; SMS is often extra</td><td data-label="Delivery platforms">A fee for every delivery</td></tr>
+        <tr><th scope="row">Customer and brand</th><td data-label="Javi" class="us">Stay yours</td><td data-label="Foreign dispatch tools">Stay yours</td><td data-label="Delivery platforms">The platform runs the delivery</td></tr>
+      </tbody>
+    </table>
+    <p class="compare-note">We compare categories, not single products. Status: October 2026.</p>
+  </section>
+
   <section class="sec" id="cena" aria-labelledby="cena-h">
     <h2 id="cena-h">Price</h2>
     <div class="price-card">
@@ -474,6 +576,12 @@
       <p>A new shop sends only to Serbian mobile numbers and has lower daily and monthly limits until we verify it. After the check the normal limits apply.</p>
       <h3>What happens to customer data?</h3>
       <p>We delete the customer's name, phone and address 90 days after the delivery ends. The customer can unsubscribe from messages. Details are in the <a href="/privacy.html#en">privacy policy</a>.</p>
+      <h3>How do customers know when the delivery arrives?</h3>
+      <p>When the courier leaves, tap “Delivery started”. Javi sends the customer a Viber message or an SMS with the approximate arrival time and a tracking link. We compute the time from the route, with traffic.</p>
+      <h3>How do I send Viber notifications to my online shop's customers?</h3>
+      <p>Register your shop and add deliveries by hand or through the API. Javi sends a Viber message with your shop's name, or an SMS if the customer has no Viber. The messages are included in the 30 € per month.</p>
+      <h3>Is there an alternative to foreign delivery tracking tools in Serbia?</h3>
+      <p>Yes, Javi. It sends Viber first and then SMS, works in Serbian and costs 30 € per month with messages included. The courier needs no app. Javi does not track the courier by live GPS and does not plan routes with many stops.</p>
     </div>
   </section>
 

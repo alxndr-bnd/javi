@@ -127,3 +127,20 @@ cd landing && python3 -m http.server 8080
   shops (first started delivery) come from `Shop` / `Delivery`. GA4 gets `landing_view`,
   `cta_click` (`data-cta` on each CTA), `lead_submit`, `signup_start`, `signup_complete`.
   Weekly report: `uv run python manage.py funnel_report --weeks 8` (read-only, counts only).
+
+## Why Javi, facts block and llms.txt (SERBITO-597)
+
+- **Facts block** `#sta-je-javi` sits right after the hero: one summary sentence plus a `<dl>` with
+  what / for whom / price / where / who makes it. AI answers quote short factual blocks like this.
+- **Why Javi** `#zasto` (before the price): 8 strengths and a comparison table Javi vs "foreign
+  dispatch tools" vs "delivery platforms". Categories only, no competitor product names (unfair
+  advertising risk); the note under the table says so and gives the date. On a phone each row is a
+  card, and each cell shows its column name from `data-label`.
+- **Claims.** Only what Javi does today (owner positioning, 2026-10-09). Never claim live courier
+  GPS, multi-stop routes or shop-platform plugins; the table and FAQ say "no" to GPS and routes.
+  Research: Basic Memory `reference/javi — аналоги и конкуренты в Сербии (2026-10)`.
+- **FAQ** has the questions people ask AI assistants (when does the delivery arrive, Viber
+  notifications for an online shop, an alternative to foreign tools). FAQPage JSON-LD = visible FAQ.
+- **`llms.txt`** (served as `text/plain; charset="utf-8"`) states the same facts in English and
+  Serbian. No page links to it; robots.txt allows it. Change the price, trial, channels or
+  operator → change `llms.txt` too (`config/test_landing_geo.py` checks the key sentences).

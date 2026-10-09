@@ -191,6 +191,30 @@
             "@type": "Answer",
             "text": "Ime, telefon i adresu kupca brišemo 90 dana posle završene dostave. Kupac može da se odjavi od poruka. Detalji su u politici privatnosti."
           }
+        },
+        {
+          "@type": "Question",
+          "name": "Kako da kupci znaju kada stiže dostava?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Kada kurir krene, kliknite „Isporuka krenula“. Javi kupcu šalje Viber poruku ili SMS sa okvirnim vremenom dolaska i linkom za praćenje. Vreme računamo iz rute, uz saobraćaj."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Kako da pošaljem Viber obaveštenja kupcima online prodavnice?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Registrujte prodavnicu i dodajte isporuke ručno ili preko API-ja. Javi šalje Viber poruku sa imenom vaše prodavnice, a SMS ako kupac nema Viber. Poruke su uključene u 30 € mesečno."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Postoji li u Srbiji alternativa stranim alatima za praćenje dostave?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Da, Javi. Šalje Viber pa SMS, radi na srpskom i košta 30 € mesečno sa uključenim porukama. Kuriru ne treba aplikacija. Javi ne prati kurira GPS-om uživo i ne planira rute sa više adresa."
+          }
         }
       ]
     }
@@ -285,6 +309,34 @@
   .proof figcaption{margin-top:8px;color:var(--muted);font-size:13.5px;text-align:center}
   .proof-note{text-align:center;color:var(--muted);font-size:12.5px;margin:10px 0 0}
 
+  /* SERBITO-597: "What is Javi" facts (AI answers quote it), "Why Javi" and the comparison table */
+  .facts{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
+  .facts > p{margin:0 0 14px;color:var(--ink)}
+  .facts dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:8px 16px}
+  .facts dt{font-weight:700;color:var(--ink)}
+  .facts dd{margin:0;color:var(--muted)}
+  @media(max-width:560px){.facts dl{grid-template-columns:1fr;gap:2px}.facts dd{margin-bottom:8px}}
+  .why{list-style:none;margin:0 0 26px;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(max-width:760px){.why{grid-template-columns:1fr}}
+  .why li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--muted);font-size:14.5px}
+  .why li strong{display:block;color:var(--ink);font-size:16px;margin-bottom:2px}
+  .compare{width:100%;border-collapse:collapse;font-size:14.5px;table-layout:fixed}
+  .compare thead td{width:22%}
+  .compare caption{font-weight:700;font-size:18px;margin:0 0 10px}
+  .compare th,.compare td{border-bottom:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  .compare thead th{color:var(--muted);font-size:13.5px}
+  .compare tbody th{font-weight:600}
+  .compare td{color:var(--muted)}
+  .compare .us{color:var(--ink);background:var(--card)}
+  @media(max-width:640px){
+    .compare thead{display:none}
+    .compare tr{display:block;border:1px solid var(--line);border-radius:12px;margin:0 0 12px;padding:6px 0}
+    .compare th,.compare td{display:block;border:0;padding:4px 14px}
+    .compare td::before{content:attr(data-label) ": ";color:var(--muted);font-weight:600}
+    .compare .us{background:transparent}
+  }
+  .compare-note{color:var(--muted);font-size:12.5px;margin:10px 0 0;text-align:center}
+
   .question{
     margin:34px auto;max-width:760px;text-align:center;background:var(--card);
     border:1px solid var(--line);border-radius:var(--radius);padding:26px 24px
@@ -356,6 +408,25 @@
       <a href="/accounts/register/" class="btn btn-primary" data-app-link data-cta="hero">Isprobaj 30 dana besplatno</a>
     </div>
     <p class="trial"><strong>30 dana besplatno</strong>, zatim 30 € mesečno. Kartica nije potrebna za početak.</p>
+  </section>
+
+  <section class="sec" id="sta-je-javi" aria-labelledby="sta-je-javi-h">
+    <h2 id="sta-je-javi-h">Šta je Javi</h2>
+    <div class="facts">
+      <p>Javi je veb servis za obaveštenja kupcima o dostavi, za prodavnice u Srbiji koje dostavljaju svojim kurirom. Kada kurir krene, kupac dobija Viber poruku, ili SMS ako nema Viber, sa okvirnim vremenom dolaska i linkom za praćenje.</p>
+      <dl>
+        <dt>Šta</dt>
+        <dd>Viber i SMS obaveštenja o dostavi, okvirno vreme dolaska uz saobraćaj i link za praćenje.</dd>
+        <dt>Za koga</dt>
+        <dd>Online prodavnice, restorani, pekare i cvećare sa svojim kurirom.</dd>
+        <dt>Cena</dt>
+        <dd>30 € mesečno po prodavnici, Viber i SMS poruke su uključene. Prvih 30 dana besplatno, bez kartice.</dd>
+        <dt>Gde</dt>
+        <dd>Srbija. Radi u pregledaču: ni kuriru ni kupcu ne treba aplikacija.</dd>
+        <dt>Ko ga pravi</dt>
+        <dd>Kompanija No Handoff. Kod je otvoren (MIT licenca).</dd>
+      </dl>
+    </div>
   </section>
 
   <section class="question">
@@ -443,6 +514,37 @@
     </div>
   </section>
 
+  <section class="sec" id="zasto" aria-labelledby="zasto-h">
+    <h2 id="zasto-h">Zašto Javi</h2>
+    <p class="intro">Obaveštenja o dostavi kao kod Wolta, za vašeg kurira. Kupac zna kada paket stiže, a dostava, kurir i brend ostaju vaši.</p>
+    <ul class="why">
+      <li><strong>Viber prvo, SMS kao rezerva.</strong> Većina kupaca u Srbiji koristi Viber. Ako kupac nema Viber, stiže SMS.</li>
+      <li><strong>Vreme dolaska uz saobraćaj.</strong> Računamo ga iz rute do adrese kupca.</li>
+      <li><strong>Link za praćenje na jeziku kupca.</strong> Kupac vidi status na srpskom ili engleskom.</li>
+      <li><strong>Vidite da je poruka pročitana.</strong> Pogrešan broj ispravite i pošaljite poruku ponovo.</li>
+      <li><strong>Ocena posle isporuke.</strong> Kupac ocenjuje dostavu jednim dodirom.</li>
+      <li><strong>Kuriru ne treba aplikacija.</strong> Isporuku pokrećete jednim klikom u kontrolnoj tabli.</li>
+      <li><strong>30 € mesečno, poruke uključene.</strong> Bez naplate po poruci. Prvih 30 dana besplatno, bez kartice.</li>
+      <li><strong>Vaš kurir i vaš brend.</strong> Za razliku od platformi za dostavu, kupac dobija poruku sa imenom vaše prodavnice.</li>
+    </ul>
+    <table class="compare">
+      <caption>Javi i druga rešenja</caption>
+      <thead>
+        <tr><td></td><th scope="col" class="us">Javi</th><th scope="col">Strani alati za dispečing</th><th scope="col">Platforme za dostavu</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Ko vozi</th><td data-label="Javi" class="us">Vaš kurir</td><td data-label="Strani alati za dispečing">Vaš kurir</td><td data-label="Platforme za dostavu">Kurir platforme</td></tr>
+        <tr><th scope="row">Poruka kupcu</th><td data-label="Javi" class="us">Viber, pa SMS</td><td data-label="Strani alati za dispečing">Obično SMS ili e-mail, bez Vibera</td><td data-label="Platforme za dostavu">Obaveštenja platforme</td></tr>
+        <tr><th scope="row">Vreme dolaska i link za praćenje</th><td data-label="Javi" class="us">Da</td><td data-label="Strani alati za dispečing">Da</td><td data-label="Platforme za dostavu">Da</td></tr>
+        <tr><th scope="row">Aplikacija za kurira</th><td data-label="Javi" class="us">Nije potrebna</td><td data-label="Strani alati za dispečing">Potrebna</td><td data-label="Platforme za dostavu">Aplikacija platforme</td></tr>
+        <tr><th scope="row">GPS kurira uživo</th><td data-label="Javi" class="us">Ne, vreme računamo iz rute</td><td data-label="Strani alati za dispečing">Da</td><td data-label="Platforme za dostavu">Da</td></tr>
+        <tr><th scope="row">Cena</th><td data-label="Javi" class="us">30 €/mesec, poruke uključene</td><td data-label="Strani alati za dispečing">Pretplata raste sa brojem porudžbina ili kurira; SMS se često plaća posebno</td><td data-label="Platforme za dostavu">Plaća se svaka dostava</td></tr>
+        <tr><th scope="row">Kupac i brend</th><td data-label="Javi" class="us">Ostaju vaši</td><td data-label="Strani alati za dispečing">Ostaju vaši</td><td data-label="Platforme za dostavu">Dostavu vodi platforma</td></tr>
+      </tbody>
+    </table>
+    <p class="compare-note">Poređenje kategorija, ne pojedinačnih proizvoda. Stanje: oktobar 2026.</p>
+  </section>
+
   <section class="sec" id="cena" aria-labelledby="cena-h">
     <h2 id="cena-h">Cena</h2>
     <div class="price-card">
@@ -474,6 +576,12 @@
       <p>Nova prodavnica šalje samo na srpske mobilne brojeve i ima niže dnevne i mesečne limite, dok je ne proverimo. Posle provere važe redovni limiti.</p>
       <h3>Šta je sa podacima kupaca?</h3>
       <p>Ime, telefon i adresu kupca brišemo 90 dana posle završene dostave. Kupac može da se odjavi od poruka. Detalji su u <a href="/privacy.html#sr">politici privatnosti</a>.</p>
+      <h3>Kako da kupci znaju kada stiže dostava?</h3>
+      <p>Kada kurir krene, kliknite „Isporuka krenula“. Javi kupcu šalje Viber poruku ili SMS sa okvirnim vremenom dolaska i linkom za praćenje. Vreme računamo iz rute, uz saobraćaj.</p>
+      <h3>Kako da pošaljem Viber obaveštenja kupcima online prodavnice?</h3>
+      <p>Registrujte prodavnicu i dodajte isporuke ručno ili preko API-ja. Javi šalje Viber poruku sa imenom vaše prodavnice, a SMS ako kupac nema Viber. Poruke su uključene u 30 € mesečno.</p>
+      <h3>Postoji li u Srbiji alternativa stranim alatima za praćenje dostave?</h3>
+      <p>Da, Javi. Šalje Viber pa SMS, radi na srpskom i košta 30 € mesečno sa uključenim porukama. Kuriru ne treba aplikacija. Javi ne prati kurira GPS-om uživo i ne planira rute sa više adresa.</p>
     </div>
   </section>
 

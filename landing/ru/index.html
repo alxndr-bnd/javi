@@ -191,6 +191,30 @@
             "@type": "Answer",
             "text": "Имя, телефон и адрес покупателя мы удаляем через 90 дней после окончания доставки. Покупатель может отписаться от сообщений. Подробности — в политике конфиденциальности."
           }
+        },
+        {
+          "@type": "Question",
+          "name": "Как покупателю узнать, когда приедет доставка?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Когда курьер выехал, нажмите «Доставка началась». Javi отправит покупателю сообщение в Viber или SMS с примерным временем прибытия и ссылкой для отслеживания. Время считаем по маршруту, с учётом пробок."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Как отправлять покупателям интернет-магазина уведомления в Viber?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Зарегистрируйте магазин и добавляйте доставки вручную или через API. Javi отправляет сообщение в Viber с названием вашего магазина, а если Viber нет — SMS. Сообщения входят в 30 € в месяц."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Есть ли в Сербии альтернатива зарубежным сервисам отслеживания доставки?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Да, Javi. Он отправляет сначала Viber, затем SMS, работает на сербском и стоит 30 € в месяц с сообщениями. Курьеру не нужно приложение. Javi не показывает GPS курьера в реальном времени и не строит маршруты на несколько адресов."
+          }
         }
       ]
     }
@@ -285,6 +309,34 @@
   .proof figcaption{margin-top:8px;color:var(--muted);font-size:13.5px;text-align:center}
   .proof-note{text-align:center;color:var(--muted);font-size:12.5px;margin:10px 0 0}
 
+  /* SERBITO-597: "What is Javi" facts (AI answers quote it), "Why Javi" and the comparison table */
+  .facts{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
+  .facts > p{margin:0 0 14px;color:var(--ink)}
+  .facts dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:8px 16px}
+  .facts dt{font-weight:700;color:var(--ink)}
+  .facts dd{margin:0;color:var(--muted)}
+  @media(max-width:560px){.facts dl{grid-template-columns:1fr;gap:2px}.facts dd{margin-bottom:8px}}
+  .why{list-style:none;margin:0 0 26px;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(max-width:760px){.why{grid-template-columns:1fr}}
+  .why li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--muted);font-size:14.5px}
+  .why li strong{display:block;color:var(--ink);font-size:16px;margin-bottom:2px}
+  .compare{width:100%;border-collapse:collapse;font-size:14.5px;table-layout:fixed}
+  .compare thead td{width:22%}
+  .compare caption{font-weight:700;font-size:18px;margin:0 0 10px}
+  .compare th,.compare td{border-bottom:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  .compare thead th{color:var(--muted);font-size:13.5px}
+  .compare tbody th{font-weight:600}
+  .compare td{color:var(--muted)}
+  .compare .us{color:var(--ink);background:var(--card)}
+  @media(max-width:640px){
+    .compare thead{display:none}
+    .compare tr{display:block;border:1px solid var(--line);border-radius:12px;margin:0 0 12px;padding:6px 0}
+    .compare th,.compare td{display:block;border:0;padding:4px 14px}
+    .compare td::before{content:attr(data-label) ": ";color:var(--muted);font-weight:600}
+    .compare .us{background:transparent}
+  }
+  .compare-note{color:var(--muted);font-size:12.5px;margin:10px 0 0;text-align:center}
+
   .question{
     margin:34px auto;max-width:760px;text-align:center;background:var(--card);
     border:1px solid var(--line);border-radius:var(--radius);padding:26px 24px
@@ -356,6 +408,25 @@
       <a href="/accounts/register/" class="btn btn-primary" data-app-link data-cta="hero">Попробовать 30 дней бесплатно</a>
     </div>
     <p class="trial"><strong>30 дней бесплатно</strong>, затем 30 € в месяц. Карта для старта не нужна.</p>
+  </section>
+
+  <section class="sec" id="sta-je-javi" aria-labelledby="sta-je-javi-h">
+    <h2 id="sta-je-javi-h">Что такое Javi</h2>
+    <div class="facts">
+      <p>Javi — веб-сервис уведомлений покупателям о доставке для магазинов в Сербии, которые возят заказы своим курьером. Когда курьер выехал, покупатель получает сообщение в Viber, или SMS, если Viber нет, с примерным временем прибытия и ссылкой для отслеживания.</p>
+      <dl>
+        <dt>Что</dt>
+        <dd>Уведомления о доставке в Viber и SMS, время прибытия с учётом пробок и ссылка для отслеживания.</dd>
+        <dt>Для кого</dt>
+        <dd>Интернет-магазины, рестораны, пекарни и цветочные магазины со своим курьером.</dd>
+        <dt>Цена</dt>
+        <dd>30 € в месяц за магазин, сообщения в Viber и SMS входят в цену. Первые 30 дней бесплатно, карта не нужна.</dd>
+        <dt>Где</dt>
+        <dd>Сербия. Работает в браузере: ни курьеру, ни покупателю не нужно приложение.</dd>
+        <dt>Кто делает</dt>
+        <dd>Компания No Handoff. Код открыт (лицензия MIT).</dd>
+      </dl>
+    </div>
   </section>
 
   <section class="question">
@@ -443,6 +514,37 @@
     </div>
   </section>
 
+  <section class="sec" id="zasto" aria-labelledby="zasto-h">
+    <h2 id="zasto-h">Почему Javi</h2>
+    <p class="intro">Уведомления о доставке как у Wolt — для вашего курьера. Покупатель знает, когда приедет посылка, а доставка, курьер и бренд остаются вашими.</p>
+    <ul class="why">
+      <li><strong>Сначала Viber, SMS — запасной канал.</strong> Большинство покупателей в Сербии пользуются Viber. Если Viber нет, уходит SMS.</li>
+      <li><strong>Время прибытия с учётом пробок.</strong> Считаем его по маршруту до адреса покупателя.</li>
+      <li><strong>Ссылка на языке покупателя.</strong> Покупатель видит статус на сербском или английском.</li>
+      <li><strong>Видно, что сообщение прочитано.</strong> Неверный номер исправьте и отправьте сообщение снова.</li>
+      <li><strong>Оценка после доставки.</strong> Покупатель оценивает доставку в одно касание.</li>
+      <li><strong>Курьеру не нужно приложение.</strong> Доставку запускаете одним кликом в кабинете.</li>
+      <li><strong>30 € в месяц, сообщения включены.</strong> Без оплаты за каждое сообщение. Первые 30 дней бесплатно, карта не нужна.</li>
+      <li><strong>Ваш курьер и ваш бренд.</strong> В отличие от платформ доставки, покупатель получает сообщение с названием вашего магазина.</li>
+    </ul>
+    <table class="compare">
+      <caption>Javi и другие варианты</caption>
+      <thead>
+        <tr><td></td><th scope="col" class="us">Javi</th><th scope="col">Зарубежные сервисы диспетчеризации</th><th scope="col">Платформы доставки</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Кто везёт</th><td data-label="Javi" class="us">Ваш курьер</td><td data-label="Зарубежные сервисы диспетчеризации">Ваш курьер</td><td data-label="Платформы доставки">Курьер платформы</td></tr>
+        <tr><th scope="row">Сообщение покупателю</th><td data-label="Javi" class="us">Viber, затем SMS</td><td data-label="Зарубежные сервисы диспетчеризации">Обычно SMS или e-mail, без Viber</td><td data-label="Платформы доставки">Уведомления платформы</td></tr>
+        <tr><th scope="row">Время прибытия и ссылка для отслеживания</th><td data-label="Javi" class="us">Да</td><td data-label="Зарубежные сервисы диспетчеризации">Да</td><td data-label="Платформы доставки">Да</td></tr>
+        <tr><th scope="row">Приложение для курьера</th><td data-label="Javi" class="us">Не нужно</td><td data-label="Зарубежные сервисы диспетчеризации">Нужно</td><td data-label="Платформы доставки">Приложение платформы</td></tr>
+        <tr><th scope="row">GPS курьера в реальном времени</th><td data-label="Javi" class="us">Нет, время считаем по маршруту</td><td data-label="Зарубежные сервисы диспетчеризации">Да</td><td data-label="Платформы доставки">Да</td></tr>
+        <tr><th scope="row">Цена</th><td data-label="Javi" class="us">30 €/мес., сообщения включены</td><td data-label="Зарубежные сервисы диспетчеризации">Подписка растёт с числом заказов или курьеров; SMS часто оплачивается отдельно</td><td data-label="Платформы доставки">Плата за каждую доставку</td></tr>
+        <tr><th scope="row">Покупатель и бренд</th><td data-label="Javi" class="us">Остаются вашими</td><td data-label="Зарубежные сервисы диспетчеризации">Остаются вашими</td><td data-label="Платформы доставки">Доставкой управляет платформа</td></tr>
+      </tbody>
+    </table>
+    <p class="compare-note">Сравниваем категории, а не отдельные продукты. Данные на октябрь 2026.</p>
+  </section>
+
   <section class="sec" id="cena" aria-labelledby="cena-h">
     <h2 id="cena-h">Цена</h2>
     <div class="price-card">
@@ -474,6 +576,12 @@
       <p>Новый магазин отправляет только на сербские мобильные номера и имеет меньшие дневной и месячный лимиты, пока мы его не проверим. После проверки действуют обычные лимиты.</p>
       <h3>Что происходит с данными покупателей?</h3>
       <p>Имя, телефон и адрес покупателя мы удаляем через 90 дней после окончания доставки. Покупатель может отписаться от сообщений. Подробности — в <a href="/privacy.html#ru">политике конфиденциальности</a>.</p>
+      <h3>Как покупателю узнать, когда приедет доставка?</h3>
+      <p>Когда курьер выехал, нажмите «Доставка началась». Javi отправит покупателю сообщение в Viber или SMS с примерным временем прибытия и ссылкой для отслеживания. Время считаем по маршруту, с учётом пробок.</p>
+      <h3>Как отправлять покупателям интернет-магазина уведомления в Viber?</h3>
+      <p>Зарегистрируйте магазин и добавляйте доставки вручную или через API. Javi отправляет сообщение в Viber с названием вашего магазина, а если Viber нет — SMS. Сообщения входят в 30 € в месяц.</p>
+      <h3>Есть ли в Сербии альтернатива зарубежным сервисам отслеживания доставки?</h3>
+      <p>Да, Javi. Он отправляет сначала Viber, затем SMS, работает на сербском и стоит 30 € в месяц с сообщениями. Курьеру не нужно приложение. Javi не показывает GPS курьера в реальном времени и не строит маршруты на несколько адресов.</p>
     </div>
   </section>
 
