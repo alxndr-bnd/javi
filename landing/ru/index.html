@@ -25,8 +25,8 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHME7DK2K0"></script>
 
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%234f7cff'/%3E%3Ctext x='50' y='72' font-size='62' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3Ej%3C/text%3E%3C/svg%3E">
-<title>Javi — уведомления о доставке в Viber/SMS</title>
-<meta name="description" content="Javi уведомляет ваших покупателей, когда доставка началась и когда приедет. Меньше срывов, довольные клиенты.">
+<title>Javi — уведомления о доставке в Viber/SMS для магазинов</title>
+<meta name="description" content="Уведомления покупателям о доставке в Viber и SMS: посылка выехала, время прибытия, ссылка для отслеживания. 30 дней бесплатно, затем 30 € в месяц.">
 <link rel="canonical" href="https://javi.serbito.rs/ru/">
 <!-- One URL per language (SERBITO-459): the text is static, no script switches it. -->
 <link rel="alternate" hreflang="sr" href="https://javi.serbito.rs/">
@@ -42,19 +42,20 @@
 <meta property="og:locale" content="ru_RU">
 <meta property="og:locale:alternate" content="sr_RS">
 <meta property="og:locale:alternate" content="en_US">
-<meta property="og:title" content="Javi — сообщите покупателю, когда посылка в пути">
-<meta property="og:description" content="Автоматические уведомления покупателям в Viber/SMS, когда доставка началась и когда приедет. Меньше срывов доставки, довольные покупатели.">
+<meta property="og:title" content="Javi — уведомления покупателям о доставке в Viber и SMS">
+<meta property="og:description" content="Покупатель получает Viber или SMS, когда посылка выехала, примерное время прибытия и ссылку для отслеживания. Для интернет-магазинов. 30 дней бесплатно.">
 <meta property="og:image" content="https://javi.serbito.rs/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Javi — уведомления о доставке для магазинов">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Javi — сообщите покупателю, когда посылка в пути">
-<meta name="twitter:description" content="Автоматические уведомления покупателям в Viber/SMS, когда доставка началась и когда приедет.">
+<meta name="twitter:title" content="Javi — уведомления покупателям о доставке в Viber и SMS">
+<meta name="twitter:description" content="Покупатель получает Viber или SMS, когда посылка выехала, примерное время прибытия и ссылку для отслеживания. Для интернет-магазинов. 30 дней бесплатно.">
 <meta name="twitter:image" content="https://javi.serbito.rs/og.png">
 
-<!-- Structured data (SERBITO-462): one @graph per language page, stable @ids under
-     https://javi.serbito.rs/. No Offer: the price is not public yet. -->
+<!-- Structured data (SERBITO-462, SERBITO-595): one @graph per language page, stable @ids under
+     https://javi.serbito.rs/. Offer = the public price (30 €/month, 30 days free); FAQPage = the
+     questions shown on this page, word for word. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -84,8 +85,8 @@
       "@type": "WebPage",
       "@id": "https://javi.serbito.rs/ru/#webpage",
       "url": "https://javi.serbito.rs/ru/",
-      "name": "Javi — уведомления о доставке в Viber/SMS",
-      "description": "Javi уведомляет ваших покупателей, когда доставка началась и когда приедет. Меньше срывов, довольные клиенты.",
+      "name": "Javi — уведомления о доставке в Viber/SMS для магазинов",
+      "description": "Уведомления покупателям о доставке в Viber и SMS: посылка выехала, время прибытия, ссылка для отслеживания. 30 дней бесплатно, затем 30 € в месяц.",
       "inLanguage": "ru",
       "isPartOf": {
         "@id": "https://javi.serbito.rs/#website"
@@ -105,7 +106,80 @@
       "description": "Автоматические уведомления покупателям в Viber/SMS, когда доставка началась и когда приедет, со ссылкой для отслеживания — для магазинов в Сербии.",
       "publisher": {
         "@id": "https://javi.serbito.rs/#organization"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": "https://javi.serbito.rs/ru/#cena",
+        "price": "30",
+        "priceCurrency": "EUR",
+        "description": "30 дней бесплатно, затем 30 € в месяц за магазин.",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "30",
+          "priceCurrency": "EUR",
+          "billingDuration": "P1M",
+          "unitText": "в месяц за магазин"
+        }
       }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://javi.serbito.rs/ru/#faq",
+      "url": "https://javi.serbito.rs/ru/#pitanja",
+      "inLanguage": "ru",
+      "isPartOf": {
+        "@id": "https://javi.serbito.rs/ru/#webpage"
+      },
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Нужно ли покупателю ставить приложение?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Нет. Покупатель получает сообщение в Viber или SMS со ссылкой и открывает статус в любом браузере."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Что, если у покупателя нет Viber?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Javi сначала отправляет сообщение в Viber. Если оно не доходит, покупатель получает SMS."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Сколько стоит Javi?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "30 € в месяц за магазин. Первые 30 дней бесплатно, карта не нужна. Оплату картой подключим скоро."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Можно ли подключить мой интернет-магазин?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Да. У Javi есть REST API и подписанные вебхуки: создайте заказ, отметьте, что он выехал, и получите ссылку для отслеживания. Документация: javi.serbito.rs/api/docs/."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "На какие номера Javi отправляет сообщения?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Новый магазин отправляет только на сербские мобильные номера и имеет меньший дневной лимит, пока мы его не проверим. После проверки действуют обычные лимиты."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Что происходит с данными покупателей?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Имя, телефон и адрес покупателя мы удаляем через 90 дней после окончания доставки. Покупатель может отписаться от сообщений. Подробности — в политике конфиденциальности."
+          }
+        }
+      ]
     }
   ]
 }
@@ -131,7 +205,7 @@
   }
   .wrap{max-width:var(--max);margin:0 auto;padding:0 20px}
   header{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
-  .logo{font-weight:800;font-size:22px;letter-spacing:.3px}
+  .logo{font-weight:800;font-size:22px;letter-spacing:.3px;color:var(--ink);text-decoration:none}
   .logo span{background:linear-gradient(90deg,var(--brand),var(--brand-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .langs{display:flex;align-items:center;gap:6px}
   /* SERBITO-459: the language switch is plain links to /, /en/, /ru/ */
@@ -160,6 +234,66 @@
   .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,124,255,.35)}
   .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
 
+  /* SERBITO-595: the offer next to the primary CTA */
+  .trial{margin:14px 0 0;color:var(--muted);font-size:14.5px}
+  .trial strong{color:var(--ink)}
+
+  /* SERBITO-595: content sections (who it is for, how it works, price, FAQ, who runs Javi) */
+  .sec{margin:46px 0}
+  .sec > h2{font-size:clamp(22px,3.4vw,30px);line-height:1.2;margin:0 0 14px;text-align:center}
+  .sec > p.intro{color:var(--muted);max-width:720px;margin:0 auto 18px;text-align:center}
+  .intro a,.who a,.faq a,.about a{color:#9db8ff;font-weight:600}
+  .who{list-style:none;margin:0 auto;padding:0;max-width:720px;display:grid;gap:10px}
+  .who li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:step}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .steps li{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;counter-increment:step}
+  .steps li::before{content:counter(step);display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:50%;background:#3a5bd0;color:#fff;font-weight:800;margin-bottom:10px}
+  .steps h3{margin:0 0 6px;font-size:17px}
+  .steps p{margin:0;color:var(--muted);font-size:14.5px}
+  .price-card{background:var(--card);border:1px solid var(--brand);border-radius:var(--radius);padding:28px 24px;max-width:560px;margin:0 auto;text-align:center}
+  .price-card .amount{font-size:46px;font-weight:800;line-height:1;margin:0}
+  .price-card .per{color:var(--muted);margin:6px 0 4px}
+  .price-card .free{color:var(--ok);font-weight:700;margin:0 0 16px}
+  .price-card ul{text-align:left;margin:0 0 18px;padding-left:20px;color:var(--muted)}
+  .price-card .soon{font-size:13.5px;color:var(--muted);margin:14px 0 0}
+  .faq{max-width:760px;margin:0 auto}
+  .faq h3{font-size:17px;margin:20px 0 6px}
+  .faq p{margin:0;color:var(--muted)}
+  .about{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
+  .about p{margin:0 0 10px;color:var(--muted)}
+  .about p:last-child{margin:0}
+
+  /* SERBITO-595: the offer next to the primary CTA */
+  .trial{margin:14px 0 0;color:var(--muted);font-size:14.5px}
+  .trial strong{color:var(--ink)}
+
+  /* SERBITO-595: content sections (who it is for, how it works, price, FAQ, who runs Javi) */
+  .sec{margin:46px 0}
+  .sec > h2{font-size:clamp(22px,3.4vw,30px);line-height:1.2;margin:0 0 14px;text-align:center}
+  .sec > p.intro{color:var(--muted);max-width:720px;margin:0 auto 18px;text-align:center}
+  .intro a,.who a,.faq a,.about a{color:#9db8ff;font-weight:600}
+  .who{list-style:none;margin:0 auto;padding:0;max-width:720px;display:grid;gap:10px}
+  .who li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:step}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .steps li{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;counter-increment:step}
+  .steps li::before{content:counter(step);display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:50%;background:#3a5bd0;color:#fff;font-weight:800;margin-bottom:10px}
+  .steps h3{margin:0 0 6px;font-size:17px}
+  .steps p{margin:0;color:var(--muted);font-size:14.5px}
+  .price-card{background:var(--card);border:1px solid var(--brand);border-radius:var(--radius);padding:28px 24px;max-width:560px;margin:0 auto;text-align:center}
+  .price-card .amount{font-size:46px;font-weight:800;line-height:1;margin:0}
+  .price-card .per{color:var(--muted);margin:6px 0 4px}
+  .price-card .free{color:var(--ok);font-weight:700;margin:0 0 16px}
+  .price-card ul{text-align:left;margin:0 0 18px;padding-left:20px;color:var(--muted)}
+  .price-card .soon{font-size:13.5px;color:var(--muted);margin:14px 0 0}
+  .faq{max-width:760px;margin:0 auto}
+  .faq h3{font-size:17px;margin:20px 0 6px}
+  .faq p{margin:0;color:var(--muted)}
+  .about{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
+  .about p{margin:0 0 10px;color:var(--muted)}
+  .about p:last-child{margin:0}
+
   .question{
     margin:34px auto;max-width:760px;text-align:center;background:var(--card);
     border:1px solid var(--line);border-radius:var(--radius);padding:26px 24px
@@ -171,7 +305,7 @@
   @media(max-width:760px){.grid{grid-template-columns:1fr}}
   .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
   .feat .ic{font-size:26px;margin-bottom:10px}
-  .feat h2{margin:0 0 6px;font-size:17px;font-weight:700}
+  .feat h3{margin:0 0 6px;font-size:17px;font-weight:700}
   .feat p{margin:0;color:var(--muted);font-size:14.5px}
 
   .form-section{margin:36px 0 20px}
@@ -192,7 +326,7 @@
   .form-note{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
   .ok-msg{display:none;text-align:center;padding:24px}
   .ok-msg .big{font-size:40px;margin-bottom:8px}
-  .ok-msg h2{color:var(--ok)}
+  .ok-msg .ok-title{color:var(--ok);font-size:22px;font-weight:700;margin:0 0 6px}
 
   footer{border-top:1px solid var(--line);margin-top:40px;padding:24px 0 40px;color:var(--muted);font-size:13px;text-align:center}
   /* SERBITO-278: every footer link (privacy, cross-promo) gets an explicit colour; without it the
@@ -214,7 +348,7 @@
 <div class="wrap">
 
   <header>
-    <div class="logo">javi<span>.</span></div>
+    <a class="logo" href="/ru/">javi<span>.</span></a>
     <nav class="langs" id="langs">
       <a href="/" hreflang="sr" lang="sr" class="lang">SR</a>
       <a href="/en/" hreflang="en" lang="en" class="lang">EN</a>
@@ -225,33 +359,124 @@
 
   <main>
   <section class="hero">
-    <h1>Сообщите покупателю, <span class="hl">когда посылка выехала — и когда приедет</span></h1>
-    <p class="lead">Меньше срывов доставки. Довольные покупатели. Больше повторных заказов.</p>
+    <h1>Уведомления покупателям о доставке <span class="hl">в Viber и SMS</span></h1>
+    <p class="lead">Покупатель получает сообщение, когда посылка выехала, примерное время прибытия и ссылку для отслеживания — без приложения. Меньше сорванных доставок и звонков «Где моя посылка?».</p>
     <div class="cta-row">
-      <a href="/accounts/register/" class="btn btn-primary" data-app-link>Попробовать бесплатно</a>
-      <a href="#prijava" class="btn btn-ghost">Оставить контакт</a>
+      <a href="/accounts/register/" class="btn btn-primary" data-app-link data-cta="hero">Попробовать 30 дней бесплатно</a>
     </div>
+    <p class="trial"><strong>30 дней бесплатно</strong>, затем 30 € в месяц. Карта для старта не нужна.</p>
   </section>
 
   <section class="question">
     <p class="q">Javi <em>уведомляет получателя</em>, когда доставка началась и когда она примерно приедет.</p>
   </section>
 
-  <section class="grid" id="kako">
+  <section class="sec" id="za-koga" aria-labelledby="za-koga-h">
+    <h2 id="za-koga-h">Для кого Javi</h2>
+    <p class="intro">Для небольших магазинов в Сербии, которые сами доставляют заказы и не имеют своей системы отслеживания.</p>
+    <ul class="who">
+      <li><strong>Интернет-магазины</strong> со своей доставкой: покупатель знает, когда приедет посылка, и ждёт дома.</li>
+      <li><strong>Рестораны, пекарни и цветочные магазины</strong>, которые возят заказы своим курьером.</li>
+      <li><strong>Магазины со своим сайтом</strong>: уведомления о доставке уходят автоматически через <a href="/api/docs/">API</a>.</li>
+    </ul>
+  </section>
+
+  <section class="sec" id="kako" aria-labelledby="kako-h">
+    <h2 id="kako-h">Как это работает — 3 шага</h2>
+    <ol class="steps">
+      <li>
+        <h3>Добавьте доставки</h3>
+        <p>Укажите имя покупателя, телефон и адрес — вручную в кабинете или автоматически через API из вашего интернет-магазина.</p>
+      </li>
+      <li>
+        <h3>Нажмите «Доставка началась»</h3>
+        <p>Покупатель сразу получает сообщение в Viber (или SMS) с примерным временем прибытия. Время считаем по маршруту, с учётом пробок.</p>
+      </li>
+      <li>
+        <h3>Покупатель отслеживает посылку</h3>
+        <p>По ссылке видны статус и время прибытия, без приложения. После доставки покупатель ставит оценку в одно касание.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="sec" id="mogucnosti" aria-labelledby="mogucnosti-h">
+    <h2 id="mogucnosti-h">Что вы получаете</h2>
+    <div class="grid">
     <div class="feat">
       <div class="ic">📦</div>
-      <h2>Покупатель знает, что посылка выехала</h2>
+      <h3>Покупатель знает, что посылка выехала</h3>
       <p>Автоматическое сообщение в Viber или SMS сразу после отправки заказа.</p>
     </div>
     <div class="feat">
       <div class="ic">⏱️</div>
-      <h2>И когда примерно приедет</h2>
+      <h3>И когда примерно приедет</h3>
       <p>Примерное время прибытия — покупатель дома, доставка проходит с первого раза.</p>
     </div>
     <div class="feat">
       <div class="ic">🔗</div>
-      <h2>Отслеживание по одной ссылке</h2>
+      <h3>Отслеживание по одной ссылке</h3>
       <p>Без установки приложения — покупатель открывает статус в браузере.</p>
+    </div>
+    <div class="feat">
+      <div class="ic">✅</div>
+      <h3>Статус каждого сообщения</h3>
+      <p>Видно, доставлено ли сообщение и прочитано ли. Исправьте номер и отправьте снова.</p>
+    </div>
+    <div class="feat">
+      <div class="ic">🔌</div>
+      <h3>API и вебхуки</h3>
+      <p>Заказы из вашего магазина приходят сами, а статус доставки вы получаете обратно.</p>
+    </div>
+    <div class="feat">
+      <div class="ic">⭐</div>
+      <h3>Оценка доставки</h3>
+      <p>После доставки покупатель ставит оценку в одно касание — видно, как работают курьеры.</p>
+    </div>
+    </div>
+  </section>
+
+  <section class="sec" id="cena" aria-labelledby="cena-h">
+    <h2 id="cena-h">Цена</h2>
+    <div class="price-card">
+      <p class="amount">30 €</p>
+      <p class="per">в месяц за магазин</p>
+      <p class="free">Первые 30 дней бесплатно</p>
+      <ul>
+        <li>Уведомления покупателям в Viber и SMS</li>
+        <li>Примерное время прибытия и ссылка для отслеживания</li>
+        <li>Кабинет, оценки доставки, API и вебхуки</li>
+      </ul>
+      <a href="/accounts/register/" class="btn btn-primary" data-app-link data-cta="pricing">Попробовать 30 дней бесплатно</a>
+      <p class="soon">Оплату картой (ежемесячная подписка) подключим скоро. До этого Javi ничего не списывает.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="pitanja" aria-labelledby="pitanja-h">
+    <h2 id="pitanja-h">Частые вопросы</h2>
+    <div class="faq">
+      <h3>Нужно ли покупателю ставить приложение?</h3>
+      <p>Нет. Покупатель получает сообщение в Viber или SMS со ссылкой и открывает статус в любом браузере.</p>
+      <h3>Что, если у покупателя нет Viber?</h3>
+      <p>Javi сначала отправляет сообщение в Viber. Если оно не доходит, покупатель получает SMS.</p>
+      <h3>Сколько стоит Javi?</h3>
+      <p>30 € в месяц за магазин. Первые 30 дней бесплатно, карта не нужна. Оплату картой подключим скоро.</p>
+      <h3>Можно ли подключить мой интернет-магазин?</h3>
+      <p>Да. У Javi есть REST API и подписанные вебхуки: создайте заказ, отметьте, что он выехал, и получите ссылку для отслеживания. Документация: <a href="/api/docs/">javi.serbito.rs/api/docs/</a>.</p>
+      <h3>На какие номера Javi отправляет сообщения?</h3>
+      <p>Новый магазин отправляет только на сербские мобильные номера и имеет меньший дневной лимит, пока мы его не проверим. После проверки действуют обычные лимиты.</p>
+      <h3>Что происходит с данными покупателей?</h3>
+      <p>Имя, телефон и адрес покупателя мы удаляем через 90 дней после окончания доставки. Покупатель может отписаться от сообщений. Подробности — в <a href="/privacy.html#ru">политике конфиденциальности</a>.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="o-nama" aria-labelledby="o-nama-h">
+    <h2 id="o-nama-h">Кто стоит за Javi</h2>
+    <!-- TODO(owner, SERBITO-461): add the company or preduzetnik name, the city and a business
+         e-mail for Javi here and in the Organization node. Only facts from the repo are shown now. -->
+    <div class="about">
+      <p>Javi делает команда <a href="https://www.linkedin.com/company/nohandoff/">No Handoff</a>. Код открыт (лицензия MIT) и опубликован на <a href="https://github.com/alxndr-bnd/javi">GitHub</a>: можно проверить, что Javi делает с данными.</p>
+      <p>Javi в стадии альфа. Мы активно его развиваем и публикуем все изменения в <a href="https://github.com/alxndr-bnd/javi/blob/main/CHANGELOG.md">списке изменений</a>.</p>
+      <p>Есть вопрос до регистрации? <a href="#prijava">Оставьте контакт</a>, и мы свяжемся с вами.</p>
     </div>
   </section>
 
@@ -270,16 +495,6 @@
             <input id="f-contact" type="text" name="contact" autocomplete="email" required>
           </div>
           <div class="field">
-            <label for="f-volume">Заказов в месяц (примерно)</label>
-            <select id="f-volume" name="volume">
-              <option value="">— выберите —</option>
-              <option value="1-50">1–50</option>
-              <option value="50-200">50–200</option>
-              <option value="200-1000">200–1000</option>
-              <option value="1000+">1000+</option>
-            </select>
-          </div>
-          <div class="field">
             <label for="f-msg">Сообщение (необязательно)</label>
             <textarea id="f-msg" name="message"></textarea>
           </div>
@@ -294,7 +509,7 @@
       </div>
       <div class="ok-msg" id="okMsg">
         <div class="big">✅</div>
-        <h2>Спасибо!</h2>
+        <p class="ok-title">Спасибо!</p>
         <p>Мы получили вашу заявку и скоро свяжемся.</p>
       </div>
     </div>
@@ -331,6 +546,26 @@ document.querySelectorAll('[data-app-link]').forEach(a=>{
   });
 });
 
+// Request funnel (SERBITO-595): GA4 events in GA4 terms. The server counts landing views and
+// sign-up form opens itself (manage.py funnel_report); GA4 also sees the CTA and lead form.
+function track(name, params){
+  try{ gtag('event', name, Object.assign({page_language: LANG}, params || {})); }catch(e){}
+}
+track('landing_view');
+document.querySelectorAll('[data-cta]').forEach(a=>{
+  a.addEventListener('click',()=>track('cta_click', {cta: a.getAttribute('data-cta')}));
+});
+
+// Request funnel (SERBITO-595): GA4 events in GA4 terms. The server counts landing views and
+// sign-up form opens itself (manage.py funnel_report); GA4 also sees the CTA and lead form.
+function track(name, params){
+  try{ gtag('event', name, Object.assign({page_language: LANG}, params || {})); }catch(e){}
+}
+track('landing_view');
+document.querySelectorAll('[data-cta]').forEach(a=>{
+  a.addEventListener('click',()=>track('cta_click', {cta: a.getAttribute('data-cta')}));
+});
+
 // UTM capture for ad attribution (Google / Telegram)
 (function(){
   const p = new URLSearchParams(location.search);
@@ -350,6 +585,7 @@ form.addEventListener('submit', async (e)=>{
   try{
     const res = await fetch(action,{method:'POST',body:new FormData(form),headers:{'Accept':'application/json'}});
     if(res.ok){
+      track('lead_submit');
       document.getElementById('formBox').style.display='none';
       document.getElementById('okMsg').style.display='block';
     }else{ form.submit(); }

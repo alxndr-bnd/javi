@@ -6,6 +6,8 @@
 - Every visible field has a <label for> pointing at it.
 - WCAG 1.4.11: field borders contrast at least 3:1 with the field's fill and the form card,
   and the focus rule only fires on focus (it used to paint every <select> as focused).
+- SERBITO-595: the form asks only what we need to reply: shop, contact, an optional message
+  (the "orders per month" select is gone).
 - SERBITO-459: the form is on every language page; they share one stylesheet
   (config/test_seo.py::test_language_pages_share_style_and_script).
 """
@@ -43,7 +45,6 @@ def test_fields_name_their_purpose_for_autofill(lang):
     assert {f.attrs["name"]: f.attrs.get("autocomplete") for f in fields} == {
         "shop": "organization",
         "contact": "email",
-        "volume": None,  # not personal data: no token applies
         "message": None,
     }
 

@@ -14,6 +14,12 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Changed
+- The home page now shows who Javi is for, how it works in 3 steps, the price (30 € a month, the first 30 days free), common questions and who runs Javi.
+  - SR: Početna stranica sada pokazuje za koga je Javi, kako radi u 3 koraka, cenu (30 € mesečno, prvih 30 dana besplatno), česta pitanja i ko stoji iza Javija.
+- The contact form is shorter: shop name, contact and an optional message.
+  - SR: Forma za kontakt je kraća: naziv prodavnice, kontakt i opciona poruka.
+
 ## [0.78.0] - 2026-10-08
 
 ### Security

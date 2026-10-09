@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Create an account" %} · Javi{% endblock %}
+{% block ga_page_events %}gtag('event', 'signup_start');{% endblock %}
 {% block body %}
 <div class="auth">
   <div class="logo" style="margin-bottom:18px">javi<span>.</span></div>
   <h1>{% trans "Create an account" %}</h1>
+  {# SERBITO-595/593: the offer next to the form. Billing is not live yet: no checkout promised. #}
+  <p class="muted trial-note">{% trans "30 days free, then 30 € per month. No card needed to start." %}</p>
   <form method="post" action="{% url 'accounts:register' %}">
     {% csrf_token %}
     {% if form.non_field_errors %}

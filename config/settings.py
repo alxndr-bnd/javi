@@ -66,6 +66,8 @@ MIDDLEWARE = [
     # Before WhiteNoise: on *.run.app the landing redirects to javi.serbito.rs too (SERBITO-430).
     "common.run_app_guard.RunAppHostGuardMiddleware",
     # WhiteNoise with permanent redirects and a cached /consent.js (SERBITO-462).
+    # Counts landing page views (SERBITO-595); wraps WhiteNoise, which answers the landing.
+    "common.funnel.LandingViewMiddleware",
     "common.landing_whitenoise.LandingWhiteNoiseMiddleware",
     # После WhiteNoise: лендинг сюда не доходит, всё, что рендерит Django, — noindex (SERBITO-303).
     "common.middleware.NoIndexMiddleware",
@@ -96,6 +98,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "deliveries.context_processors.free_quota",
+                "common.funnel.ga_events",  # one-off GA4 events (signup_complete, SERBITO-595)
             ],
         },
     },
@@ -273,6 +276,8 @@ SEND_LIMIT_GLOBAL_DAY = env.int("SEND_LIMIT_GLOBAL_DAY", default=500)
 SHOP_VERIFY_EMAIL = env("SHOP_VERIFY_EMAIL", default="alexander.bondarchuk@gmail.com")
 # Регистраций с одного IP клиента за сутки (UTC); сверх — 429 на форме регистрации.
 SIGNUP_LIMIT_PER_IP_DAY = env.int("SIGNUP_LIMIT_PER_IP_DAY", default=3)
+# Request funnel counts (SERBITO-595, common/funnel.py): landing views and sign-up form opens.
+FUNNEL_COUNTING = env.bool("FUNNEL_COUNTING", default=True)
 # Активных (не отозванных) API-ключей у магазина.
 API_KEYS_PER_SHOP = env.int("API_KEYS_PER_SHOP", default=5)
 

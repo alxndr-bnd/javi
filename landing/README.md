@@ -94,3 +94,22 @@ cd landing && python3 -m http.server 8080
   the three landings, `privacy.html` and `templates/base.html`. `config/test_consent.py` fails
   with the right value until you do:
   `shasum -a 256 landing/consent.js | cut -c1-12`.
+
+## Seller content and the request funnel (SERBITO-595)
+
+- **Search terms.** Title = descriptor + the search phrase, ≤ 60 characters. H1 and description
+  name Viber, SMS and delivery notifications to customers; the description (≤ 155) has the price.
+- **Sections** on every language page: hero with one CTA (registration) and the trial line, who
+  it is for, how it works (3 steps), features, price (`#cena`), FAQ (`#pitanja`), who runs Javi
+  (`#o-nama`), the lead form (`#prijava`). Section ids are the same in every language.
+- **Price.** 30 €/month per shop, the first 30 days free (SERBITO-593). Card payment is not live:
+  the page says it comes soon and promises no checkout. Change the price → change the page text,
+  the `Offer` in JSON-LD (`config/test_seo.py` checks both) and the registration page line.
+- **FAQPage.** The JSON-LD questions and answers are the visible FAQ, word for word (tested).
+- **Who runs Javi.** Only facts from the repo: No Handoff, MIT licence, public GitHub, alpha.
+  TODO for the owner (SERBITO-461): company name, city, business e-mail.
+- **Funnel.** The server counts browser views of `/`, `/en/`, `/ru/` and registration form opens per
+  day (`common/funnel.py`, table `common_funnelcount`, no visitor data). Sign-ups and activated
+  shops (first started delivery) come from `Shop` / `Delivery`. GA4 gets `landing_view`,
+  `cta_click` (`data-cta` on each CTA), `lead_submit`, `signup_start`, `signup_complete`.
+  Weekly report: `uv run python manage.py funnel_report --weeks 8` (read-only, counts only).
