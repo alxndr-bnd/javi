@@ -129,6 +129,8 @@ def test_opening_the_registration_form_is_counted(client):
 def test_registration_page_shows_the_trial_and_sends_signup_start(client):
     body = client.get(reverse("accounts:register"), HTTP_USER_AGENT=BROWSER).content.decode()
     assert "30 days free, then 30 € per month" in body
+    assert "After the 30 days, payment is required to continue." in body
+    assert "soon" not in body
     assert "gtag('event', 'signup_start');" in body
     invalid = client.post(reverse("accounts:register"), {"email": "x"}, HTTP_USER_AGENT=BROWSER)
     assert invalid.status_code == 200  # the form again, with errors: not another start
@@ -136,6 +138,7 @@ def test_registration_page_shows_the_trial_and_sends_signup_start(client):
     client.cookies["django_language"] = "sr-latn"
     body = client.get(reverse("accounts:register"), HTTP_USER_AGENT=BROWSER).content.decode()
     assert "30 dana besplatno, zatim 30 € mesečno" in body
+    assert "Posle 30 dana za nastavak je potrebno plaćanje." in body
 
 
 def test_signup_complete_reaches_ga4_once_after_sign_up(client):

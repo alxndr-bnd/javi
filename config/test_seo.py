@@ -21,13 +21,15 @@ SERBITO-595: shop-owner search terms and a public price.
   notifications to customers; the description (≤ 155 chars) carries the price and the trial.
 - The SoftwareApplication has an Offer: 30 EUR a month. A FAQPage node repeats the questions and
   answers shown on the page, word for word.
+- Owner answers (2026-10-09): Viber/SMS messages are in the 30 €, with no limit shown. After the
+  30 free days payment is required; without it the trial limits stay. No "card payment soon"
+  promise. No Handoff (the owner's company) makes Javi; no address or personal data.
 
 SERBITO-462: SEO polish.
 - "Javi" alone is ambiguous (Spanish footballers): the title, og:site_name and the schema
   alternateName carry a descriptor in the page language.
 - Each language page has one JSON-LD @graph: Organization (No Handoff), WebSite, WebPage and
-  SoftwareApplication, with stable @ids under https://javi.serbito.rs/. No Offer: the price is
-  not public yet (SERBITO-461); add one only with the real price.
+  SoftwareApplication, with stable @ids under https://javi.serbito.rs/.
 - /index.html, /en/index.html, /ru/index.html answer 301 (WhiteNoise's default is 302).
 """
 
@@ -475,6 +477,47 @@ def test_json_ld_faq_matches_the_visible_faq(lang):
         zip(questions, answers, strict=True)
     )
     assert all(q["@type"] == "Question" for q in faq["mainEntity"])
+
+
+# The owner's answers (SERBITO-595, 2026-10-09), in the price card, the FAQ and the Offer.
+AFTER_TRIAL = {
+    "sr": "Posle 30 dana za nastavak je potrebno plaćanje. Bez plaćanja ostaju probni limiti.",
+    "en": (
+        "After the 30 days, payment is required to continue. "
+        "Without payment, the trial limits stay."
+    ),
+    "ru": "После 30 дней для продолжения нужна оплата. Без оплаты остаются пробные лимиты.",
+}
+MESSAGES_INCLUDED = {
+    "sr": "Viber i SMS poruke su uključene u cenu.",
+    "en": "Viber and SMS messages are included in the price.",
+    "ru": "Сообщения в Viber и SMS входят в цену.",
+}
+NO_LONGER_PROMISED = ("soon", "uskoro", "скоро", "charges nothing", "ne naplaćuje", "не списывает")
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_price_says_payment_is_required_after_the_trial(lang):
+    page = parse_html(_landing(lang))
+    price = page.find("section", {"id": "cena"})
+    assert price.find("p", {"class": "after"}).text() == AFTER_TRIAL[lang]
+    faq = page.find("section", {"id": "pitanja"}).text()
+    assert AFTER_TRIAL[lang] in faq
+    assert MESSAGES_INCLUDED[lang] in faq
+    offer = _graph(lang)["SoftwareApplication"]["offers"]
+    assert MESSAGES_INCLUDED[lang] in offer["description"]
+    for text in (price.text(), faq, json.dumps(_graph(lang), ensure_ascii=False)):
+        for word in NO_LONGER_PROMISED:
+            assert word not in text.lower(), (lang, word)
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_no_handoff_runs_javi_without_personal_data(lang):
+    html = _landing(lang)
+    assert "TODO" not in html
+    about = parse_html(html).find("section", {"id": "o-nama"})
+    assert "No Handoff" in about.text()
+    assert "@" not in about.text()  # no personal or business e-mail on the page
 
 
 def test_json_ld_shared_nodes_agree_across_languages():

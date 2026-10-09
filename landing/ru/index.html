@@ -125,7 +125,7 @@
         "url": "https://javi.serbito.rs/ru/#cena",
         "price": "30",
         "priceCurrency": "EUR",
-        "description": "30 дней бесплатно, затем 30 € в месяц за магазин.",
+        "description": "30 дней бесплатно, затем 30 € в месяц за магазин. Сообщения в Viber и SMS входят в цену.",
         "priceSpecification": {
           "@type": "UnitPriceSpecification",
           "price": "30",
@@ -165,7 +165,7 @@
           "name": "Сколько стоит Javi?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "30 € в месяц за магазин. Первые 30 дней бесплатно, карта не нужна. Оплату картой подключим скоро."
+            "text": "30 € в месяц за магазин. Сообщения в Viber и SMS входят в цену. Первые 30 дней бесплатно, карта для старта не нужна. После 30 дней для продолжения нужна оплата. Без оплаты остаются пробные лимиты."
           }
         },
         {
@@ -269,7 +269,7 @@
   .price-card .per{color:var(--muted);margin:6px 0 4px}
   .price-card .free{color:var(--ok);font-weight:700;margin:0 0 16px}
   .price-card ul{text-align:left;margin:0 0 18px;padding-left:20px;color:var(--muted)}
-  .price-card .soon{font-size:13.5px;color:var(--muted);margin:14px 0 0}
+  .price-card .after{font-size:13.5px;color:var(--muted);margin:14px 0 0}
   .faq{max-width:760px;margin:0 auto}
   .faq h3{font-size:17px;margin:20px 0 6px}
   .faq p{margin:0;color:var(--muted)}
@@ -450,12 +450,12 @@
       <p class="per">в месяц за магазин</p>
       <p class="free">Первые 30 дней бесплатно</p>
       <ul>
-        <li>Уведомления покупателям в Viber и SMS</li>
+        <li>Уведомления покупателям в Viber и SMS, входят в цену</li>
         <li>Примерное время прибытия и ссылка для отслеживания</li>
         <li>Кабинет, оценки доставки, API и вебхуки</li>
       </ul>
       <a href="/accounts/register/" class="btn btn-primary" data-app-link data-cta="pricing">Попробовать 30 дней бесплатно</a>
-      <p class="soon">Оплату картой (ежемесячная подписка) подключим скоро. До этого Javi ничего не списывает.</p>
+      <p class="after">После 30 дней для продолжения нужна оплата. Без оплаты остаются пробные лимиты.</p>
     </div>
   </section>
 
@@ -467,7 +467,7 @@
       <h3>Что, если у покупателя нет Viber?</h3>
       <p>Javi сначала отправляет сообщение в Viber. Если оно не доходит, покупатель получает SMS.</p>
       <h3>Сколько стоит Javi?</h3>
-      <p>30 € в месяц за магазин. Первые 30 дней бесплатно, карта не нужна. Оплату картой подключим скоро.</p>
+      <p>30 € в месяц за магазин. Сообщения в Viber и SMS входят в цену. Первые 30 дней бесплатно, карта для старта не нужна. После 30 дней для продолжения нужна оплата. Без оплаты остаются пробные лимиты.</p>
       <h3>Можно ли подключить мой интернет-магазин?</h3>
       <p>Да. У Javi есть REST API и подписанные вебхуки: создайте заказ, отметьте, что он выехал, и получите ссылку для отслеживания. Документация: <a href="/api/docs/">javi.serbito.rs/api/docs/</a>.</p>
       <h3>На какие номера Javi отправляет сообщения?</h3>
@@ -479,10 +479,8 @@
 
   <section class="sec" id="o-nama" aria-labelledby="o-nama-h">
     <h2 id="o-nama-h">Кто стоит за Javi</h2>
-    <!-- TODO(owner, SERBITO-461): add the company or preduzetnik name, the city and a business
-         e-mail for Javi here and in the Organization node. Only facts from the repo are shown now. -->
     <div class="about">
-      <p>Javi делает команда <a href="https://www.linkedin.com/company/nohandoff/">No Handoff</a>. Код открыт (лицензия MIT) и опубликован на <a href="https://github.com/alxndr-bnd/javi">GitHub</a>: можно проверить, что Javi делает с данными.</p>
+      <p>Javi делает компания <a href="https://www.linkedin.com/company/nohandoff/">No Handoff</a>. Код открыт (лицензия MIT) и опубликован на <a href="https://github.com/alxndr-bnd/javi">GitHub</a>: можно проверить, что Javi делает с данными.</p>
       <p>Javi в стадии альфа. Мы активно его развиваем и публикуем все изменения в <a href="https://github.com/alxndr-bnd/javi/blob/main/CHANGELOG.md">списке изменений</a>.</p>
       <p>Есть вопрос до регистрации? <a href="#prijava">Оставьте контакт</a>, и мы свяжемся с вами.</p>
     </div>

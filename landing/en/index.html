@@ -125,7 +125,7 @@
         "url": "https://javi.serbito.rs/en/#cena",
         "price": "30",
         "priceCurrency": "EUR",
-        "description": "30 days free, then 30 € per month per shop.",
+        "description": "30 days free, then 30 € per month per shop. Viber and SMS messages are included in the price.",
         "priceSpecification": {
           "@type": "UnitPriceSpecification",
           "price": "30",
@@ -165,7 +165,7 @@
           "name": "How much does Javi cost?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "30 € per month per shop. The first 30 days are free and no card is needed. Card payment comes soon."
+            "text": "30 € per month per shop. Viber and SMS messages are included in the price. The first 30 days are free and no card is needed to start. After the 30 days, payment is required to continue. Without payment, the trial limits stay."
           }
         },
         {
@@ -269,7 +269,7 @@
   .price-card .per{color:var(--muted);margin:6px 0 4px}
   .price-card .free{color:var(--ok);font-weight:700;margin:0 0 16px}
   .price-card ul{text-align:left;margin:0 0 18px;padding-left:20px;color:var(--muted)}
-  .price-card .soon{font-size:13.5px;color:var(--muted);margin:14px 0 0}
+  .price-card .after{font-size:13.5px;color:var(--muted);margin:14px 0 0}
   .faq{max-width:760px;margin:0 auto}
   .faq h3{font-size:17px;margin:20px 0 6px}
   .faq p{margin:0;color:var(--muted)}
@@ -450,12 +450,12 @@
       <p class="per">per month per shop</p>
       <p class="free">First 30 days free</p>
       <ul>
-        <li>Viber and SMS notifications to your customers</li>
+        <li>Viber and SMS notifications to your customers, included in the price</li>
         <li>Approximate arrival time and a parcel tracking link</li>
         <li>Dashboard, delivery ratings, API and webhooks</li>
       </ul>
       <a href="/accounts/register/" class="btn btn-primary" data-app-link data-cta="pricing">Try it free for 30 days</a>
-      <p class="soon">Card payment (a monthly subscription) comes soon. Until then Javi charges nothing.</p>
+      <p class="after">After the 30 days, payment is required to continue. Without payment, the trial limits stay.</p>
     </div>
   </section>
 
@@ -467,7 +467,7 @@
       <h3>What if the customer has no Viber?</h3>
       <p>Javi sends a Viber message first. If it cannot be delivered, the customer gets an SMS.</p>
       <h3>How much does Javi cost?</h3>
-      <p>30 € per month per shop. The first 30 days are free and no card is needed. Card payment comes soon.</p>
+      <p>30 € per month per shop. Viber and SMS messages are included in the price. The first 30 days are free and no card is needed to start. After the 30 days, payment is required to continue. Without payment, the trial limits stay.</p>
       <h3>Can I connect my online shop?</h3>
       <p>Yes. Javi has a REST API and signed webhooks: create an order, mark it as started and get the tracking link. Docs: <a href="/api/docs/">javi.serbito.rs/api/docs/</a>.</p>
       <h3>Which numbers does Javi send to?</h3>
@@ -479,10 +479,8 @@
 
   <section class="sec" id="o-nama" aria-labelledby="o-nama-h">
     <h2 id="o-nama-h">Who runs Javi</h2>
-    <!-- TODO(owner, SERBITO-461): add the company or preduzetnik name, the city and a business
-         e-mail for Javi here and in the Organization node. Only facts from the repo are shown now. -->
     <div class="about">
-      <p>Javi is made by the <a href="https://www.linkedin.com/company/nohandoff/">No Handoff</a> team. The code is open source (MIT licence) and public on <a href="https://github.com/alxndr-bnd/javi">GitHub</a>: you can check what Javi does with data.</p>
+      <p>Javi is made by the company <a href="https://www.linkedin.com/company/nohandoff/">No Handoff</a>. The code is open source (MIT licence) and public on <a href="https://github.com/alxndr-bnd/javi">GitHub</a>: you can check what Javi does with data.</p>
       <p>Javi is in alpha. We develop it actively and publish every change in the <a href="https://github.com/alxndr-bnd/javi/blob/main/CHANGELOG.md">changelog</a>.</p>
       <p>A question before you sign up? <a href="#prijava">Leave your contact</a> and we will get back to you.</p>
     </div>

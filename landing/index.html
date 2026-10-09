@@ -125,7 +125,7 @@
         "url": "https://javi.serbito.rs/#cena",
         "price": "30",
         "priceCurrency": "EUR",
-        "description": "30 dana besplatno, zatim 30 € mesečno po prodavnici.",
+        "description": "30 dana besplatno, zatim 30 € mesečno po prodavnici. Viber i SMS poruke su uključene u cenu.",
         "priceSpecification": {
           "@type": "UnitPriceSpecification",
           "price": "30",
@@ -165,7 +165,7 @@
           "name": "Koliko košta Javi?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "30 € mesečno po prodavnici. Prvih 30 dana je besplatno i kartica nije potrebna. Plaćanje karticom uvodimo uskoro."
+            "text": "30 € mesečno po prodavnici. Viber i SMS poruke su uključene u cenu. Prvih 30 dana je besplatno i kartica nije potrebna za početak. Posle 30 dana za nastavak je potrebno plaćanje. Bez plaćanja ostaju probni limiti."
           }
         },
         {
@@ -269,7 +269,7 @@
   .price-card .per{color:var(--muted);margin:6px 0 4px}
   .price-card .free{color:var(--ok);font-weight:700;margin:0 0 16px}
   .price-card ul{text-align:left;margin:0 0 18px;padding-left:20px;color:var(--muted)}
-  .price-card .soon{font-size:13.5px;color:var(--muted);margin:14px 0 0}
+  .price-card .after{font-size:13.5px;color:var(--muted);margin:14px 0 0}
   .faq{max-width:760px;margin:0 auto}
   .faq h3{font-size:17px;margin:20px 0 6px}
   .faq p{margin:0;color:var(--muted)}
@@ -450,12 +450,12 @@
       <p class="per">mesečno po prodavnici</p>
       <p class="free">Prvih 30 dana besplatno</p>
       <ul>
-        <li>Viber i SMS obaveštenja vašim kupcima</li>
+        <li>Viber i SMS obaveštenja vašim kupcima, uključena u cenu</li>
         <li>Okvirno vreme dolaska i link za praćenje pošiljke</li>
         <li>Kontrolna tabla, ocene dostave, API i webhookovi</li>
       </ul>
       <a href="/accounts/register/" class="btn btn-primary" data-app-link data-cta="pricing">Isprobaj 30 dana besplatno</a>
-      <p class="soon">Plaćanje karticom (mesečna pretplata) uvodimo uskoro. Do tada Javi ne naplaćuje ništa.</p>
+      <p class="after">Posle 30 dana za nastavak je potrebno plaćanje. Bez plaćanja ostaju probni limiti.</p>
     </div>
   </section>
 
@@ -467,7 +467,7 @@
       <h3>Šta ako kupac nema Viber?</h3>
       <p>Javi prvo šalje Viber poruku. Ako ona ne može da stigne, kupac dobija SMS.</p>
       <h3>Koliko košta Javi?</h3>
-      <p>30 € mesečno po prodavnici. Prvih 30 dana je besplatno i kartica nije potrebna. Plaćanje karticom uvodimo uskoro.</p>
+      <p>30 € mesečno po prodavnici. Viber i SMS poruke su uključene u cenu. Prvih 30 dana je besplatno i kartica nije potrebna za početak. Posle 30 dana za nastavak je potrebno plaćanje. Bez plaćanja ostaju probni limiti.</p>
       <h3>Mogu li da povežem svoju online prodavnicu?</h3>
       <p>Da. Javi ima REST API i potpisane webhookove: napravite porudžbinu, označite da je krenula i dobijete link za praćenje. Dokumentacija: <a href="/api/docs/">javi.serbito.rs/api/docs/</a>.</p>
       <h3>Na koje brojeve Javi šalje poruke?</h3>
@@ -479,10 +479,8 @@
 
   <section class="sec" id="o-nama" aria-labelledby="o-nama-h">
     <h2 id="o-nama-h">Ko stoji iza Javija</h2>
-    <!-- TODO(owner, SERBITO-461): add the company or preduzetnik name, the city and a business
-         e-mail for Javi here and in the Organization node. Only facts from the repo are shown now. -->
     <div class="about">
-      <p>Javi pravi tim <a href="https://www.linkedin.com/company/nohandoff/">No Handoff</a>. Kod je otvoren (MIT licenca) i javan na <a href="https://github.com/alxndr-bnd/javi">GitHub-u</a>: možete da proverite šta Javi radi sa podacima.</p>
+      <p>Javi pravi kompanija <a href="https://www.linkedin.com/company/nohandoff/">No Handoff</a>. Kod je otvoren (MIT licenca) i javan na <a href="https://github.com/alxndr-bnd/javi">GitHub-u</a>: možete da proverite šta Javi radi sa podacima.</p>
       <p>Javi je u alfa fazi. Aktivno ga razvijamo, a sve izmene objavljujemo u <a href="https://github.com/alxndr-bnd/javi/blob/main/CHANGELOG.md">spisku promena</a>.</p>
       <p>Imate pitanje pre registracije? <a href="#prijava">Ostavite kontakt</a> i javićemo vam se.</p>
     </div>

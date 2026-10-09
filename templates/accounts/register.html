@@ -7,8 +7,8 @@
 <div class="auth">
   <div class="logo" style="margin-bottom:18px">javi<span>.</span></div>
   <h1>{% trans "Create an account" %}</h1>
-  {# SERBITO-595/593: the offer next to the form. Billing is not live yet: no checkout promised. #}
-  <p class="muted trial-note">{% trans "30 days free, then 30 € per month. No card needed to start." %}</p>
+  {# SERBITO-595/593: the offer next to the form. No checkout page or payment date is promised. #}
+  <p class="muted trial-note">{% trans "30 days free, then 30 € per month. No card needed to start. After the 30 days, payment is required to continue. Without payment, the trial limits stay." %}</p>
   <form method="post" action="{% url 'accounts:register' %}">
     {% csrf_token %}
     {% if form.non_field_errors %}

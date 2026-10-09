@@ -15,8 +15,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 ## [Unreleased]
 
 ### Changed
-- The home page now shows who Javi is for, how it works in 3 steps, the price (30 € a month, the first 30 days free), common questions and who runs Javi.
-  - SR: Početna stranica sada pokazuje za koga je Javi, kako radi u 3 koraka, cenu (30 € mesečno, prvih 30 dana besplatno), česta pitanja i ko stoji iza Javija.
+- The home page now shows who Javi is for, how it works in 3 steps, the price, common questions and who runs Javi. The price is 30 € a month with Viber and SMS messages included. The first 30 days are free. After that, payment is required to continue; without it, the trial limits stay.
+  - SR: Početna stranica sada pokazuje za koga je Javi, kako radi u 3 koraka, cenu, česta pitanja i ko stoji iza Javija. Cena je 30 € mesečno, a Viber i SMS poruke su uključene. Prvih 30 dana je besplatno. Posle toga je za nastavak potrebno plaćanje; bez njega ostaju probni limiti.
 - The contact form is shorter: shop name, contact and an optional message.
   - SR: Forma za kontakt je kraća: naziv prodavnice, kontakt i opciona poruka.
 - The home page shows the message a customer gets and the tracking page (test data).

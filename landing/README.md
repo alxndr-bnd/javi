@@ -85,8 +85,8 @@ cd landing && python3 -m http.server 8080
 - **JSON-LD.** Each language page has one `@graph`: `Organization` (No Handoff),
   `WebSite`, `WebPage` (this page's URL, title, description, language) and `SoftwareApplication`.
   The `@id`s are stable: `https://javi.serbito.rs/#organization`, `#website`, `#software`, and
-  `<page URL>#webpage`. There is no `Offer`: the price is not public. Add one only with the real
-  price from the landing (SERBITO-461). `config/test_seo.py` checks the graph against the page.
+  `<page URL>#webpage`. `SoftwareApplication` carries the `Offer` (see "Price" below).
+  `config/test_seo.py` checks the graph against the page.
 - **Redirects.** `/index.html`, `/en/index.html`, `/ru/index.html`, `/en`, `/ru` answer 301
   (`common/landing_whitenoise.py`; plain WhiteNoise answers 302).
 - **consent.js cache.** Every page loads `/consent.js?v=<first 12 hex of its SHA-256>`, and
@@ -102,12 +102,13 @@ cd landing && python3 -m http.server 8080
 - **Sections** on every language page: hero with one CTA (registration) and the trial line, who
   it is for, how it works (3 steps), features, price (`#cena`), FAQ (`#pitanja`), who runs Javi
   (`#o-nama`), the lead form (`#prijava`). Section ids are the same in every language.
-- **Price.** 30 €/month per shop, the first 30 days free (SERBITO-593). Card payment is not live:
-  the page says it comes soon and promises no checkout. Change the price → change the page text,
+- **Price.** 30 €/month per shop, the first 30 days free (SERBITO-593). Viber/SMS messages are
+  included, with no limit shown. After 30 days payment is required; without it the trial limits
+  stay. The page names no checkout page, payment method or date. Change the price → change the page text,
   the `Offer` in JSON-LD (`config/test_seo.py` checks both) and the registration page line.
 - **FAQPage.** The JSON-LD questions and answers are the visible FAQ, word for word (tested).
-- **Who runs Javi.** Only facts from the repo: No Handoff, MIT licence, public GitHub, alpha.
-  TODO for the owner (SERBITO-461): company name, city, business e-mail.
+- **Who runs Javi.** No Handoff, the owner's company (owner answer, 2026-10-09), the MIT licence,
+  public GitHub, alpha. No street address or personal data on the page.
 - **Icons.** `favicon.ico` (16/32/48) and `apple-touch-icon.png` (180×180, opaque) are files in
   `landing/`, drawn from the same "j" logo as the inline SVG icon. Every landing page, `privacy.html`
   and `templates/base.html` link all three (`config/test_landing_media.py`).
