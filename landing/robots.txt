@@ -9,5 +9,6 @@ Disallow: /api/
 Disallow: /webhooks/
 Disallow: /tasks/
 Disallow: /i18n/
+Disallow: /billing/
 
 Sitemap: https://javi.serbito.rs/sitemap.xml

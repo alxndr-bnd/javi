@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Added
+- Paid plan is ready: 30 € per month per shop, paid by card on the Whop page, after the first 30 free days. It is switched on separately; until then nothing changes for shops.
+  - SR: Plaćeni paket je spreman: 30 € mesečno po prodavnici, plaćanje karticom na Whop stranici, posle prvih 30 besplatnih dana. Uključuje se posebno; do tada se za prodavnice ništa ne menja.
+
 ## [0.80.0] - 2026-10-10
 
 ### Changed

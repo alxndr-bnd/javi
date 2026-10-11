@@ -40,6 +40,7 @@ urlpatterns = [
     path("t/", include("tracking.urls")),  # публичная страница статуса (без логина)
     path("webhooks/", include("notifications.urls")),  # вебхуки Infobip (по секрету)
     path("tasks/", include("tasks.urls")),  # колбэки Cloud Tasks (по секрету)
+    path("billing/", include("billing.urls")),  # subscription + Whop webhook (SERBITO-593)
 ]
 
 # Своя 404 (SERBITO-356): на языке посетителя (по умолчанию сербский), без аналитики.

@@ -7,7 +7,8 @@
 
 Проверки (в порядке):
 1. переотправки одной доставки — не больше SEND_LIMIT_RESENDS_PER_DELIVERY;
-2. пробный (непроверенный) магазин — только сербские мобильные;
+2. пробный (непроверенный) магазин — только сербские мобильные. Неоплаченный магазин после
+   бесплатного периода (SERBITO-593, billing/services.py) получает те же пробные лимиты;
 3. один номер за день — по всем магазинам;
 4. магазин за день и за месяц (пробные / обычные / индивидуальные лимиты);
 5. весь сервис за день — предохранитель, упор логируется как ERROR (→ Sentry).
@@ -28,6 +29,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext, ngettext
 
+from billing import services as billing
 from deliveries.models import Shop
 
 from .models import OutboundSend
@@ -50,18 +52,24 @@ class ShopLimits:
     day: int
     month: int
     trial: bool
+    # SERBITO-593: the free trial is over and the shop has not paid (billing on).
+    unpaid: bool = False
 
 
 def shop_limits(shop: Shop) -> ShopLimits:
-    """Лимиты магазина: индивидуальные из админки, иначе пробные или обычные."""
-    trial = not shop.sending_verified
+    """Лимиты магазина: индивидуальные из админки, иначе пробные или обычные.
+
+    Пробные — у непроверенного магазина и у неоплаченного после бесплатного периода.
+    """
+    unpaid = not billing.has_access(shop)
+    trial = not shop.sending_verified or unpaid
     day = settings.SEND_LIMIT_TRIAL_DAY if trial else settings.SEND_LIMIT_SHOP_DAY
     month = settings.SEND_LIMIT_TRIAL_MONTH if trial else settings.SEND_LIMIT_SHOP_MONTH
     if shop.daily_send_limit is not None:
         day = shop.daily_send_limit
     if shop.monthly_send_limit is not None:
         month = shop.monthly_send_limit
-    return ShopLimits(day=day, month=month, trial=trial)
+    return ShopLimits(day=day, month=month, trial=trial, unpaid=unpaid)
 
 
 def _day_start(now: datetime) -> datetime:
@@ -79,6 +87,7 @@ def shop_usage(shop: Shop, now: datetime | None = None) -> dict:
     sends = OutboundSend.objects.filter(shop=shop)
     return {
         "trial": limits.trial,
+        "unpaid": limits.unpaid,
         "day_used": sends.filter(created_at__gte=_day_start(now)).count(),
         "day_limit": limits.day,
         "month_used": sends.filter(created_at__gte=_month_start(now)).count(),
@@ -87,6 +96,10 @@ def shop_usage(shop: Shop, now: datetime | None = None) -> dict:
 
 
 def _trial_suffix(limits: ShopLimits) -> str:
+    if limits.unpaid:
+        return " " + gettext(
+            "The free trial has ended. Subscribe in the store profile to lift the limits."
+        )
     if not limits.trial:
         return ""
     return " " + gettext("New stores have lower limits until the store is verified.")
@@ -116,6 +129,11 @@ def _check(shop: Shop, phone: str, *, kind: str, delivery, risky: bool, now: dat
         raise QuotaExceeded(
             "destination_not_allowed",
             gettext(
+                "Without a subscription, messages go only to Serbian mobile numbers. "
+                "Subscribe in the store profile to lift the limits."
+            )
+            if limits.unpaid and shop.sending_verified
+            else gettext(
                 "New stores can send messages only to Serbian mobile numbers "
                 "until the store is verified."
             ),

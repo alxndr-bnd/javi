@@ -29,6 +29,7 @@ def free_quota(request):
         usage = shop_usage(shop)
         ctx["shop_quota"] = {
             "trial": usage["trial"],
+            "unpaid": usage["unpaid"],
             "rows": [
                 _row(_("Today"), usage["day_used"], usage["day_limit"]),
                 _row(_("This month"), usage["month_used"], usage["month_limit"]),

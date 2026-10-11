@@ -11,6 +11,7 @@ from django.utils.translation import gettext as _
 from django.views import View
 from django.views.generic import TemplateView
 
+from billing import services as billing
 from common.phone import InvalidPhone, normalize_phone
 from common.timewindow import BELGRADE, format_eta, format_eta_label
 from notifications.models import Notification, OptOut
@@ -127,6 +128,7 @@ class ShopProfileView(LoginRequiredMixin, View):
             "api_keys": api_keys,
             "send_usage": usage,
             "verify_email": settings.SHOP_VERIFY_EMAIL,
+            "billing": billing.summary(shop) if shop is not None else None,
         }
 
     def get(self, request):
