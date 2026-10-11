@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.81.0] - 2026-10-11
+
 ### Added
 - Paid plan is ready: 30 € per month per shop, paid by card on the Whop page, after the first 30 free days. It is switched on separately; until then nothing changes for shops.
   - SR: Plaćeni paket je spreman: 30 € mesečno po prodavnici, plaćanje karticom na Whop stranici, posle prvih 30 besplatnih dana. Uključuje se posebno; do tada se za prodavnice ništa ne menja.
@@ -148,7 +150,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.80.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.81.0...HEAD
+[0.81.0]: https://github.com/alxndr-bnd/javi/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/alxndr-bnd/javi/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/alxndr-bnd/javi/compare/v0.78.0...v0.79.0
 [0.78.0]: https://github.com/alxndr-bnd/javi/compare/v0.77.0...v0.78.0
