@@ -88,6 +88,46 @@
     </form>
   </div>
 
+  {% if billing %}
+  <div class="h" style="margin-top:28px">{% trans "Subscription" %}</div>
+  <div class="card" id="billing">
+    <div style="font-size:14px">
+      {% if billing.status == "active" %}
+        <strong>{% trans "Subscription is active" %}</strong> ·
+        {% blocktrans with price=billing.price|floatformat:0 %}{{ price }} € per month{% endblocktrans %}
+        {% if billing.current_period_end %}
+          · {% if billing.cancel_at_period_end %}{% trans "ends on" %}{% else %}{% trans "next payment" %}{% endif %}
+          {{ billing.current_period_end|date:"d.m.Y" }}
+        {% endif %}
+      {% elif billing.status == "past_due" %}
+        <strong>{% trans "Payment failed" %}</strong> ·
+        {% trans "Please update your card on the Whop page. If the payment does not go through within a few days, the trial limits apply." %}
+      {% elif billing.has_access %}
+        <strong>{% trans "Free trial" %}</strong> ·
+        {% blocktrans count days=billing.trial_days_left %}{{ days }} day left{% plural %}{{ days }} days left{% endblocktrans %}
+        ({% trans "until" %} {{ billing.trial_ends_at|date:"d.m.Y" }})
+      {% else %}
+        <strong>{% trans "Free trial ended" %}</strong> ·
+        {% trans "The trial limits apply until you subscribe." %}
+      {% endif %}
+    </div>
+    <div class="muted" style="font-size:13px;margin-top:6px">
+      {% blocktrans with price=billing.price|floatformat:0 %}{{ price }} € per month per store, Viber and SMS messages included. You pay on the Whop page, our payment partner.{% endblocktrans %}
+      {% if billing.can_subscribe and billing.has_access %}{% trans "You are not charged before the free trial ends." %}{% endif %}
+    </div>
+    <div style="margin-top:12px">
+      {% if billing.can_subscribe %}
+        <form method="post" action="{% url 'billing:subscribe' %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">{% blocktrans with price=billing.price|floatformat:0 %}Subscribe — {{ price }} € / month{% endblocktrans %}</button>
+        </form>
+      {% elif billing.manage_url %}
+        <a class="btn" href="{{ billing.manage_url }}" rel="noopener">{% trans "Manage subscription" %}</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
   {% if send_usage %}
   <div class="h" style="margin-top:28px">{% trans "Customer messages" %}</div>
   <div class="card">
@@ -95,7 +135,11 @@
       {% blocktrans with used=send_usage.day_used limit=send_usage.day_limit %}Today: {{ used }} of {{ limit }}{% endblocktrans %}
       · {% blocktrans with used=send_usage.month_used limit=send_usage.month_limit %}This month: {{ used }} of {{ limit }}{% endblocktrans %}
     </div>
-    {% if send_usage.trial %}
+    {% if send_usage.unpaid %}
+    <div class="muted" style="font-size:13px;margin-top:6px">
+      {% trans "Trial limits: the free trial has ended. Subscribe above to lift them." %}
+    </div>
+    {% elif send_usage.trial %}
     <div class="muted" style="font-size:13px;margin-top:6px">
       {% trans "Trial store: lower limits and Serbian mobile numbers only until we verify the store." %}
       {% if verify_email %}

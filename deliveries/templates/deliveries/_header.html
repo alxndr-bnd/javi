@@ -30,7 +30,7 @@
                   <span class="quota-num">{% blocktrans with used=q.used limit=q.limit %}{{ used }} of {{ limit }}{% endblocktrans %}</span>
                 </div>
               {% endfor %}
-              {% if shop_quota.trial %}<a class="quota-more" href="{% url 'deliveries:profile' %}">{% trans "Trial limits — how to get verified" %}</a>{% endif %}
+              {% if shop_quota.unpaid %}<a class="quota-more" href="{% url 'deliveries:profile' %}#billing">{% trans "Trial limits — subscribe" %}</a>{% elif shop_quota.trial %}<a class="quota-more" href="{% url 'deliveries:profile' %}">{% trans "Trial limits — how to get verified" %}</a>{% endif %}
             </div>
           {% endif %}
           {% if free_quota %}

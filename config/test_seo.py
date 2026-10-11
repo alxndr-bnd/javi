@@ -49,7 +49,16 @@ from common.testing import LANDING_PAGES, parse_html
 SITE = "https://javi.serbito.rs"
 NOINDEX = "noindex, nofollow"
 META_NOINDEX = '<meta name="robots" content="noindex, nofollow">'
-PRIVATE_PREFIXES = ["admin/", "app/", "accounts/", "api/", "webhooks/", "tasks/", "i18n/"]
+PRIVATE_PREFIXES = [
+    "admin/",
+    "app/",
+    "accounts/",
+    "api/",
+    "webhooks/",
+    "tasks/",
+    "i18n/",
+    "billing/",
+]
 # Top-level Django prefixes that must stay crawlable (they rely on noindex instead).
 CRAWLABLE_PREFIXES = {"t/"}
 

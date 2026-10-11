@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "tracking",
     "tasks",
     "common",
+    "billing",
 ]
 
 MIDDLEWARE = [
@@ -221,11 +222,41 @@ SESSION_COOKIE_HTTPONLY = True  # дефолт True, фиксируем явно
 # Полная политика: скрипты — свои и с nonce (+ gtag), стили — свои + inline-атрибуты,
 # GA — только свои домены. Пока report-only: gtag (Consent Mode) может ходить куда-то ещё;
 # нарушения видно в консоли браузера. CSP_ENFORCE=True — включить её в полную силу.
+# Shop billing (SERBITO-593, billing/services.py). Off by default: the release is safe before
+# the Whop product exists. On: the store profile shows the subscription, and after the free
+# trial an unpaid shop gets the unverified-shop limits (notifications/quotas.py).
+JAVI_BILLING_ENABLED = env.bool("JAVI_BILLING_ENABLED", default=False)
+# The day billing goes live (YYYY-MM-DD). Shops registered earlier start their trial on this
+# day, so nobody loses the 30 free days. Required when the flag is on, else no billing limits.
+JAVI_BILLING_START_DATE = env("JAVI_BILLING_START_DATE", default="")
+JAVI_BILLING_TRIAL_DAYS = env.int("JAVI_BILLING_TRIAL_DAYS", default=30)
+JAVI_BILLING_PRICE = env("JAVI_BILLING_PRICE", default="30.00")
+JAVI_BILLING_CURRENCY = env("JAVI_BILLING_CURRENCY", default="EUR")
+JAVI_BILLING_PERIOD_DAYS = env.int("JAVI_BILLING_PERIOD_DAYS", default=30)
+# Whop fee (~17%, as measured on serbito) for the estimated net in billing_report.
+JAVI_BILLING_FEE_RATE = env("JAVI_BILLING_FEE_RATE", default="0.17")
+# Whop retries a failed renewal; the shop keeps its limits for this many days meanwhile.
+JAVI_BILLING_PAST_DUE_GRACE_DAYS = env.int("JAVI_BILLING_PAST_DUE_GRACE_DAYS", default=7)
+# Whop: the same business as serbito, its own API key, webhook and product for javi.
+WHOP_API_KEY = env("WHOP_API_KEY", default="")
+WHOP_WEBHOOK_SECRET = env("WHOP_WEBHOOK_SECRET", default="")
+WHOP_COMPANY_ID = env("WHOP_COMPANY_ID", default="")
+WHOP_PRODUCT_ID = env("WHOP_PRODUCT_ID", default="")
+# 1 = sandbox-api.whop.com (test cards only), 0 = api.whop.com.
+WHOP_SANDBOX = env.bool("WHOP_SANDBOX", default=True)
+WHOP_API_VERSION = env("WHOP_API_VERSION", default="2026-10-06")
+WHOP_API_TIMEOUT = env.float("WHOP_API_TIMEOUT", default=10.0)
+
+# Billing: the subscribe form answers with a redirect to Whop, and browsers check form-action
+# on that redirect too (serbito SERBITO-541). Without these hosts the checkout is blocked.
+_FORM_ACTION = [CSP.SELF]
+if JAVI_BILLING_ENABLED:
+    _FORM_ACTION += ["https://whop.com", "https://*.whop.com"]
 _CSP_BASELINE = {
     "object-src": [CSP.NONE],
     "base-uri": [CSP.SELF],
     "frame-ancestors": [CSP.NONE],
-    "form-action": [CSP.SELF],
+    "form-action": _FORM_ACTION,
 }
 _GOOGLE_ANALYTICS = [
     "https://*.google-analytics.com",

@@ -1229,3 +1229,123 @@ msgstr ""
 #: tracking/views.py:19
 msgid "Received"
 msgstr "Primljeno"
+
+#: billing/views.py
+msgid "Your subscription is already active."
+msgstr "Vaša pretplata je već aktivna."
+
+#: billing/views.py
+msgid "We could not open the payment page. Please try again later."
+msgstr "Nismo uspeli da otvorimo stranicu za plaćanje. Pokušajte ponovo kasnije."
+
+#: billing/views.py
+msgid ""
+"Thank you! Your subscription becomes active as soon as Whop confirms it, "
+"usually within a minute."
+msgstr ""
+"Hvala! Pretplata postaje aktivna čim je Whop potvrdi, obično u roku od "
+"jednog minuta."
+
+#: notifications/quotas.py
+msgid ""
+"The free trial has ended. Subscribe in the store profile to lift the limits."
+msgstr ""
+"Besplatni probni period je završen. Pretplatite se u profilu prodavnice da "
+"biste uklonili limite."
+
+#: notifications/quotas.py
+msgid ""
+"Without a subscription, messages go only to Serbian mobile numbers. "
+"Subscribe in the store profile to lift the limits."
+msgstr ""
+"Bez pretplate poruke idu samo na srpske mobilne brojeve. Pretplatite se u "
+"profilu prodavnice da biste uklonili limite."
+
+#: deliveries/templates/deliveries/_header.html
+msgid "Trial limits — subscribe"
+msgstr "Probni limiti — pretplatite se"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Subscription"
+msgstr "Pretplata"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Subscription is active"
+msgstr "Pretplata je aktivna"
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "%(price)s € per month"
+msgstr "%(price)s € mesečno"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "ends on"
+msgstr "ističe"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "next payment"
+msgstr "sledeće plaćanje"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Payment failed"
+msgstr "Plaćanje nije uspelo"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid ""
+"Please update your card on the Whop page. If the payment does not go through "
+"within a few days, the trial limits apply."
+msgstr ""
+"Ažurirajte karticu na Whop stranici. Ako plaćanje ne prođe u roku od "
+"nekoliko dana, važe probni limiti."
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Free trial"
+msgstr "Besplatni probni period"
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "%(days)s day left"
+msgid_plural "%(days)s days left"
+msgstr[0] "još %(days)s dan"
+msgstr[1] "još %(days)s dana"
+msgstr[2] "još %(days)s dana"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "until"
+msgstr "do"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Free trial ended"
+msgstr "Besplatni probni period je završen"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "The trial limits apply until you subscribe."
+msgstr "Probni limiti važe dok se ne pretplatite."
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid ""
+"%(price)s € per month per store, Viber and SMS messages included. You pay on "
+"the Whop page, our payment partner."
+msgstr ""
+"%(price)s € mesečno po prodavnici, Viber i SMS poruke su uključene. Plaćate "
+"na stranici Whop, našeg partnera za plaćanje."
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "You are not charged before the free trial ends."
+msgstr "Ne naplaćujemo pre kraja besplatnog probnog perioda."
+
+#: deliveries/templates/deliveries/shop_profile.html
+#, python-format
+msgid "Subscribe — %(price)s € / month"
+msgstr "Pretplati se — %(price)s € / mesečno"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Manage subscription"
+msgstr "Upravljaj pretplatom"
+
+#: deliveries/templates/deliveries/shop_profile.html
+msgid "Trial limits: the free trial has ended. Subscribe above to lift them."
+msgstr ""
+"Probni limiti: besplatni probni period je završen. Pretplatite se iznad da "
+"biste ih uklonili."

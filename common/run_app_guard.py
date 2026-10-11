@@ -7,8 +7,11 @@ On a run.app host this middleware serves only the deploy tag host ``candidate---
 deploy smoke-checks it and checks its security headers, then removes the tag. Any other request
 gets a 301 to the same path on ``PUBLIC_BASE_URL`` (GET/HEAD) or a 403 (other methods).
 
-No machine path needs run.app: Cloud Tasks callbacks use ``CLOUD_TASKS_SERVICE_URL`` and Infobip
-webhooks use ``PUBLIC_BASE_URL`` (both javi.serbito.rs). The guard is off when ``PUBLIC_BASE_URL``
+Cloud Tasks callbacks use ``CLOUD_TASKS_SERVICE_URL`` and Infobip webhooks use ``PUBLIC_BASE_URL``
+(both javi.serbito.rs). One machine path is served on run.app: the Whop webhook (SERBITO-593,
+``RUN_APP_ALLOWED_PATHS``). Cloudflare Bot Fight Mode challenges Whop's servers on serbito.rs
+hosts (serbito SERBITO-526), so Whop posts to the run.app URL. The view accepts only requests
+with a valid Whop signature and a fresh timestamp. The guard is off when ``PUBLIC_BASE_URL``
 is itself a run.app URL: the redirect would point back at the same host. Hosts that are not
 run.app are not affected. ``.run.app`` stays in ``ALLOWED_HOSTS``: the tag host needs it.
 
@@ -25,6 +28,8 @@ from django.http import HttpResponseForbidden, HttpResponsePermanentRedirect
 
 RUN_APP_SUFFIX = ".run.app"
 CANDIDATE_TAG_PREFIX = "candidate---"
+#: Exact paths served on any run.app host (machine-to-machine, signed).
+RUN_APP_ALLOWED_PATHS = frozenset({"/billing/whop/webhook/"})
 
 
 def host_name(value: str) -> str:
@@ -54,6 +59,8 @@ class RunAppHostGuardMiddleware:
     def __call__(self, request):
         host = host_name(request.META.get("HTTP_HOST") or "")
         if not is_run_app_host(host) or host.startswith(CANDIDATE_TAG_PREFIX):
+            return self.get_response(request)
+        if request.path in RUN_APP_ALLOWED_PATHS:
             return self.get_response(request)
         origin = public_origin()
         if not origin:
