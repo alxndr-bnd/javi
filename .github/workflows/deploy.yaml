@@ -97,11 +97,15 @@ jobs:
             suffix="-r$(date -u +%Y%m%d)"
           fi
           sha="$(git rev-parse HEAD)"
-          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
-          echo "IMAGE=${AR_IMAGE}:${sha}${suffix}" >> "$GITHUB_ENV"
-          echo "mode=$mode" >> "$GITHUB_OUTPUT"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "image=${AR_IMAGE}:${sha}${suffix}" >> "$GITHUB_OUTPUT"
+          {
+            echo "RELEASE_TAG=$tag"
+            echo "IMAGE=${AR_IMAGE}:${sha}${suffix}"
+          } >> "$GITHUB_ENV"
+          {
+            echo "mode=$mode"
+            echo "tag=$tag"
+            echo "image=${AR_IMAGE}:${sha}${suffix}"
+          } >> "$GITHUB_OUTPUT"
           echo "Deploying $tag ($mode): ${AR_IMAGE}:${sha}${suffix}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       # SERBITO-389: a tag ships only with its notes for shops. scripts/release_minor.sh writes the

@@ -25,7 +25,7 @@ repos:
         stages: [pre-commit]
       - id: django-check
         name: django system check
-        entry: uv run python manage.py check
+        entry: uv run python manage.py check --fail-level WARNING
         language: system
         pass_filenames: false
         always_run: true

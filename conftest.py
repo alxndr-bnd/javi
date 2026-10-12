@@ -39,3 +39,31 @@ def _no_funnel_counting():
     """
     with override_settings(FUNNEL_COUNTING=False):
         yield
+
+
+@pytest.fixture(autouse=True)
+def _close_streaming_responses(monkeypatch):
+    """Close every test-client response at teardown (SERBITO-613: warnings are errors).
+
+    WhiteNoise serves the landing as a streaming FileResponse. Django closes its file only
+    when a test reads the whole body; a test that checks only the status or the headers left
+    the file open, and Python reported `ResourceWarning: unclosed file` later, in a random
+    test. Production servers always close the response.
+    """
+    from django.test import Client
+
+    responses = []
+    request = Client.request
+
+    def tracked(self, **kwargs):
+        response = request(self, **kwargs)
+        responses.append(response)
+        return response
+
+    monkeypatch.setattr(Client, "request", tracked)
+    yield
+    for response in responses:
+        # Only the file closers: response.close() also sends request_finished, which touches
+        # the DB. The test client re-wraps streaming_content, so file_to_stream is None here.
+        for close in getattr(response, "_resource_closers", ()):
+            close()
