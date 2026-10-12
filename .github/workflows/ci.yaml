@@ -15,6 +15,13 @@ on:
 permissions:
   contents: read
 
+# actions/checkout runs `git init`; with no default branch configured, git prints a
+# 10-line "Using 'master'" hint into the log. Set it for every git call (as SERBITO-530).
+env:
+  GIT_CONFIG_COUNT: "1"
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
+
 jobs:
   verify:
     runs-on: ubuntu-24.04 # явная версия: ubuntu-latest переезжает на 26.04 (2026-10-19)
