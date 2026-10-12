@@ -130,8 +130,8 @@ def test_trial_store_sees_verification_contact(client):
     body = client.get(PROFILE).content.decode()
     assert "Trial store" in body
     assert (
-        'Write to <a href="mailto:alexander.bondarchuk@gmail.com">'
-        "alexander.bondarchuk@gmail.com</a> to get verified." in body
+        'Write to <a href="mailto:support@serbito.rs">'
+        "support@serbito.rs</a> to get verified." in body
     )
 
 
@@ -139,7 +139,7 @@ def test_trial_verification_contact_in_serbian(client):
     user, _shop = _user_shop()
     client.force_login(user)
     body = client.get(PROFILE, HTTP_ACCEPT_LANGUAGE="sr").content.decode()
-    assert "Pišite na" in body and "mailto:alexander.bondarchuk@gmail.com" in body
+    assert "Pišite na" in body and "mailto:support@serbito.rs" in body
 
 
 def test_verified_store_has_no_trial_note(client):

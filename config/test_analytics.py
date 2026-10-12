@@ -112,7 +112,7 @@ def test_privacy_lists_google_analytics(lang):
     assert "Google Ireland" in section  # Google named as processor
     assert "/t/" in section  # says where GA does not run
     assert "Cloudflare Web Analytics" in section
-    assert "mailto:alexander.bondarchuk@gmail.com" in section
+    assert "mailto:support@serbito.rs" in section
 
 
 @pytest.mark.parametrize(
