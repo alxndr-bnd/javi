@@ -108,7 +108,8 @@ cd landing && python3 -m http.server 8080
   the `Offer` in JSON-LD (`config/test_seo.py` checks both) and the registration page line.
 - **FAQPage.** The JSON-LD questions and answers are the visible FAQ, word for word (tested).
 - **Who runs Javi.** No Handoff, the owner's company (owner answer, 2026-10-09), the MIT licence,
-  public GitHub, alpha. No street address or personal data on the page.
+  public GitHub, alpha, and the business e-mail `support@serbito.rs` (already public on serbito.rs;
+  SERBITO-461). No city, street address or personal e-mail on the page: the city is not public yet.
 - **Icons.** `favicon.ico` (16/32/48) and `apple-touch-icon.png` (180×180, opaque) are files in
   `landing/`, drawn from the same "j" logo as the inline SVG icon. Every landing page, `privacy.html`
   and `templates/base.html` link all three (`config/test_landing_media.py`).
@@ -144,3 +145,16 @@ cd landing && python3 -m http.server 8080
 - **`llms.txt`** (served as `text/plain; charset="utf-8"`) states the same facts in English and
   Serbian. No page links to it; robots.txt allows it. Change the price, trial, channels or
   operator → change `llms.txt` too (`config/test_landing_geo.py` checks the key sentences).
+
+## Integrations section and privacy page (SERBITO-461)
+
+- **`#povezivanje`** (before `#zasto`): manual entry works without integration; REST API, signed
+  webhooks, link to `/api/docs/`. It says there are no ready-made shop-platform plugins.
+- **Contact.** `support@serbito.rs` in `#o-nama`, in the Organization JSON-LD (`email`), in
+  `llms.txt` and on the privacy page. `SHOP_VERIFY_EMAIL` defaults to it too. Never a personal Gmail
+  (`config/test_seo.py`, `config/test_privacy_page.py`).
+- **`privacy.html`** describes the live product: controller No Handoff; shop data; customer data
+  (name, phone, address, order description, language, message status, rating, opt-out); processors
+  Google Cloud (europe-west1), Cloudflare, Infobip, Google Maps Platform, Sentry, Formspree, Google
+  Analytics, Whop (only when card payment is on); retention (90 days for customer data, SERBITO-467;
+  the prod job is SERBITO-574). A new processor or data flow → update all three sections.

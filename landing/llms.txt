@@ -2,7 +2,7 @@
 
 > Javi is a web service for shops in Serbia that deliver with their own courier. When the courier leaves, the customer gets a Viber message, or an SMS if Viber is not available, with the approximate arrival time and a tracking link. Price: 30 € per month per shop, Viber and SMS messages included. The first 30 days are free. Javi is made by the company No Handoff.
 
-Facts below are in English and in Serbian. Updated: 2026-10-10.
+Facts below are in English and in Serbian. Updated: 2026-10-12.
 
 ## Facts (English)
 
@@ -14,12 +14,13 @@ Facts below are in English and in Serbian. Updated: 2026-10-10.
 - Message status: the shop sees if a message was delivered or read, and can fix a number and send again.
 - Rating: after the delivery the customer rates it in one tap.
 - Courier: no courier app is needed. The shop starts a delivery with one click in the dashboard.
-- Integration: REST API and signed webhooks.
+- Integration: REST API and signed webhooks. Docs: https://javi.serbito.rs/api/docs/. No ready-made plugins for shop platforms.
 - Price: 30 € per month per shop. Viber and SMS messages are included. The first 30 days are free and no card is needed to start. After 30 days, payment is required to continue. Without payment, the trial limits stay.
 - Trial limits: a new shop sends only to Serbian mobile numbers and has lower daily and monthly limits until it is verified.
 - Brand: the shop keeps its own courier and brand. The message carries the shop's name.
 - Where: Serbia. Languages: Serbian (Latin script) and English; the website is also in Russian.
 - Made by: the company No Handoff. The code is open source (MIT licence). Status: alpha.
+- Contact: support@serbito.rs.
 - Customer data: name, phone and address are deleted 90 days after the delivery ends.
 - Javi does not offer: live GPS tracking of the courier, route planning with many stops, ready-made plugins for shop platforms.
 
@@ -33,12 +34,13 @@ Facts below are in English and in Serbian. Updated: 2026-10-10.
 - Status poruke: prodavnica vidi da li je poruka isporučena ili pročitana, može da ispravi broj i pošalje ponovo.
 - Ocena: posle isporuke kupac ocenjuje dostavu jednim dodirom.
 - Kurir: aplikacija za kurira nije potrebna. Prodavnica pokreće isporuku jednim klikom u kontrolnoj tabli.
-- Povezivanje: REST API i potpisani webhookovi.
+- Povezivanje: REST API i potpisani webhookovi. Dokumentacija: https://javi.serbito.rs/api/docs/. Nema gotovih dodataka za platforme online prodavnica.
 - Cena: 30 € mesečno po prodavnici. Viber i SMS poruke su uključene u cenu. Prvih 30 dana je besplatno i kartica nije potrebna za početak. Posle 30 dana za nastavak je potrebno plaćanje. Bez plaćanja ostaju probni limiti.
 - Probni limiti: nova prodavnica šalje samo na srpske mobilne brojeve i ima niže dnevne i mesečne limite dok je ne proverimo.
 - Brend: prodavnica zadržava svog kurira i svoj brend. Poruka nosi ime prodavnice.
 - Gde: Srbija. Jezici: srpski (latinica) i engleski; sajt je i na ruskom.
 - Ko pravi Javi: kompanija No Handoff. Kod je otvoren (MIT licenca). Faza: alfa.
+- Kontakt: support@serbito.rs.
 - Podaci kupaca: ime, telefon i adresa se brišu 90 dana posle završene dostave.
 - Javi nema: GPS praćenje kurira uživo, planiranje ruta sa više adresa, gotove dodatke za platforme online prodavnica.
 

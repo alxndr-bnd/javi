@@ -39,3 +39,34 @@ def test_headings_never_skip_a_level():
     for section in page.find_all("section"):
         first, *rest = heading_levels(section)
         assert first == 1 and rest and set(rest) == {2}, (section.attrs["id"], first, rest)
+
+
+# --- SERBITO-461: the policy describes the live product, with a named controller --------------
+
+STALE = {
+    "sr": "fazi provere interesovanja",
+    "en": "demand-validation phase",
+    "ru": "фазе проверки спроса",
+}
+
+
+def _section_text(lang):
+    return _page().find("section", {"id": lang}).text()
+
+
+def test_policy_names_the_controller_and_a_business_contact():
+    html = PRIVACY.read_text(encoding="utf-8")
+    assert "gmail" not in html.lower()
+    for lang in LANGS:
+        section = _page().find("section", {"id": lang})
+        assert "No Handoff" in section.text(), lang
+        hrefs = [a.attrs.get("href") for a in section.find_all("a")]
+        assert "mailto:support@serbito.rs" in hrefs, lang
+
+
+def test_policy_lists_the_live_data_flows():
+    for lang in LANGS:
+        text = _section_text(lang)
+        for processor in ("Infobip", "Google Maps", "Google Cloud", "Cloudflare", "Sentry", "Whop"):
+            assert processor in text, (lang, processor)
+        assert STALE[lang] not in text, lang

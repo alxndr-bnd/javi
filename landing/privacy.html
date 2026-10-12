@@ -25,7 +25,7 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHME7DK2K0"></script>
 
 <title>Javi — Politika privatnosti / Privacy Policy</title>
-<meta name="description" content="Kako Javi prikuplja i koristi podatke iz kontakt forme i analitike poseta. How Javi collects and uses contact form and visit analytics data.">
+<meta name="description" content="Kako Javi obrađuje podatke prodavnica i kupaca, ko ih dobija i koliko ih čuvamo. Rukovalac: No Handoff. How Javi processes shop and customer data.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://javi.serbito.rs/privacy.html">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -72,10 +72,32 @@
   <!-- ===================== SRPSKI ===================== -->
   <section id="sr" lang="sr">
     <h1>Politika privatnosti</h1>
-    <p class="muted">Poslednje ažuriranje: 9. oktobar 2026.</p>
-    <p>Ova stranica objašnjava koje podatke <strong>Javi</strong> (javi.serbito.rs) prikuplja preko kontakt forme i analitike poseta i kako ih koristi. Javi je u fazi provere interesovanja — sajt je jednostavna stranica sa formom za kontakt.</p>
+    <p class="muted">Poslednje ažuriranje: 12. oktobar 2026.</p>
+    <p><strong>Javi</strong> (javi.serbito.rs) je veb servis za prodavnice: kupcima šalje Viber ili SMS obaveštenje o dostavi i link za praćenje. Ova stranica objašnjava koje podatke Javi obrađuje, zašto, ko ih još dobija i koliko dugo ih čuvamo.</p>
 
-    <h2>Koje podatke prikupljamo</h2>
+    <h2>Ko obrađuje podatke</h2>
+    <p>Rukovalac podacima je kompanija <strong>No Handoff</strong>, koja pravi Javi. Kontakt za sva pitanja o podacima: <a href="mailto:support@serbito.rs">support@serbito.rs</a>.</p>
+    <p>Podatke kupaca unosi prodavnica. Javi ih obrađuje za prodavnicu, samo da pošalje obaveštenje o njenoj dostavi.</p>
+
+    <h2>Podaci prodavnica</h2>
+    <ul>
+      <li>Nalog: email i lozinka. Lozinku čuvamo samo kao heš.</li>
+      <li>Prodavnica: naziv, adresa polaska i njene koordinate, telefon za kupce i adresa za webhook. API ključeve čuvamo samo kao heš.</li>
+      <li>Zaštita od zloupotrebe: broj neuspešnih prijava i novih registracija po IP adresi. Čuvamo heš, ne samu IP adresu, najduže jedan dan.</li>
+      <li>Pretplata, kada je plaćanje karticom uključeno: status pretplate, iznos i datum plaćanja. Broj kartice ne dobijamo.</li>
+    </ul>
+
+    <h2>Podaci kupaca kojima prodavnice šalju obaveštenja</h2>
+    <ul>
+      <li>Ime, broj telefona, adresa za dostavu, opis porudžbine i jezik poruke. Unosi ih prodavnica, ručno ili preko API-ja.</li>
+      <li>Okvirno vreme dolaska: adresu šaljemo servisu Google Maps i dobijamo koordinate i rutu uz saobraćaj. Ne pratimo kurira GPS-om.</li>
+      <li>Poruke: broj telefona i tekst poruke šaljemo servisu Infobip, koji isporučuje Viber poruku ili SMS. Od Infobip-a dobijamo status poruke: poslata, isporučena, pročitana ili neuspešna.</li>
+      <li>Stranica za praćenje (/t/…): kupac vidi status i vreme dolaska i može da oceni dostavu od 1 do 5.</li>
+      <li>Odjava: kada se kupac odjavi od poruka, čuvamo njegov broj telefona da mu više ne šaljemo poruke.</li>
+      <li>Ako prodavnica podesi webhook, Javi šalje status dostave, ime i telefon kupca na adresu sajta te prodavnice.</li>
+    </ul>
+
+    <h2>Kontakt forma i statistika poseta</h2>
     <ul>
       <li>Podatke koje sami unesete u formu: naziv prodavnice, kontakt (email ili telefon/Viber) i opcionu poruku.</li>
       <li>Dnevni broj otvaranja početne stranice i forme za registraciju — samo zbirni broj, bez IP adrese, kolačića i podataka o posetiocu.</li>
@@ -85,15 +107,20 @@
     </ul>
 
     <h2>Zašto ih koristimo</h2>
-    <p>Podatke iz forme — isključivo da vam se javimo povodom Javi i da procenimo interesovanje. Statistiku poseta — da vidimo sa kojih kanala posetioci dolaze i koje stranice koriste. Ne prodajemo i ne delimo vaše podatke u marketinške svrhe.</p>
+    <p>Podatke prodavnica koristimo da vodimo nalog, šaljemo obaveštenja i štitimo servis od zloupotrebe. Podatke kupaca koristimo samo za obaveštenje o dostavi koje je pokrenula prodavnica i za stranicu za praćenje. Podatke iz forme koristimo da vam se javimo povodom Javi. Statistiku poseta koristimo da vidimo sa kojih kanala posetioci dolaze i koje stranice koriste. Ne prodajemo podatke i ne koristimo ih za reklame.</p>
 
     <h2>Kome ih prosleđujemo (obrađivači)</h2>
     <ul>
+      <li><strong>Google Cloud</strong> — server, baza podataka, zakazani zadaci i logovi, u regionu europe-west1 (Belgija).</li>
+      <li><strong>Cloudflare</strong> — mreža preko koje ide sav saobraćaj sajta; štiti ga od napada i vidi IP adresu posetioca. Cloudflare Web Analytics daje zbirnu statistiku poseta bez kolačića.</li>
+      <li><strong>Infobip</strong> — slanje Viber poruka i SMS-a kupcima: broj telefona i tekst poruke.</li>
+      <li><strong>Google Maps Platform</strong> — adresa za dostavu, za koordinate i okvirno vreme dolaska.</li>
+      <li><strong>Sentry</strong> — izveštaji o greškama u aplikaciji. Tokene iz linkova za praćenje uklanjamo pre slanja.</li>
       <li><strong>Formspree</strong> — dostava poslate forme na naš email.</li>
-      <li><strong>Google</strong> (Google Ireland Ltd. i Google LLC) — Google Analytics 4, statistika poseta. Podaci se mogu obrađivati i van Srbije, uključujući SAD.</li>
-      <li><strong>Cloudflare Web Analytics</strong> — zbirna statistika poseta bez kolačića.</li>
-      <li><strong>Whop</strong> — plaćanje pretplate karticom, samo za prodavnice koje se pretplate. Mi dobijamo status plaćanja i iznos, ne broj kartice.</li>
+      <li><strong>Google</strong> (Google Ireland Ltd. i Google LLC) — Google Analytics 4, statistika poseta.</li>
+      <li><strong>Whop</strong> — plaćanje pretplate karticom, kada ga uključimo, samo za prodavnice koje se pretplate. Mi dobijamo status plaćanja i iznos, ne broj kartice.</li>
     </ul>
+    <p>Neki obrađivači obrađuju podatke i van Srbije, uključujući SAD.</p>
 
     <h2>Kolačići</h2>
     <p>Samo ako prihvatite analitiku, Google Analytics postavlja analitičke kolačiće <strong>_ga</strong> (razlikuje posetioce) i <strong>_ga_*</strong> (čuva stanje posete), koji traju do 2 godine. Možete ih blokirati ili obrisati u podešavanjima pregledača ili instalirati <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a>. Cloudflare Web Analytics ne koristi kolačiće. Nalog prodavnice koristi i neophodne kolačiće za prijavu, jezik i zaštitu formi. Izbor jezika na početnoj stranici čuvamo lokalno u vašem pregledaču (localStorage).</p>
@@ -101,24 +128,49 @@
     <h2>Saglasnost za analitiku</h2>
     <p>Pri prvoj poseti mali baner vas pita da li dozvoljavate analitičke kolačiće. Dok ne kliknete <strong>Prihvati</strong>, Google Analytics radi u režimu saglasnosti: ne postavlja i ne čita kolačiće i šalje Google-u samo signale bez kolačića — otvorenu stranicu, vreme, tip pregledača i uređaja, približnu lokaciju izvedenu iz IP adrese i vaš izbor, bez identifikatora po kojem bi vas prepoznao pri sledećoj poseti. Google te signale može koristiti za zbirnu, modelovanu statistiku. <strong>Odbij</strong> zadržava to stanje. Vaš izbor i datum čuvamo u vašem pregledaču (localStorage) i ponovo pitamo posle 12 meseci. Izbor možete promeniti bilo kada preko <button type="button" class="cookie-btn" data-consent-open="sr">Podešavanja kolačića</button> na dnu stranice; povlačenje saglasnosti briše kolačiće _ga.</p>
 
-    <h2>Čuvanje i vaša prava</h2>
+    <h2>Koliko čuvamo podatke</h2>
     <p id="recipient-retention-sr">Podatke kupaca kojima prodavnice šalju obaveštenja preko Javi (ime, telefon i adresa za dostavu) brišemo <strong>90 dana</strong> posle završetka dostave. Status dostave, ocena i datumi ostaju, bez ličnih podataka. Broj koji se odjavio od poruka čuvamo da mu ne bismo ponovo slali poruke.</p>
-    <p>Podatke čuvamo dok traje provera interesovanja. Imate pravo na pristup, ispravku i brisanje svojih podataka — pišite nam i obrisaćemo ih.</p>
+    <p>Nalog i podatke prodavnice čuvamo dok prodavnica koristi Javi. Kontakt iz forme čuvamo dok ne zatražite brisanje. Brojače po IP adresi brišemo posle jednog dana.</p>
+
+    <h2>Vaša prava</h2>
+    <p>Imate pravo na pristup, ispravku i brisanje svojih podataka i pravo da se usprotivite obradi. Pišite na <a href="mailto:support@serbito.rs">support@serbito.rs</a>. Ako ste kupac prodavnice, možete se obratiti i samoj prodavnici. Pritužbu možete podneti Povereniku za informacije od javnog značaja i zaštitu podataka o ličnosti.</p>
 
     <h2>Kontakt</h2>
-    <p>Pitanja: <a href="mailto:alexander.bondarchuk@gmail.com">alexander.bondarchuk@gmail.com</a></p>
+    <p>No Handoff · <a href="mailto:support@serbito.rs">support@serbito.rs</a></p>
     <a class="back" href="/">← Nazad na početnu</a>
   </section>
 
   <!-- ===================== ENGLISH ===================== -->
   <section id="en" lang="en">
     <h1>Privacy Policy</h1>
-    <p class="muted">Last updated: 9 October 2026.</p>
-    <p>This page explains what data <strong>Javi</strong> (javi.serbito.rs) collects through its contact form and visit analytics, and how it is used. Javi is in a demand-validation phase — the site is a simple page with a contact form.</p>
+    <p class="muted">Last updated: 12 October 2026.</p>
+    <p><strong>Javi</strong> (javi.serbito.rs) is a web service for shops: it sends customers a Viber or SMS delivery notification and a tracking link. This page explains what data Javi processes, why, who else receives it and how long we keep it.</p>
 
-    <h2>What we collect</h2>
+    <h2>Who processes the data</h2>
+    <p>The data controller is the company <strong>No Handoff</strong>, which makes Javi. Contact for all data questions: <a href="mailto:support@serbito.rs">support@serbito.rs</a>.</p>
+    <p>The shop enters its customers' data. Javi processes it for the shop, only to send the notification about that shop's delivery.</p>
+
+    <h2>Shop data</h2>
     <ul>
-      <li>What you enter in the form: shop name, contact (email or phone/Viber), and an optional message.</li>
+      <li>Account: email and password. We store only a hash of the password.</li>
+      <li>Shop: name, start address and its coordinates, phone for customers and webhook address. We store API keys only as a hash.</li>
+      <li>Abuse protection: the number of failed logins and new sign-ups per IP address. We store a hash, not the IP address itself, for at most one day.</li>
+      <li>Subscription, when card payment is on: subscription status, payment amount and date. We do not receive the card number.</li>
+    </ul>
+
+    <h2>Data of customers who get notifications from shops</h2>
+    <ul>
+      <li>Name, phone number, delivery address, order description and message language. The shop enters them, by hand or through the API.</li>
+      <li>Approximate arrival time: we send the address to Google Maps and get the coordinates and a route with traffic. We do not track the courier by GPS.</li>
+      <li>Messages: we send the phone number and the message text to Infobip, which delivers the Viber message or SMS. Infobip returns the message status: sent, delivered, read or failed.</li>
+      <li>Tracking page (/t/…): the customer sees the status and the arrival time and can rate the delivery from 1 to 5.</li>
+      <li>Unsubscribe: when a customer unsubscribes from messages, we keep the phone number so that we do not message it again.</li>
+      <li>If the shop sets up a webhook, Javi sends the delivery status and the customer's name and phone to that shop's website.</li>
+    </ul>
+
+    <h2>Contact form and visit statistics</h2>
+    <ul>
+      <li>What you enter in the form: shop name, contact (email or phone/Viber) and an optional message.</li>
       <li>A daily count of home page and sign-up form opens — only a total number, with no IP address, cookie or visitor data.</li>
       <li>UTM tags from the link (utm_source/medium/campaign) — to know which channel you came from.</li>
       <li>Visit statistics via <strong>Google Analytics 4</strong> (with cookies only if you accept — see “Analytics consent”): the pages you open, where you came from, device and browser type, and approximate location (city, country) derived from your IP address. It runs on the home page, this page and the shop account (login, sign-up, dashboard). It does <strong>not</strong> run on the delivery tracking pages (/t/…) that customers receive.</li>
@@ -126,15 +178,20 @@
     </ul>
 
     <h2>Why we use it</h2>
-    <p>Form data — only to contact you about Javi and to gauge interest. Visit statistics — to see which channels visitors come from and which pages they use. We do not sell or share your data for marketing.</p>
+    <p>We use shop data to run the account, send notifications and protect the service from abuse. We use customer data only for the delivery notification that the shop started and for the tracking page. We use form data to contact you about Javi. We use visit statistics to see which channels visitors come from and which pages they use. We do not sell data and do not use it for ads.</p>
 
     <h2>Processors we share it with</h2>
     <ul>
+      <li><strong>Google Cloud</strong> — server, database, scheduled tasks and logs, in the europe-west1 region (Belgium).</li>
+      <li><strong>Cloudflare</strong> — the network that carries all site traffic; it protects the site from attacks and sees the visitor's IP address. Cloudflare Web Analytics gives cookieless aggregate visit statistics.</li>
+      <li><strong>Infobip</strong> — sends Viber messages and SMS to customers: phone number and message text.</li>
+      <li><strong>Google Maps Platform</strong> — the delivery address, for coordinates and the approximate arrival time.</li>
+      <li><strong>Sentry</strong> — application error reports. We remove tracking link tokens before sending.</li>
       <li><strong>Formspree</strong> — delivers the submitted form to our email.</li>
-      <li><strong>Google</strong> (Google Ireland Ltd. and Google LLC) — Google Analytics 4, visit statistics. Data may be processed outside Serbia, including in the USA.</li>
-      <li><strong>Cloudflare Web Analytics</strong> — cookieless aggregate visit statistics.</li>
-      <li><strong>Whop</strong> — card payment of the subscription, only for shops that subscribe. We receive the payment status and amount, not the card number.</li>
+      <li><strong>Google</strong> (Google Ireland Ltd. and Google LLC) — Google Analytics 4, visit statistics.</li>
+      <li><strong>Whop</strong> — card payment of the subscription, when we turn it on, only for shops that subscribe. We receive the payment status and amount, not the card number.</li>
     </ul>
+    <p>Some processors also process data outside Serbia, including in the USA.</p>
 
     <h2>Cookies</h2>
     <p>Only if you accept analytics, Google Analytics sets the analytics cookies <strong>_ga</strong> (tells visitors apart) and <strong>_ga_*</strong> (keeps the visit state), which last up to 2 years. You can block or delete them in your browser settings or install the <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a> add-on. Cloudflare Web Analytics uses no cookies. The shop account also uses essential cookies for login, language and form protection. Your language choice on the home page is stored locally in your browser (localStorage).</p>
@@ -142,22 +199,47 @@
     <h2>Analytics consent</h2>
     <p>On your first visit a small banner asks whether you allow analytics cookies. Until you click <strong>Accept</strong>, Google Analytics runs in consent mode: it sets and reads no cookies and sends Google only cookieless pings — the page opened, the time, browser and device type, approximate location derived from the IP address and your choice, with no identifier that recognises you on your next visit. Google may use these pings for aggregate, modelled statistics. <strong>Decline</strong> keeps it that way. We store your choice and its date in your browser (localStorage) and ask again after 12 months. You can change it at any time via <button type="button" class="cookie-btn" data-consent-open="en">Cookie settings</button> at the bottom of the page; withdrawing consent deletes the _ga cookies.</p>
 
-    <h2>Retention and your rights</h2>
+    <h2>How long we keep data</h2>
     <p id="recipient-retention-en">Data of customers to whom shops send notifications through Javi (name, phone and delivery address) is deleted <strong>90 days</strong> after the delivery is finished. Delivery status, rating and dates stay, without personal data. We keep a number that unsubscribed from messages, so that we do not message it again.</p>
-    <p>We keep the data for the duration of the validation phase. You have the right to access, correct, and delete your data — email us and we will remove it.</p>
+    <p>We keep the shop account and its data while the shop uses Javi. We keep a form contact until you ask us to delete it. We delete the per-IP counters after one day.</p>
+
+    <h2>Your rights</h2>
+    <p>You have the right to access, correct and delete your data and the right to object to processing. Write to <a href="mailto:support@serbito.rs">support@serbito.rs</a>. If you are a shop's customer, you can also contact the shop. You can file a complaint with the Serbian Commissioner for Information of Public Importance and Personal Data Protection.</p>
 
     <h2>Contact</h2>
-    <p>Questions: <a href="mailto:alexander.bondarchuk@gmail.com">alexander.bondarchuk@gmail.com</a></p>
+    <p>No Handoff · <a href="mailto:support@serbito.rs">support@serbito.rs</a></p>
     <a class="back" href="/">← Back to home</a>
   </section>
 
   <!-- ===================== РУССКИЙ ===================== -->
   <section id="ru" lang="ru">
     <h1>Политика конфиденциальности</h1>
-    <p class="muted">Последнее обновление: 9 октября 2026 г.</p>
-    <p>Эта страница объясняет, какие данные <strong>Javi</strong> (javi.serbito.rs) собирает через контактную форму и аналитику посещений и как их использует. Javi находится в фазе проверки спроса — сайт представляет собой простую страницу с формой.</p>
+    <p class="muted">Последнее обновление: 12 октября 2026 г.</p>
+    <p><strong>Javi</strong> (javi.serbito.rs) — веб-сервис для магазинов: он отправляет покупателям уведомление о доставке в Viber или по SMS и ссылку для отслеживания. Эта страница объясняет, какие данные обрабатывает Javi, зачем, кто ещё их получает и сколько мы их храним.</p>
 
-    <h2>Какие данные мы собираем</h2>
+    <h2>Кто обрабатывает данные</h2>
+    <p>Оператор данных — компания <strong>No Handoff</strong>, которая делает Javi. Контакт по всем вопросам о данных: <a href="mailto:support@serbito.rs">support@serbito.rs</a>.</p>
+    <p>Данные покупателей вводит магазин. Javi обрабатывает их для магазина, только чтобы отправить уведомление о его доставке.</p>
+
+    <h2>Данные магазинов</h2>
+    <ul>
+      <li>Аккаунт: email и пароль. Пароль храним только в виде хэша.</li>
+      <li>Магазин: название, адрес отправки и его координаты, телефон для покупателей и адрес вебхука. API-ключи храним только в виде хэша.</li>
+      <li>Защита от злоупотреблений: число неудачных входов и новых регистраций с одного IP-адреса. Храним хэш, а не сам IP-адрес, не дольше одного дня.</li>
+      <li>Подписка, когда оплата картой включена: статус подписки, сумма и дата платежа. Номер карты мы не получаем.</li>
+    </ul>
+
+    <h2>Данные покупателей, которым магазины отправляют уведомления</h2>
+    <ul>
+      <li>Имя, номер телефона, адрес доставки, описание заказа и язык сообщения. Их вводит магазин, вручную или через API.</li>
+      <li>Примерное время прибытия: адрес отправляем в Google Maps и получаем координаты и маршрут с учётом пробок. Курьера по GPS мы не отслеживаем.</li>
+      <li>Сообщения: номер телефона и текст сообщения отправляем в Infobip, который доставляет сообщение в Viber или SMS. От Infobip получаем статус сообщения: отправлено, доставлено, прочитано или не доставлено.</li>
+      <li>Страница отслеживания (/t/…): покупатель видит статус и время прибытия и может оценить доставку от 1 до 5.</li>
+      <li>Отписка: когда покупатель отписывается от сообщений, храним его номер телефона, чтобы больше ему не писать.</li>
+      <li>Если магазин настроил вебхук, Javi отправляет статус доставки, имя и телефон покупателя на адрес сайта этого магазина.</li>
+    </ul>
+
+    <h2>Контактная форма и статистика посещений</h2>
     <ul>
       <li>То, что вы вводите в форму: название магазина, контакт (email или телефон/Viber) и необязательное сообщение.</li>
       <li>Дневное число открытий главной страницы и формы регистрации — только общее число, без IP-адреса, cookies и данных о посетителе.</li>
@@ -167,15 +249,20 @@
     </ul>
 
     <h2>Зачем мы их используем</h2>
-    <p>Данные формы — только чтобы связаться с вами по поводу Javi и оценить интерес. Статистику посещений — чтобы понимать, с каких каналов приходят посетители и какими страницами пользуются. Мы не продаём и не передаём ваши данные в маркетинговых целях.</p>
+    <p>Данные магазинов нужны, чтобы вести аккаунт, отправлять уведомления и защищать сервис от злоупотреблений. Данные покупателей нужны только для уведомления о доставке, которую начал магазин, и для страницы отслеживания. Данные формы нужны, чтобы связаться с вами по поводу Javi. Статистика посещений показывает, с каких каналов приходят посетители и какими страницами пользуются. Мы не продаём данные и не используем их для рекламы.</p>
 
     <h2>Кому передаём (обработчики)</h2>
     <ul>
+      <li><strong>Google Cloud</strong> — сервер, база данных, отложенные задачи и логи, в регионе europe-west1 (Бельгия).</li>
+      <li><strong>Cloudflare</strong> — сеть, через которую идёт весь трафик сайта; защищает его от атак и видит IP-адрес посетителя. Cloudflare Web Analytics даёт сводную статистику посещений без cookies.</li>
+      <li><strong>Infobip</strong> — отправка сообщений в Viber и SMS покупателям: номер телефона и текст сообщения.</li>
+      <li><strong>Google Maps Platform</strong> — адрес доставки, для координат и примерного времени прибытия.</li>
+      <li><strong>Sentry</strong> — отчёты об ошибках приложения. Токены ссылок для отслеживания удаляем перед отправкой.</li>
       <li><strong>Formspree</strong> — доставка отправленной формы на нашу почту.</li>
-      <li><strong>Google</strong> (Google Ireland Ltd. и Google LLC) — Google Analytics 4, статистика посещений. Данные могут обрабатываться за пределами Сербии, в том числе в США.</li>
-      <li><strong>Cloudflare Web Analytics</strong> — сводная статистика посещений без cookies.</li>
-      <li><strong>Whop</strong> — оплата подписки картой, только для магазинов, которые подписались. Мы получаем статус и сумму платежа, не номер карты.</li>
+      <li><strong>Google</strong> (Google Ireland Ltd. и Google LLC) — Google Analytics 4, статистика посещений.</li>
+      <li><strong>Whop</strong> — оплата подписки картой, когда мы её включим, только для магазинов, которые подписались. Мы получаем статус и сумму платежа, не номер карты.</li>
     </ul>
+    <p>Некоторые обработчики обрабатывают данные и за пределами Сербии, в том числе в США.</p>
 
     <h2>Cookies</h2>
     <p>Только если вы согласитесь на аналитику, Google Analytics устанавливает аналитические cookies <strong>_ga</strong> (различает посетителей) и <strong>_ga_*</strong> (хранит состояние визита) сроком до 2 лет. Их можно заблокировать или удалить в настройках браузера либо установить дополнение <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics Opt-out</a>. Cloudflare Web Analytics cookies не использует. Кабинет магазина также использует необходимые cookies для входа, языка и защиты форм. Выбор языка на главной странице хранится локально в вашем браузере (localStorage).</p>
@@ -183,12 +270,15 @@
     <h2>Согласие на аналитику</h2>
     <p>При первом визите небольшой баннер спрашивает, разрешаете ли вы аналитические cookies. Пока вы не нажмёте <strong>Принять</strong>, Google Analytics работает в режиме согласия: не ставит и не читает cookies и отправляет в Google только запросы без cookies — открытую страницу, время, тип браузера и устройства, примерное местоположение по IP-адресу и ваш выбор, без идентификатора, по которому вас можно узнать при следующем визите. Google может использовать эти запросы для сводной, смоделированной статистики. <strong>Отклонить</strong> оставляет всё как есть. Ваш выбор и его дату мы храним в вашем браузере (localStorage) и спрашиваем снова через 12 месяцев. Изменить решение можно в любой момент через <button type="button" class="cookie-btn" data-consent-open="ru">Настройки cookies</button> внизу страницы; отзыв согласия удаляет cookies _ga.</p>
 
-    <h2>Хранение и ваши права</h2>
+    <h2>Сколько храним данные</h2>
     <p id="recipient-retention-ru">Данные покупателей, которым магазины отправляют уведомления через Javi (имя, телефон и адрес доставки), удаляем через <strong>90 дней</strong> после завершения доставки. Статус доставки, оценка и даты остаются, без персональных данных. Номер, отписавшийся от сообщений, храним, чтобы больше ему не писать.</p>
-    <p>Данные храним в течение фазы проверки спроса. Вы вправе запросить доступ, исправление и удаление своих данных — напишите нам, и мы их удалим.</p>
+    <p>Аккаунт и данные магазина храним, пока магазин пользуется Javi. Контакт из формы храним, пока вы не попросите его удалить. Счётчики по IP-адресу удаляем через один день.</p>
+
+    <h2>Ваши права</h2>
+    <p>Вы вправе запросить доступ к своим данным, их исправление и удаление, а также возразить против обработки. Пишите на <a href="mailto:support@serbito.rs">support@serbito.rs</a>. Если вы покупатель магазина, можно обратиться и в сам магазин. Жалобу можно подать Уполномоченному по информации, имеющей общественное значение, и защите персональных данных Сербии (Poverenik).</p>
 
     <h2>Контакт</h2>
-    <p>Вопросы: <a href="mailto:alexander.bondarchuk@gmail.com">alexander.bondarchuk@gmail.com</a></p>
+    <p>No Handoff · <a href="mailto:support@serbito.rs">support@serbito.rs</a></p>
     <a class="back" href="/">← На главную</a>
   </section>
   </main>

@@ -304,7 +304,7 @@ SEND_LIMIT_RESENDS_PER_DELIVERY = env.int("SEND_LIMIT_RESENDS_PER_DELIVERY", def
 SEND_LIMIT_GLOBAL_DAY = env.int("SEND_LIMIT_GLOBAL_DAY", default=500)
 
 # Пробный магазин (SERBITO-357): куда писать, чтобы проверили (показываем на «Prodavnica»).
-SHOP_VERIFY_EMAIL = env("SHOP_VERIFY_EMAIL", default="alexander.bondarchuk@gmail.com")
+SHOP_VERIFY_EMAIL = env("SHOP_VERIFY_EMAIL", default="support@serbito.rs")
 # Регистраций с одного IP клиента за сутки (UTC); сверх — 429 на форме регистрации.
 SIGNUP_LIMIT_PER_IP_DAY = env.int("SIGNUP_LIMIT_PER_IP_DAY", default=3)
 # Request funnel counts (SERBITO-595, common/funnel.py): landing views and sign-up form opens.

@@ -358,6 +358,7 @@ def test_language_pages_share_style_and_script():
 # --- structured data (SERBITO-462) ---
 
 LINKEDIN = "https://www.linkedin.com/company/nohandoff/"
+BUSINESS_EMAIL = "support@serbito.rs"
 ORG_ID = f"{SITE}/#organization"
 WEBSITE_ID = f"{SITE}/#website"
 APP_ID = f"{SITE}/#software"
@@ -415,6 +416,7 @@ def test_json_ld_organization_is_no_handoff(lang):
         "@id": ORG_ID,
         "name": "No Handoff",
         "url": f"{SITE}/",
+        "email": BUSINESS_EMAIL,
         "logo": {
             "@type": "ImageObject",
             "url": f"{SITE}/apple-touch-icon.png",
@@ -521,12 +523,21 @@ def test_price_says_payment_is_required_after_the_trial(lang):
 
 
 @pytest.mark.parametrize("lang", LANGS)
-def test_no_handoff_runs_javi_without_personal_data(lang):
+def test_no_handoff_runs_javi_with_business_contact(lang):
+    # SERBITO-461: the business address already public on serbito.rs; never a personal one.
     html = _landing(lang)
     assert "TODO" not in html
+    assert "gmail" not in html.lower()
     about = parse_html(html).find("section", {"id": "o-nama"})
     assert "No Handoff" in about.text()
-    assert "@" not in about.text()  # no personal or business e-mail on the page
+    assert f'<a href="mailto:{BUSINESS_EMAIL}">{BUSINESS_EMAIL}</a>' in html
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_integrations_section_links_the_api_docs(lang):
+    section = parse_html(_landing(lang)).find("section", {"id": "povezivanje"})
+    assert section is not None
+    assert "/api/docs/" in [a.attrs.get("href") for a in section.find_all("a")]
 
 
 def test_json_ld_shared_nodes_agree_across_languages():

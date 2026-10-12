@@ -14,6 +14,12 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Changed
+- The privacy policy now describes the live service: who processes the data (No Handoff), what we keep about shops and their customers, which services receive it and for how long. Contact: support@serbito.rs.
+  - SR: Politika privatnosti sada opisuje servis kakav jeste: ko obrađuje podatke (No Handoff), šta čuvamo o prodavnicama i njihovim kupcima, koji servisi ih dobijaju i koliko dugo. Kontakt: support@serbito.rs.
+- The home page has a section on connecting your shop through the API, with a link to the API docs, and a business contact address.
+  - SR: Početna stranica ima odeljak o povezivanju prodavnice preko API-ja, sa linkom na dokumentaciju, i poslovnu adresu za kontakt.
+
 ## [0.81.0] - 2026-10-11
 
 ### Added
