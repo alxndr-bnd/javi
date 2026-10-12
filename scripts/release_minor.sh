@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Release helper for javi: CHANGELOG -> gate (pytest, ruff, manage.py check, landing parse) ->
-# commit -> next minor tag -> push -> GitHub Release. The v*.*.* tag triggers
-# .github/workflows/deploy.yaml, which re-runs the same gate and deploys to Cloud Run.
+# Release helper for javi: CI gate (green GitHub CI on main, scripts/ci_gate.sh) -> CHANGELOG ->
+# gate (pytest, ruff, manage.py check, landing parse) -> commit -> next minor tag -> push ->
+# GitHub Release. The v*.*.* tag triggers .github/workflows/deploy.yaml, which re-runs the
+# same gate and deploys to Cloud Run.
 # Entries for shops go into CHANGELOG.md under "## [Unreleased]" before the release. This script
 # turns them into "## [X.Y.0] - date" in the release commit and refuses to release without
 # entries (SERBITO-389, format: changelog.py).
@@ -24,12 +25,16 @@ if [[ "$branch" != "main" ]]; then
   exit 1
 fi
 
+# --- CI gate (SERBITO-613): a red pipeline stops the line. HEAD must be origin/main with green
+# GitHub CI; a running CI is awaited (up to 20 min). Before the CHANGELOG, the tests and the tag ---
+scripts/ci_gate.sh
+
 latest_tag="$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)"
 if [[ -z "$latest_tag" ]]; then
   next_tag="v0.1.0"
 else
   version="${latest_tag#v}"
-  IFS='.' read -r major minor patch <<<"$version"
+  IFS='.' read -r major minor _ <<<"$version"
   next_minor=$((minor + 1))
   next_tag="v${major}.${next_minor}.0"
 fi
@@ -50,7 +55,7 @@ uv run ruff check .
 echo "==> ruff format --check"
 uv run ruff format --check .
 echo "==> manage.py check"
-uv run python manage.py check
+uv run python manage.py check --fail-level WARNING
 
 # --- gate: landing must exist and parse before we tag ---
 echo "==> landing HTML parses"
@@ -64,7 +69,7 @@ fi
 untracked="$(git ls-files --others --exclude-standard)"
 if [[ -n "$untracked" ]]; then
   echo "WARNING: untracked files NOT included in this release (pass them as arguments to add):" >&2
-  echo "$untracked" | sed 's/^/  /' >&2
+  printf '  %s\n' "${untracked//$'\n'/$'\n'  }" >&2
 fi
 
 if git diff --cached --quiet; then

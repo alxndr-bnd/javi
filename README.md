@@ -46,11 +46,15 @@ Infobip (Viber → SMS) · Cloud Tasks. Serbian (Latin) + English UI.
 
 1. With every change shops notice, add an entry under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md):
    an English line `- ...` and a Serbian (Latin) line `  - SR: ...` under it.
-2. On `main`: `bash scripts/release_minor.sh "message"`. It refuses to release when `[Unreleased]` is empty.
+2. On `main`: `bash scripts/release_minor.sh "message"`. First the CI gate (`scripts/ci_gate.sh`,
+   SERBITO-613): local `main` must equal `origin/main`, and GitHub CI on it must be green. It waits for
+   a running CI (up to 20 min) and refuses on red. It refuses to release when `[Unreleased]` is empty.
    Otherwise it dates the entries as `## [X.Y.0]`, runs the gate, tags, pushes and creates the GitHub Release.
 3. The deploy fails for a tag without its `## [X.Y.Z]` section in CHANGELOG.md.
    Details: [SETUP_CICD.md](SETUP_CICD.md#7-day-to-day-release-flow).
-4. Every Wednesday 03:00 UTC the deploy rebuilds the newest tag with fresh Debian packages and
+4. A red run on `main` or on a tag opens one SERBITO Jira issue (`.github/workflows/ci-red.yml`,
+   secrets `JIRA_EMAIL`, `JIRA_API_TOKEN`). Fix it before anything else ships.
+5. Every Wednesday 03:00 UTC the deploy rebuilds the newest tag with fresh Debian packages and
    redeploys it (same version). If the main page is not 200, traffic goes back to the previous revision.
 
 ## License

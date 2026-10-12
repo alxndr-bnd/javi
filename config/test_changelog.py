@@ -6,6 +6,7 @@ A CI checkout has no tags (or only the pushed one), so there the tag check cover
 Locally, with all tags, it checks every one.
 """
 
+import json
 import os
 import re
 import shutil
@@ -133,6 +134,17 @@ def test_real_changelog_notes_are_english_only():
     assert notes.startswith("### Security\n- ") and "SR:" not in notes and "š" not in notes
 
 
+def _runs(tmp, status, conclusion, name="runs"):
+    run = {
+        "workflowName": "CI",
+        "status": status,
+        "conclusion": conclusion,
+        "createdAt": "2026-10-12T10:00:00Z",
+        "url": "https://github.com/alxndr-bnd/javi/actions/runs/1",
+    }
+    (tmp / f"gh-{name}.json").write_text(json.dumps([run]))
+
+
 # --- The release script in a throwaway repo: its own bare origin; uv and gh are stubs ---
 
 
@@ -143,11 +155,25 @@ def repo(tmp_path):
     (work / "landing").mkdir()
     bin_.mkdir()
     shutil.copy(ROOT / "scripts" / "release_minor.sh", work / "scripts")
+    shutil.copy(ROOT / "scripts" / "ci_gate.sh", work / "scripts")
     shutil.copy(ROOT / "changelog.py", work)
     (work / "CHANGELOG.md").write_text(C.with_links(GOOD, C.parse(GOOD)), encoding="utf-8")
     (work / "landing" / "index.html").write_text("<p>ok</p>\n")
     (bin_ / "uv").write_text(f'#!/bin/sh\necho "$@" >> "{tmp_path}/uv-calls"\n')  # the gate passes
-    (bin_ / "gh").write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" > "{tmp_path}/gh-args"\n')
+    # gh: `run list` (the CI gate) prints gh-runs.json, then gh-runs-next.json takes its place
+    # (a run that finishes between two polls); any other call records its arguments.
+    (bin_ / "gh").write_text(
+        "#!/bin/sh\n"
+        'if [ "$1 $2" = "run list" ]; then\n'
+        f'  cat "{tmp_path}/gh-runs.json"\n'
+        f'  if [ -f "{tmp_path}/gh-runs-next.json" ]; then\n'
+        f'    mv "{tmp_path}/gh-runs-next.json" "{tmp_path}/gh-runs.json"\n'
+        "  fi\n"
+        "  exit 0\n"
+        "fi\n"
+        f'printf "%s\\n" "$@" > "{tmp_path}/gh-args"\n'
+    )
+    _runs(tmp_path, "completed", "success")
     for stub in bin_.iterdir():
         stub.chmod(0o755)
     # No GIT_* from the caller: in a git hook GIT_DIR and GIT_INDEX_FILE point at this repo,
@@ -156,6 +182,8 @@ def repo(tmp_path):
         **{k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
         "PYTHON": sys.executable,
         "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}",
+        "CI_GATE_INTERVAL": "0",
+        "CI_GATE_NO_RUN_GRACE": "0",
         "GIT_CONFIG_GLOBAL": os.devnull,
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_AUTHOR_NAME": "t",
@@ -206,8 +234,10 @@ def test_release_script_dates_the_entry_and_uses_it_for_github_release(repo):
     entry = "## [Unreleased]\n\n### Added\n- Three\n  - SR: Tri\n"
     log.write_text(log.read_text().replace("## [Unreleased]\n", entry))
     git("commit", "-qam", "entry", cwd=work, env=env)
+    git("push", "-q", "origin", "main", cwd=work, env=env)  # CI runs on main for this commit
     r = release()
     assert r.returncode == 0, r.stdout + r.stderr
+    assert "CI gate: green" in r.stdout
     assert "run pytest" in (tmp / "uv-calls").read_text()
     top = C.parse(log.read_text())[1]
     assert (top.version, top.date, top.entries) == (
@@ -221,3 +251,72 @@ def test_release_script_dates_the_entry_and_uses_it_for_github_release(repo):
     assert args[:6] == ["release", "create", "v0.3.0", "--verify-tag", "--title", "v0.3.0"]
     assert args[6] == "--notes" and "\n".join(args[7:]).startswith("### Added\n- Three")
     assert "SR:" not in (tmp / "gh-args").read_text()
+
+
+# --- The CI gate (SERBITO-613): no release unless GitHub CI on main is green for HEAD ---
+
+
+def _refused_before_anything(r, work, env, tmp, head):
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert "release refused (SERBITO-613)" in r.stderr
+    assert not (tmp / "uv-calls").exists()  # before the tests, the commit and the tag
+    assert git("rev-parse", "HEAD", cwd=work, env=env) == head
+    assert "v0.3.0" not in git("tag", cwd=work, env=env)
+    assert git("status", "--porcelain", "-uno", cwd=work, env=env) == ""  # CHANGELOG untouched
+    assert not (tmp / "gh-args").exists()
+
+
+@pytest.mark.parametrize(
+    "status, conclusion",
+    [("completed", "failure"), ("completed", "cancelled"), ("completed", "timed_out")],
+)
+def test_ci_gate_refuses_a_red_main(repo, status, conclusion):
+    work, remote, env, release, tmp = repo
+    _runs(tmp, status, conclusion)
+    head = git("rev-parse", "HEAD", cwd=work, env=env)
+    r = release()
+    _refused_before_anything(r, work, env, tmp, head)
+    assert f"CI: {conclusion} https://github.com/" in r.stderr
+
+
+def test_ci_gate_refuses_a_head_that_is_not_origin_main(repo):
+    work, remote, env, release, tmp = repo
+    git("commit", "-q", "--allow-empty", "-m", "local only", cwd=work, env=env)
+    head = git("rev-parse", "HEAD", cwd=work, env=env)
+    r = release()
+    _refused_before_anything(r, work, env, tmp, head)
+    assert "is not origin/main" in r.stderr
+
+
+def test_ci_gate_refuses_when_main_has_no_ci_run(repo):
+    work, remote, env, release, tmp = repo
+    (tmp / "gh-runs.json").write_text("[]")
+    head = git("rev-parse", "HEAD", cwd=work, env=env)
+    r = release()
+    _refused_before_anything(r, work, env, tmp, head)
+    assert 'no "CI" run on main' in r.stderr
+
+
+def test_ci_gate_refuses_when_ci_runs_too_long(repo):
+    work, remote, env, release, tmp = repo
+    _runs(tmp, "in_progress", "")
+    head = git("rev-parse", "HEAD", cwd=work, env=env)
+    r = subprocess.run(
+        ["bash", "scripts/release_minor.sh", "Release"],
+        cwd=work,
+        env={**env, "CI_GATE_TIMEOUT": "0"},
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    _refused_before_anything(r, work, env, tmp, head)
+    assert "CI still running" in r.stderr
+
+
+def test_ci_gate_waits_for_a_running_ci_then_goes_on(repo):
+    work, remote, env, release, tmp = repo
+    _runs(tmp, "in_progress", "")
+    _runs(tmp, "completed", "success", name="runs-next")
+    r = release()  # no entry: the gate passes, then the CHANGELOG check refuses
+    assert "waiting 0s: CI (in_progress)" in r.stdout and "CI gate: green" in r.stdout
+    assert "no entry for 0.3.0" in r.stderr

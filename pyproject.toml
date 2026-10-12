@@ -39,3 +39,6 @@ select = ["E", "F", "I", "UP", "B", "DJ"]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py", "tests.py"]
 addopts = "-q"
+# SERBITO-613: zero tolerance. Every warning fails the test; scope an ignore by message and
+# module, with its upstream cause, only for third-party code that has no fix.
+filterwarnings = ["error"]
