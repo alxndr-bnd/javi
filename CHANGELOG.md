@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.82.0] - 2026-10-12
+
 ### Changed
 - The privacy policy now describes the live service: who processes the data (No Handoff), what we keep about shops and their customers, which services receive it and for how long. Contact: support@serbito.rs.
   - SR: Politika privatnosti sada opisuje servis kakav jeste: ko obrađuje podatke (No Handoff), šta čuvamo o prodavnicama i njihovim kupcima, koji servisi ih dobijaju i koliko dugo. Kontakt: support@serbito.rs.
@@ -156,7 +158,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.81.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.82.0...HEAD
+[0.82.0]: https://github.com/alxndr-bnd/javi/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/alxndr-bnd/javi/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/alxndr-bnd/javi/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/alxndr-bnd/javi/compare/v0.78.0...v0.79.0
