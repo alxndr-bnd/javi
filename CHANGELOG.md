@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Changed
+- The footer links to our task manager by its full name, Serbito GTD.
+  - SR: Podnožje stranice navodi naš menadžer zadataka punim imenom, Serbito GTD.
+
 ## [0.82.0] - 2026-10-12
 
 ### Changed
