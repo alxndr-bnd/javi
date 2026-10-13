@@ -105,8 +105,16 @@ def test_landing_has_crosspromo_with_utm(client, lang):
 @pytest.mark.parametrize("lang", LANGS)
 def test_crosspromo_in_the_page_language(client, lang):
     _, page = _landing(client, lang)
-    names = ["GTD", "Planning Poker", "Serbito", "No Handoff"]
+    names = ["Serbito GTD", "Planning Poker", "Serbito", "No Handoff"]
     assert [t for t in page.promo_text if t not in names] == TEXTS[lang]
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_crosspromo_gtd_link_uses_brand_name(client, lang):
+    """SERBITO-619: one brand name, "Serbito GTD", on every cross-product link."""
+    html, page = _landing(client, lang)
+    assert "Serbito GTD" in page.promo_text
+    assert "GTD" not in page.promo_text
 
 
 @pytest.mark.parametrize("lang", LANGS)

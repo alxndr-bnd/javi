@@ -71,7 +71,7 @@ i online shopove koji dostavljaju svojim kuririma, a nemaju svoj sistem za prać
 
 ## Other projects
 
-- **[GTD](https://gtd.serbito.rs/?utm_source=github&utm_medium=crosspromo&utm_campaign=readme)** — free GTD task manager with a Telegram bot · [source](https://github.com/alxndr-bnd/gtd)
+- **[Serbito GTD](https://gtd.serbito.rs/?utm_source=github&utm_medium=crosspromo&utm_campaign=readme)** — free GTD task manager with a Telegram bot · [source](https://github.com/alxndr-bnd/gtd)
 - **[Planning Poker](https://poker.serbito.rs/?utm_source=github&utm_medium=crosspromo&utm_campaign=readme)** — free planning poker for scrum teams, no sign-up · [source](https://github.com/alxndr-bnd/planning-poker)
 - **[Serbito](https://serbito.rs/?utm_source=github&utm_medium=crosspromo&utm_campaign=readme)** — classifieds in Serbia
 
