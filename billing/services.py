@@ -95,7 +95,8 @@ def start_date() -> date | None:
     try:
         return date.fromisoformat(value)
     except ValueError:
-        logger.error("billing: JAVI_BILLING_START_DATE=%r is not YYYY-MM-DD", value)
+        # The value itself stays out of the log: settings values are never logged (SERBITO-638).
+        logger.error("billing: JAVI_BILLING_START_DATE is not YYYY-MM-DD")
         return None
 
 

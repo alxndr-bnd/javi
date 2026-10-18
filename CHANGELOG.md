@@ -14,6 +14,12 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- The cookie banner builds its privacy-policy link only from fixed values, never from page text.
+  - SR: Baner za kolačiće pravi link ka politici privatnosti samo od fiksnih vrednosti, nikad od teksta stranice.
+- Server logs no longer show the value of a wrong billing start-date setting.
+  - SR: Serverski logovi više ne prikazuju vrednost pogrešne postavke za datum početka naplate.
+
 ## [0.84.0] - 2026-10-18
 
 ### Security

@@ -32,6 +32,7 @@
   var GAP = 12; // the banner's offset from the viewport bottom; also kept clear above it
   var T = {
     sr: {
+      href: "/privacy.html#sr",
       label: "Saglasnost za kolačiće",
       text: "Koristimo kolačiće Google Analytics da vidimo kako se sajt koristi — samo ako se složite.",
       more: "Politika privatnosti",
@@ -39,6 +40,7 @@
       decline: "Odbij"
     },
     en: {
+      href: "/privacy.html#en",
       label: "Cookie consent",
       text: "We use Google Analytics cookies to see how the site is used — only if you agree.",
       more: "Privacy policy",
@@ -46,6 +48,7 @@
       decline: "Decline"
     },
     ru: {
+      href: "/privacy.html#ru",
       label: "Согласие на cookies",
       text: "Мы используем cookies Google Analytics, чтобы понимать, как используется сайт, — только с вашего согласия.",
       more: "Политика конфиденциальности",
@@ -158,7 +161,7 @@
     banner.querySelector(".jc-text span").textContent = t.text + " ";
     var more = banner.querySelector(".jc-text a");
     more.textContent = t.more;
-    more.href = "/privacy.html#" + l;
+    more.href = t.href; // a constant from T, never text read from the page (SERBITO-638)
     banner.querySelector(".jc-accept").textContent = t.accept;
     banner.querySelector(".jc-decline").textContent = t.decline;
   }

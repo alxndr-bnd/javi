@@ -20,7 +20,12 @@ def _new_tracking_token() -> str:
 
 
 def hash_api_key(full_key: str) -> str:
-    """sha256-хэш полного ключа (храним только его, не сам ключ)."""
+    """sha256-хэш полного ключа (храним только его, не сам ключ).
+
+    Не пароль: ключ — 32 случайных байта (`secrets.token_urlsafe(32)`, 256 бит), перебор
+    невозможен, поэтому медленный KDF (bcrypt/argon2) не нужен и только тормозил бы каждый
+    API-запрос. Хэш — точный индекс для поиска ключа (SERBITO-638: CodeQL alert 3 — false positive).
+    """
     return hashlib.sha256(full_key.encode()).hexdigest()
 
 
