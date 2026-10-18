@@ -690,3 +690,39 @@ def test_deploy_stops_when_the_tag_moved_after_the_build(repo, tmp_path):
     )
     assert r.returncode == 1 and "::error::" in r.stdout, r.stdout + r.stderr
     assert "IMAGE" not in out
+
+
+# --- SERBITO-635: PR CI builds the same image, without a push -------------------------------
+
+CI_WORKFLOW = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yaml").read_text("utf-8"))
+AUTOMERGE = yaml.safe_load(
+    (ROOT / ".github" / "workflows" / "dependabot-automerge.yml").read_text("utf-8")
+)
+
+
+def _build_step(steps):
+    matches = [s for s in steps if s.get("uses", "").startswith("docker/build-push-action@")]
+    assert len(matches) == 1, matches
+    return matches[0]
+
+
+def test_pr_ci_builds_the_deploy_image_without_a_push():
+    job = CI_WORKFLOW["jobs"]["image"]
+    assert job["permissions"] == {"contents": "read"}
+    assert "secrets." not in json.dumps(job) and "id-token" not in json.dumps(job)
+    assert job["if"] == "${{ !startsWith(github.ref, 'refs/tags/') }}"  # a tag builds in deploy
+    pr, prod = _build_step(job["steps"])["with"], _build_step(BUILD)["with"]
+    assert pr["push"] is False
+    assert pr["context"] == prod["context"] and pr["build-args"] == prod["build-args"]
+    assert "file" not in pr and "target" not in pr and "file" not in prod and "target" not in prod
+    assert pr["cache-from"] == "type=gha" and pr["cache-to"] == "type=gha,mode=max"
+    # Same pinned actions as the deploy build.
+    uses = {s["uses"] for s in job["steps"] if "uses" in s}
+    assert all(re.fullmatch(r"[\w./-]+@[0-9a-f]{40}", u) for u in uses), uses
+    assert uses <= {s["uses"] for s in BUILD if "uses" in s}
+
+
+def test_dependabot_automerge_waits_for_the_image_build():
+    steps = AUTOMERGE["jobs"]["automerge"]["steps"]
+    merge = next(s for s in steps if "gh pr merge" in s.get("run", ""))
+    assert "image" in merge["env"]["REQUIRED_CHECKS"].split()

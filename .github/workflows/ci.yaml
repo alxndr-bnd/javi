@@ -4,6 +4,9 @@ name: CI
 # landing parse. One definition, two callers (SERBITO-290):
 #   - here, on every PR (incl. Dependabot) and every push to main, so nothing merges untested;
 #   - deploy.yaml, via workflow_call, before every v*.*.* tag deploy.
+# SERBITO-635: the image job builds the production image on every PR and push to main, so a
+# broken image (base image, uv bump, Dockerfile) fails the PR, not the release. A tag run skips
+# it: deploy.yaml builds and pushes the image itself.
 # Runs on main also seed the uv cache: tag runs can restore caches from the default
 # branch only (a tag's own cache is invisible to the next tag).
 on:
@@ -92,3 +95,48 @@ jobs:
             -r "$RUNNER_TEMP/requirements.txt"
       - name: Dockerfile lint (docker build --check)
         run: docker build --check .
+
+  # SERBITO-635: the same image as deploy.yaml's "Build & push image" (context, Dockerfile,
+  # APT_REFRESH build arg), built and never pushed. No registry login, no secrets, no id-token.
+  # Layers are cached in the GitHub Actions cache. A PR reads the cache of its own branch and of
+  # main; runs on main keep it warm. A tag run (deploy.yaml calls this workflow) skips the job.
+  image:
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-24.04 # explicit: ubuntu-latest moves to 26.04 on 2026-10-19
+    timeout-minutes: 15
+    permissions:
+      contents: read # build only: no push, no deploy
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: "false" # no build-record artifact per run; the summary stays
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (SHA-pinned: supply-chain, Aikido)
+        with:
+          persist-credentials: false # no step pushes; keep the token out of .git/config (SERBITO-385, Aikido)
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4 (SHA-pinned)
+
+      # As deploy.yaml (SERBITO-369): the UTC date, so the apt-get upgrade layer is fresh daily.
+      - name: Daily apt refresh key
+        id: apt
+        run: echo "refresh=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7 (SHA-pinned)
+        with:
+          context: .
+          push: false
+          load: true # into the runner's Docker, for the smoke step below
+          tags: javi:ci
+          build-args: |
+            APT_REFRESH=${{ steps.apt.outputs.refresh }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The gunicorn entry point (config.wsgi) imports in the built image. config/checks.py
+      # refuses to serve without SECRET_KEY and ALLOWED_HOSTS: give it a throwaway key made in
+      # this step (not a repo secret) and a reserved host name. No network, no database.
+      - name: Smoke (import config.wsgi in the image)
+        run: |
+          docker run --rm --network none \
+            -e SECRET_KEY="$(openssl rand -hex 32)" -e ALLOWED_HOSTS=ci.invalid \
+            javi:ci python -c "import config.wsgi; print('config.wsgi imports')"
