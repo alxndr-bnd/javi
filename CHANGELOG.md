@@ -14,6 +14,12 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.83.0] - 2026-10-13
+
+### Changed
+- The footer links to our task manager by its full name, Serbito GTD.
+  - SR: Podnožje stranice navodi naš menadžer zadataka punim imenom, Serbito GTD.
+
 ## [0.82.0] - 2026-10-12
 
 ### Changed
@@ -158,7 +164,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.82.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.83.0...HEAD
+[0.83.0]: https://github.com/alxndr-bnd/javi/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/alxndr-bnd/javi/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/alxndr-bnd/javi/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/alxndr-bnd/javi/compare/v0.79.0...v0.80.0
