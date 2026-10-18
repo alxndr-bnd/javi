@@ -284,6 +284,11 @@ def test_later_steps_use_the_picked_tag_not_the_trigger_ref():
     assert code.count("GITHUB_REF_NAME") == 1  # only the tag pick, for a tag push
 
 
+def _curl_args(log: str) -> list[str]:
+    """Every argument of every logged curl call: whole tokens, not substrings."""
+    return log.split()
+
+
 def _run(i, cwd, tmp_path, steps=STEPS, **env):
     out, genv = tmp_path / "out", tmp_path / "env"
     out.write_text("")
@@ -583,8 +588,9 @@ def test_smoke_checks_the_candidate_tag_url(tmp_path, fakes):
     r, _ = _run(SMOKE, tmp_path, tmp_path, FAKE_CODE="200", PREV_REVISION="javi-00067", **env)
     assert r.returncode == 0, r.stdout + r.stderr
     curl = Path(f"{log}.curl").read_text()
-    assert "https://candidate---javi-x.a.run.app/" in curl
-    assert " https://javi-x.a.run.app/" not in curl
+    urls = _curl_args(curl)
+    assert any(u == "https://candidate---javi-x.a.run.app/" for u in urls)
+    assert all(u != "https://javi-x.a.run.app/" for u in urls)
 
 
 def test_header_step_checks_the_candidate_tag_url(tmp_path):
@@ -607,7 +613,7 @@ def test_header_step_checks_the_candidate_tag_url(tmp_path):
     )
     r, _ = _run(HEADERS, ROOT, tmp_path, **env)
     assert r.returncode == 0, r.stdout + r.stderr
-    assert "https://candidate---javi-x.a.run.app/" in log.read_text()
+    assert any(u == "https://candidate---javi-x.a.run.app/" for u in _curl_args(log.read_text()))
 
 
 def test_the_candidate_tag_is_removed_last_even_after_a_failure(tmp_path, fakes):

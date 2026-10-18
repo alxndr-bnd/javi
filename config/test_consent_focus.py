@@ -107,3 +107,27 @@ def test_window_refocus_does_not_scroll_and_tab_still_clears_the_banner(page):
     _settle(page)
     assert second.evaluate("el => el === document.activeElement"), "Tab went elsewhere"
     assert not second.evaluate(COVERED), "Tab left focus under the banner"
+
+
+HOSTILE = 'javascript:alert(1)//"><img src=x onerror="window.__xss=1">'
+
+
+def test_page_text_never_reaches_the_privacy_link(page):
+    """SERBITO-638: the banner language comes from the page (data-consent-open, lang); the
+    privacy link takes only a constant from its own table, so page text never becomes markup
+    or a URL."""
+    page.goto(BASE + "/en/index.html")
+    page.wait_for_selector(".jc:not([hidden])", state="visible", timeout=WAIT_MS)
+    link = page.locator(".jc .jc-text a")
+    assert link.get_attribute("href") == "/privacy.html#en"
+
+    page.evaluate(
+        "v => { document.documentElement.setAttribute('data-consent-lang', v);"
+        " document.querySelector('[data-consent-open]').setAttribute('data-consent-open', v); }",
+        HOSTILE,
+    )
+    page.locator("[data-consent-open]").first.click()
+    _settle(page)
+    assert link.get_attribute("href") == "/privacy.html#sr"  # unknown language -> Serbian
+    assert page.locator(".jc img").count() == 0
+    assert page.evaluate("window.__xss === undefined")

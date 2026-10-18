@@ -346,7 +346,8 @@ def test_language_pages_share_style_and_script():
     def shared(lang):
         html = _landing(lang)
         styles = re.findall(r"<style>(.*?)</style>", html, flags=re.S)
-        scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)  # inline, no JSON-LD
+        # inline, no JSON-LD
+        scripts = re.findall(r"<script>(.*?)</script[^>]*>", html, flags=re.S | re.I)
         return styles, scripts
 
     sr = shared("sr")

@@ -40,14 +40,14 @@ def test_dashboard_has_baseline_csp_and_full_report_only_policy(client, owner):
     full = _directives(resp[REPORT_ONLY])
     assert full["default-src"] == "'self'"
     assert "'unsafe-inline'" not in full["script-src"]
-    assert "https://www.googletagmanager.com" in full["script-src"]
+    assert any(src == "https://www.googletagmanager.com" for src in full["script-src"].split())
 
 
 def test_every_script_on_the_dashboard_carries_the_nonce(client, owner):
     resp = client.get("/app/")
     nonce = re.search(r"'nonce-([^']+)'", resp[REPORT_ONLY]).group(1)
     body = resp.content.decode()
-    scripts = re.findall(r"<script\b[^>]*>", body)
+    scripts = re.findall(r"<script\b[^>]*>", body, flags=re.I)
     assert len(scripts) >= 4  # consent default, gtag, data-confirm, page script, consent.js
     for tag in scripts:
         assert f'nonce="{nonce}"' in tag, tag
@@ -83,7 +83,7 @@ def test_templates_have_no_inline_event_handlers_or_bare_scripts():
     for path in [*ROOT.glob("templates/**/*.html"), *ROOT.glob("*/templates/**/*.html")]:
         text = path.read_text(encoding="utf-8")
         assert not re.search(r"\son[a-z]+\s*=", text), path
-        for tag in re.findall(r"<script\b[^>]*>", text):
+        for tag in re.findall(r"<script\b[^>]*>", text, flags=re.I):
             assert 'nonce="{{ csp_nonce }}"' in tag, (path, tag)
 
 

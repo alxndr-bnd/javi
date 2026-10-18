@@ -189,7 +189,9 @@ def test_banner_behaviour_contract():
     assert "ad_storage" not in CONSENT_JS  # no ads consent is ever granted
     assert 'if (value === "denied") dropGaCookies();' in CONSENT_JS
     assert 'name.indexOf("_ga") !== 0' in CONSENT_JS
-    assert '"/privacy.html#" + l' in CONSENT_JS
+    assert "more.href = t.href;" in CONSENT_JS  # constants only (SERBITO-638)
+    for lang in LANGS:
+        assert f'href: "/privacy.html#{lang}",' in CONSENT_JS
     assert 'var KEY = "javi_consent";' in CONSENT_JS and "365 * 864e5" in CONSENT_JS
 
 
