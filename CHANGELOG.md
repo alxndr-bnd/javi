@@ -14,6 +14,12 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.84.0] - 2026-10-18
+
+### Security
+- The server image is now built with the current version of the package installer (uv 0.13).
+  - SR: Serverska slika se sada pravi sa aktuelnom verzijom alata za instalaciju paketa (uv 0.13).
+
 ## [0.83.0] - 2026-10-13
 
 ### Changed
@@ -164,7 +170,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.83.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.84.0...HEAD
+[0.84.0]: https://github.com/alxndr-bnd/javi/compare/v0.83.0...v0.84.0
 [0.83.0]: https://github.com/alxndr-bnd/javi/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/alxndr-bnd/javi/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/alxndr-bnd/javi/compare/v0.80.0...v0.81.0
