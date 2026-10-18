@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.85.0] - 2026-10-18
+
 ### Security
 - The cookie banner builds its privacy-policy link only from fixed values, never from page text.
   - SR: Baner za kolačiće pravi link ka politici privatnosti samo od fiksnih vrednosti, nikad od teksta stranice.
@@ -176,7 +178,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.84.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.85.0...HEAD
+[0.85.0]: https://github.com/alxndr-bnd/javi/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/alxndr-bnd/javi/compare/v0.83.0...v0.84.0
 [0.83.0]: https://github.com/alxndr-bnd/javi/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/alxndr-bnd/javi/compare/v0.81.0...v0.82.0
