@@ -3,7 +3,7 @@
 # The single source of the uv version: CI (ci.yaml) reads it from this line (SERBITO-294).
 # Build-time only: the sync step bind-mounts the binary, the runtime image has no uv
 # (Aikido flagged its Rust crates, SERBITO-387).
-FROM ghcr.io/astral-sh/uv:0.13.0@sha256:cdc6093146eb3ff6a40107b38f008b789e050e77ad87865e381d9917da55a168 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.1@sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336 AS uv
 
 # ---- Stage 1: Django + gunicorn (Javi MVP) ----
 # Лендинг Этапа 0 остаётся в образе (landing/) и отдаётся WhiteNoise на /.
