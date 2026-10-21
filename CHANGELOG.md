@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Security
+- We updated the list of trusted security certificates. It no longer trusts certificates that were compromised. Nothing changes for you.
+  - SR: Ažurirali smo listu pouzdanih sertifikata. Ona više ne veruje kompromitovanim sertifikatima. Za vas se ništa ne menja.
+
 ## [0.85.0] - 2026-10-18
 
 ### Security
