@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.86.0] - 2026-10-21
+
 ### Security
 - We updated the list of trusted security certificates. It no longer trusts certificates that were compromised. Nothing changes for you.
   - SR: Ažurirali smo listu pouzdanih sertifikata. Ona više ne veruje kompromitovanim sertifikatima. Za vas se ništa ne menja.
@@ -182,7 +184,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.85.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.86.0...HEAD
+[0.86.0]: https://github.com/alxndr-bnd/javi/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/alxndr-bnd/javi/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/alxndr-bnd/javi/compare/v0.83.0...v0.84.0
 [0.83.0]: https://github.com/alxndr-bnd/javi/compare/v0.82.0...v0.83.0
