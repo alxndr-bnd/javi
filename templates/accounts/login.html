@@ -3,7 +3,7 @@
 {% block title %}{% trans "Sign in" %} · Javi{% endblock %}
 {% block body %}
 <div class="auth">
-  <div class="logo" style="margin-bottom:18px">javi<span>.</span></div>
+  {% include "_logo_home.html" %}
   <h1>{% trans "Sign in" %}</h1>
   <form method="post" action="{% url 'accounts:login' %}">
     {% csrf_token %}

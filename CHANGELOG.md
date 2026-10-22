@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Fixed
+- The Javi logo on the sign-in and sign-up pages opens the home page.
+  - SR: Javi logo na stranicama za prijavu i registraciju otvara početnu stranicu.
+
 ## [0.86.0] - 2026-10-21
 
 ### Security

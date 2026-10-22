@@ -2,6 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.urls import reverse
+from django.utils import translation
 
 from deliveries.models import Shop
 
@@ -86,3 +87,14 @@ def test_register_weak_password_rejected(client):
     assert resp.status_code == 200
     assert not get_user_model().objects.filter(email="weak@shop.rs").exists()
     assert Shop.objects.count() == 0
+
+
+@pytest.mark.parametrize("name", ["accounts:login", "accounts:register"])
+@pytest.mark.parametrize("lang,home", [("en", "/en/"), ("sr-latn", "/")])
+def test_logo_links_to_landing_in_same_language(client, name, lang, home):
+    """Логотип на входе и регистрации ведёт на лендинг на языке страницы."""
+    client.cookies["django_language"] = lang
+    # LocaleMiddleware leaves the language active in this thread: restore it after.
+    with translation.override(None):
+        resp = client.get(reverse(name))
+    assert f'<a class="logo" href="{home}"'.encode() in resp.content

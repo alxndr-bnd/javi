@@ -1,0 +1,1 @@
+{% load i18n %}{% get_current_language as cur %}{# The logo on the sign-in pages opens the landing in the same language: / is Serbian, /en/ is English. #}<a class="logo" href="{% if cur == 'en' %}/en/{% else %}/{% endif %}" style="margin-bottom:18px;display:inline-block">javi<span>.</span></a>
