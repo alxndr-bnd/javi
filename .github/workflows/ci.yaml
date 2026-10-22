@@ -70,7 +70,13 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      # apt has no download timeout: on 2026-10-22 a stuck azure.archive.ubuntu.com download
+      # held the step until the job's 10-minute timeout, twice, and cancelled the v0.87.0 deploy.
+      # A stalled download now times out after 30 s and apt retries it.
+      - name: apt download timeout and retries
+        run: printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-timeout-retries
       - name: Chromium for Playwright
+        timeout-minutes: 6
         run: uv run --frozen playwright install --with-deps chromium
 
       # Tests use the sqlite fallback, exactly as locally: no DATABASE_URL, no .env.

@@ -14,6 +14,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+### Changed
+- Behind-the-scenes: a slow download server no longer stops a release from reaching you. Nothing changes for you.
+  - SR: Iza scene: spor server za preuzimanje više ne zaustavlja izdanje. Za vas se ništa ne menja.
+
 ## [0.87.0] - 2026-10-22
 
 ### Fixed
