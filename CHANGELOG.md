@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.88.0] - 2026-10-22
+
 ### Changed
 - Behind-the-scenes: a slow download server no longer stops a release from reaching you. Nothing changes for you.
   - SR: Iza scene: spor server za preuzimanje više ne zaustavlja izdanje. Za vas se ništa ne menja.
@@ -198,7 +200,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.87.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.88.0...HEAD
+[0.88.0]: https://github.com/alxndr-bnd/javi/compare/v0.87.0...v0.88.0
 [0.87.0]: https://github.com/alxndr-bnd/javi/compare/v0.86.0...v0.87.0
 [0.86.0]: https://github.com/alxndr-bnd/javi/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/alxndr-bnd/javi/compare/v0.84.0...v0.85.0
