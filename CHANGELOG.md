@@ -14,6 +14,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 
 ## [Unreleased]
 
+## [0.87.0] - 2026-10-22
+
 ### Fixed
 - The Javi logo on the sign-in and sign-up pages opens the home page.
   - SR: Javi logo na stranicama za prijavu i registraciju otvara početnu stranicu.
@@ -192,7 +194,8 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - Sign-in locks after too many failed attempts. Secrets no longer appear in links or logs.
   - SR: Prijava se zaključava posle previše neuspešnih pokušaja. Tajni podaci se više ne pojavljuju u linkovima ni u logovima.
 
-[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.86.0...HEAD
+[Unreleased]: https://github.com/alxndr-bnd/javi/compare/v0.87.0...HEAD
+[0.87.0]: https://github.com/alxndr-bnd/javi/compare/v0.86.0...v0.87.0
 [0.86.0]: https://github.com/alxndr-bnd/javi/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/alxndr-bnd/javi/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/alxndr-bnd/javi/compare/v0.83.0...v0.84.0
