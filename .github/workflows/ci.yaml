@@ -58,8 +58,7 @@ jobs:
         run: uv sync --frozen
       # config/test_consent_focus.py drives full Chromium headless (real window focus events).
       # SERBITO-552: the browser download (~9 s) is cached, keyed on the locked playwright
-      # version. `install --with-deps` still installs the OS packages and skips the download
-      # when the cache has this version.
+      # version. `playwright install` skips the download when the cache has this version.
       - name: Playwright version from uv.lock
         id: playwright
         run: |
@@ -70,14 +69,19 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-      # apt has no download timeout: on 2026-10-22 a stuck azure.archive.ubuntu.com download
-      # held the step until the job's 10-minute timeout, twice, and cancelled the v0.87.0 deploy.
-      # A stalled download now times out after 30 s and apt retries it.
-      - name: apt download timeout and retries
-        run: printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-timeout-retries
+      # On 2026-10-22 azure.archive.ubuntu.com sent the fonts for `install --with-deps` at
+      # 30-50 kB/s: the step hit the job's 10-minute timeout and cancelled the v0.87.0 deploy.
+      # The runner image already has the OS libraries Chrome needs, so apt runs only when the
+      # browser does not start without it.
       - name: Chromium for Playwright
-        timeout-minutes: 6
-        run: uv run --frozen playwright install --with-deps chromium
+        timeout-minutes: 8
+        run: |
+          uv run --frozen playwright install chromium
+          if ! uv run --frozen python -c 'from playwright.sync_api import sync_playwright as p
+          with p() as pw: pw.chromium.launch().close()'; then
+            echo "::warning::Chromium needs OS packages: running playwright install-deps"
+            uv run --frozen playwright install-deps chromium
+          fi
 
       # Tests use the sqlite fallback, exactly as locally: no DATABASE_URL, no .env.
       - name: ruff check
