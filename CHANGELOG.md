@@ -18,6 +18,10 @@ tags `vX.Y.Z`. Every entry has an English line and its Serbian (Latin script) tr
 - The Javi logo on the sign-in and sign-up pages opens the home page.
   - SR: Javi logo na stranicama za prijavu i registraciju otvara početnu stranicu.
 
+### Security
+- A tracing library is updated to a version without a known security issue. Nothing changes for you.
+  - SR: Biblioteka za praćenje je ažurirana na verziju bez poznatog bezbednosnog problema. Za vas se ništa ne menja.
+
 ## [0.86.0] - 2026-10-21
 
 ### Security
